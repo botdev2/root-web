@@ -1,0 +1,95 @@
+import { Icon } from "./Icons.jsx";
+import { useAppState } from "../AppState.jsx";
+
+const HEADERS = {
+  home: { title: "New Agent" },
+  chat: { title: "New Agent" },
+  automations: { title: "Automations", subtitle: "Scheduled helpers for this project" },
+  reasoning: { title: "Reasoning", subtitle: "Intake to Output — click a node" },
+  crawler: { title: "Crawler", subtitle: "Record, play, OTP, scrape" },
+  ops: { title: "PALM Ops", subtitle: "Anonymous hosting · wallet signature only" },
+  plugins: { title: "Plugins", subtitle: "Persona packs and workflow extensions" },
+  notes: { title: "Notes", subtitle: "Daily goals and markdown" },
+  settings: { title: "Settings", subtitle: "Appearance, models, privacy" },
+  templates: { title: "Create from Template", subtitle: "Scaffold a project, then refine with Auto-Prompt" },
+  account: { title: "Account", subtitle: "Access, skills, profile" },
+  updates: { title: "Updates", subtitle: "App version and channel" },
+  telemetry: { title: "Telemetry", subtitle: "Session privacy and traces" },
+  help: { title: "Help", subtitle: "How /root works on the web" },
+  editor: { title: "Editor", subtitle: "Project text editor" },
+  history: { title: "Run history", subtitle: "Automation runs for this project" },
+};
+
+export default function HeaderBar({
+  view,
+  sessionTitle,
+  onHelp,
+  onFiles,
+  onClear,
+  filesOpen,
+  onMenu,
+}) {
+  const { project, signedIn, session } = useAppState();
+  const header = HEADERS[view] || HEADERS.home;
+  const title =
+    view === "chat" && sessionTitle ? sessionTitle : view === "editor" && sessionTitle ? sessionTitle : header.title;
+  const subtitle = header.subtitle || `${project.label} · ${project.remote}`;
+
+  return (
+    <header className="frost-header flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[var(--stroke-soft)] px-3 pt-[env(safe-area-inset-top)] md:px-7">
+      <button
+        type="button"
+        onClick={onMenu}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--hover)] md:hidden"
+        aria-label="Open menu"
+      >
+        <Icon name="menu" size={18} />
+      </button>
+      <img src="/palm.png" alt="" className="h-6 w-6 shrink-0 object-contain md:hidden" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[15px] text-[var(--ink)]">{title}</div>
+        <div className="truncate text-[11.5px] text-[var(--faint)]">{subtitle}</div>
+      </div>
+      <div className="mx-2 hidden shrink-0 items-center text-[11.5px] text-[var(--faint)] lg:flex">
+        HTTPS ·{" "}
+        <span className={`ml-1 ${signedIn ? "text-[var(--green)]" : "text-[var(--faint)]"}`}>
+          {signedIn ? "signed in" : "locked"}
+        </span>
+        {signedIn && session?.source && (
+          <span className="ml-2 hidden xl:inline">{session.source}</span>
+        )}
+      </div>
+      <div className="hidden shrink-0 items-center gap-0.5 sm:flex">
+        <Ghost onClick={onHelp}>Help</Ghost>
+        <Ghost onClick={onFiles} active={filesOpen}>
+          Files
+        </Ghost>
+        <Ghost onClick={onClear}>Clear</Ghost>
+      </div>
+      <button
+        type="button"
+        onClick={onFiles}
+        className={`flex h-10 w-10 items-center justify-center rounded-lg sm:hidden ${
+          filesOpen ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
+        }`}
+        aria-label="Files"
+      >
+        <Icon name="folder" size={16} />
+      </button>
+    </header>
+  );
+}
+
+function Ghost({ children, onClick, active }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-[30px] rounded-lg px-2.5 text-[12.5px] ${
+        active ? "bg-[var(--sidebar-sel)] text-[var(--ink)]" : "text-[var(--ink)] hover:bg-[var(--hover)]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}

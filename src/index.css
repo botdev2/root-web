@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "PALM";
+  src: url("/fonts/palm.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
+  --font-mono: "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
+}
+
+:root {
+  --bg: #0e1220;
+  --top: #131829;
+  --sidebar: #161c30;
+  --sidebar-sel: #1e2740;
+  --panel: #182036;
+  --panel-soft: #1c2440;
+  --input: #131a2c;
+  --stroke: #2e3a55;
+  --stroke-soft: #253048;
+  --ink: #e6ecf7;
+  --muted: #9fb0ce;
+  --faint: #6e7ea0;
+  --accent: #bfd2ff;
+  --accent-soft: #263250;
+  --hover: #1e2740;
+  --tab: #263250;
+  --code: #141b2e;
+  --bubble: #1e2842;
+  --green: #46b98a;
+  --amber: #d4a24a;
+  --rose: #c89ab8;
+  --shell: linear-gradient(160deg, #101527, #0c101c, #131a30);
+  --wallpaper-image: url("/wallpaper.png");
+  --radius: 12px;
+  --ui-font: "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  height: 100dvh;
+  margin: 0;
+}
+
+body {
+  font-family: var(--ui-font);
+  background: var(--bg);
+  color: var(--ink);
+  font-feature-settings: "kern" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+.wallpaper-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 28%, transparent), color-mix(in srgb, var(--bg) 52%, transparent)),
+    var(--wallpaper-image) center / cover no-repeat;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+[data-wallpaper="off"] .wallpaper-layer {
+  display: none;
+}
+
+.shell {
+  background: color-mix(in srgb, var(--bg) 18%, transparent);
+}
+
+[data-wallpaper="off"] .shell {
+  background: var(--shell);
+}
+
+.frost {
+  background: color-mix(in srgb, var(--sidebar) 86%, transparent);
+  backdrop-filter: blur(22px) saturate(1.2);
+}
+
+.frost-header {
+  background: color-mix(in srgb, var(--top) 72%, transparent);
+  backdrop-filter: blur(20px) saturate(1.15);
+}
+
+.frost-panel {
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(24px) saturate(1.25);
+}
+
+.frost-input {
+  background: color-mix(in srgb, var(--input) 84%, transparent);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+
+.home-title {
+  color: var(--ink);
+  text-shadow: 0 1px 18px color-mix(in srgb, var(--bg) 55%, transparent);
+}
+
+.composer-shadow {
+  box-shadow: 0 10px 28px color-mix(in srgb, #000 22%, transparent);
+}
+
+.fade-up {
+  animation: fadeUp 0.35s ease both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scroll-thin {
+  scrollbar-width: none;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.title-fade {
+  mask-image: linear-gradient(90deg, #000 78%, transparent);
+}
+

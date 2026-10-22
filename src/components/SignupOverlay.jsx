@@ -5,10 +5,10 @@ import { Icon } from "./Icons.jsx";
 const ACCOUNT = "https://useroot.sh/account";
 
 const FEATURES = [
-  { icon: "spark", title: "Agent", body: "Ask, Plan, or Agent — Auto-Prompt writes the brief." },
-  { icon: "globe", title: "Farm", body: "Cloud Android phones. No local emulator pack." },
-  { icon: "folder", title: "Ops", body: "Anonymous hosting. One wallet signature." },
-  { icon: "play", title: "Crawler", body: "Record, replay, OTP, scrape — then ship." },
+  { icon: "spark", title: "Agent", body: "Ask / Plan / Agent. Auto-Prompt. Tools." },
+  { icon: "globe", title: "Farm", body: "Cloud Android. No emulator pack." },
+  { icon: "folder", title: "Ops", body: "Wallet signature. Live domain." },
+  { icon: "play", title: "Crawler", body: "Record. Play. OTP. Scrape." },
 ];
 
 export default function SignupOverlay() {
@@ -45,19 +45,21 @@ export default function SignupOverlay() {
               </div>
               <div>
                 <div className="text-[15px] tracking-wide">/root</div>
-                <div className="text-[11px] text-[var(--faint)]">useroot.sh · web</div>
+                <div className="text-[11px] text-[var(--faint)]">local AI harness</div>
               </div>
             </div>
 
-            <h1 className="gate-title mt-7 text-[34px] leading-none md:text-[44px]">Unlock the harness</h1>
-            <p className="mt-4 max-w-[34ch] text-[15px] leading-6 text-[var(--muted)]">
-              Agentic coding on your GitHub projects. Farm for phones, Ops for domains, Crawler for the
-              browser — one Root Account opens the session.
+            <h1 className="gate-title mt-7 text-[34px] leading-none md:text-[44px]">Unlock /root</h1>
+            <p className="mt-4 max-w-[36ch] text-[15px] leading-6 text-[var(--muted)]">
+              Local agent. Your projects. Farm, Ops, Crawler.
+            </p>
+            <p className="mt-2 max-w-[40ch] text-[13px] leading-5 text-[var(--faint)]">
+              Unlock at useroot.sh/account. Lifetime. Wallet optional. Card, crypto, or 1,000 $PALM.
             </p>
 
             <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center">
               <button type="button" onClick={openAccount} className="gate-cta">
-                Create account on useroot.sh
+                Unlock
               </button>
               {opened && (
                 <button
@@ -70,12 +72,12 @@ export default function SignupOverlay() {
                       : "border-[var(--stroke)] text-[var(--faint)]"
                   }`}
                 >
-                  {ready ? "Continue into /root" : "Waiting for account…"}
+                  {ready ? "Continue" : "Waiting for useroot.sh/account…"}
                 </button>
               )}
             </div>
             <div className="mt-3 text-[11.5px] text-[var(--faint)]">
-              Lifetime unlock · wallet optional · card or crypto
+              Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM
             </div>
           </div>
 

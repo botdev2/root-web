@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { useAppState } from "../AppState.jsx";
-import { Primary } from "./ui.jsx";
+import { Icon } from "./Icons.jsx";
 
 const ACCOUNT = "https://useroot.sh/account";
+
+const FEATURES = [
+  { icon: "spark", title: "Agent", body: "Ask, Plan, or Agent — Auto-Prompt writes the brief." },
+  { icon: "globe", title: "Farm", body: "Cloud Android phones. No local emulator pack." },
+  { icon: "folder", title: "Ops", body: "Anonymous hosting. One wallet signature." },
+  { icon: "play", title: "Crawler", body: "Record, replay, OTP, scrape — then ship." },
+];
 
 export default function SignupOverlay() {
   const { signIn } = useAppState();
@@ -26,53 +33,63 @@ export default function SignupOverlay() {
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,#000_52%,transparent)] px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="frost-panel w-[min(560px,96vw)] max-h-[min(92dvh,760px)] overflow-y-auto rounded-2xl border border-[var(--stroke)] p-6 shadow-2xl md:p-8">
-        <div className="flex items-center gap-2.5">
-          <img src="/palm.png" alt="" className="h-8 w-8 object-contain" />
+    <div className="gate-veil absolute inset-0 z-50 flex items-center justify-center px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="gate-card fade-up w-[min(920px,96vw)] max-h-[min(94dvh,820px)] overflow-y-auto scroll-thin">
+        <div className="gate-hero" />
+        <div className="gate-sheen" />
+        <div className="relative grid gap-8 p-6 pt-5 md:grid-cols-[1.15fr_0.85fr] md:gap-10 md:p-10 md:pt-7">
           <div>
-            <div className="text-[15px]">/root</div>
-            <div className="text-[11px] text-[var(--faint)]">useroot.sh</div>
+            <div className="flex items-center gap-3">
+              <div className="gate-orb">
+                <img src="/palm.png" alt="" className="h-8 w-8 object-contain" />
+              </div>
+              <div>
+                <div className="text-[15px] tracking-wide">/root</div>
+                <div className="text-[11px] text-[var(--faint)]">useroot.sh · web</div>
+              </div>
+            </div>
+
+            <h1 className="gate-title mt-7 text-[34px] leading-none md:text-[44px]">Unlock the harness</h1>
+            <p className="mt-4 max-w-[34ch] text-[15px] leading-6 text-[var(--muted)]">
+              Agentic coding on your GitHub projects. Farm for phones, Ops for domains, Crawler for the
+              browser — one Root Account opens the session.
+            </p>
+
+            <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <button type="button" onClick={openAccount} className="gate-cta">
+                Create account on useroot.sh
+              </button>
+              {opened && (
+                <button
+                  type="button"
+                  disabled={!ready}
+                  onClick={() => signIn({ name: "you", source: "useroot.sh/account" })}
+                  className={`h-11 rounded-full border px-5 text-[13px] transition ${
+                    ready
+                      ? "border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--hover)]"
+                      : "border-[var(--stroke)] text-[var(--faint)]"
+                  }`}
+                >
+                  {ready ? "Continue into /root" : "Waiting for account…"}
+                </button>
+              )}
+            </div>
+            <div className="mt-3 text-[11.5px] text-[var(--faint)]">
+              Lifetime unlock · wallet optional · card or crypto
+            </div>
           </div>
-        </div>
 
-        <h1 className="home-title mt-5 text-[26px] leading-8">Unlock the harness</h1>
-        <p className="mt-3 text-[14px] leading-6 text-[var(--muted)]">
-          /root is an agentic coding workspace. Chat against your GitHub projects, run tools, keep notes,
-          schedule automations, and ship — Farm for cloud Android phones, Ops for anonymous hosting, Crawler
-          for recorded browser flows.
-        </p>
-        <p className="mt-3 text-[14px] leading-6 text-[var(--muted)]">
-          A Root Account is required. Create or unlock one at useroot.sh/account. Lifetime unlock, wallet
-          optional, card or crypto. That account is the only way into this session.
-        </p>
-
-        <ul className="mt-5 space-y-2 text-[13px] text-[var(--ink)]">
-          <li>Agent / Ask / Plan composer with Auto-Prompt</li>
-          <li>PALM Farm · cloud phones, no local emulator pack</li>
-          <li>PALM Ops · wallet signature, live domains</li>
-          <li>Crawler, Reasoning, Automations, Plugins, Notes</li>
-        </ul>
-
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          <Primary onClick={openAccount}>Create account on useroot.sh</Primary>
-          {opened && (
-            <button
-              type="button"
-              disabled={!ready}
-              onClick={() => signIn({ name: "you", source: "useroot.sh/account" })}
-              className={`h-9 rounded-lg border px-3.5 text-[12.5px] ${
-                ready
-                  ? "border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--hover)]"
-                  : "border-[var(--stroke)] text-[var(--faint)]"
-              }`}
-            >
-              {ready ? "Continue into /root" : "Waiting for useroot.sh/account…"}
-            </button>
-          )}
-        </div>
-        <div className="mt-3 text-[11px] text-[var(--faint)]">
-          Opens {ACCOUNT.replace("https://", "")}. Come back here after you unlock.
+          <div className="grid grid-cols-2 gap-2.5 content-start">
+            {FEATURES.map((item) => (
+              <div key={item.title} className="gate-tile">
+                <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--stroke)] bg-[color-mix(in_srgb,var(--panel)_50%,transparent)] text-[var(--accent)]">
+                  <Icon name={item.icon} size={15} />
+                </div>
+                <div className="text-[13.5px]">{item.title}</div>
+                <div className="mt-1 text-[11.5px] leading-4 text-[var(--muted)]">{item.body}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

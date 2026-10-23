@@ -1,5 +1,6 @@
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
+import WalletButton from "./WalletButton.jsx";
 
 const HEADERS = {
   home: { title: "New Agent" },
@@ -28,6 +29,7 @@ export default function HeaderBar({
   onClear,
   filesOpen,
   onMenu,
+  onUnlock,
 }) {
   const { project, signedIn, session } = useAppState();
   const header = HEADERS[view] || HEADERS.home;
@@ -53,12 +55,16 @@ export default function HeaderBar({
       <div className="mx-2 hidden shrink-0 items-center text-[11.5px] text-[var(--faint)] lg:flex">
         HTTPS ·{" "}
         <span className={`ml-1 ${signedIn ? "text-[var(--green)]" : "text-[var(--faint)]"}`}>
-          {signedIn ? "signed in" : "locked"}
+          {signedIn ? "signed in" : "guest"}
         </span>
         {signedIn && session?.source && (
           <span className="ml-2 hidden xl:inline">{session.source}</span>
         )}
       </div>
+      <WalletButton className="shrink-0" />
+      {!signedIn && (
+        <Ghost onClick={onUnlock}>Unlock</Ghost>
+      )}
       <div className="hidden shrink-0 items-center gap-0.5 sm:flex">
         <Ghost onClick={onHelp}>Help</Ghost>
         <Ghost onClick={onFiles} active={filesOpen}>

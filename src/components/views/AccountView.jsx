@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount, useDisconnect } from "wagmi";
 import { useAppState } from "../../AppState.jsx";
+import { shortenAddress } from "../../web3/config.js";
 import { Page, Card, Tabs, Row, Field, Ghost, Primary, Toggle, Section } from "../ui.jsx";
 
 const TABS = [
@@ -9,12 +12,13 @@ const TABS = [
   { id: "profile", label: "Profile" },
 ];
 
-const ADDRESS = "0xA19c4e81b2d04f9c7e11b0a4c21";
-
 export default function AccountView() {
-  const { notice, completeOnboarding, session, signOut } = useAppState();
+  const { notice, completeOnboarding, session } = useAppState();
+  const { open } = useAppKit();
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
   const [tab, setTab] = useState("account");
-  const [showWallet, setShowWallet] = useState(false);
+  const [showWallet, setShowWallet] = useState(true);
   const [name, setName] = useState(session?.name || "you");
   const [github, setGithub] = useState("github.com/you");
 
@@ -23,44 +27,53 @@ export default function AccountView() {
       <Tabs tabs={TABS} value={tab} onChange={setTab} />
       {tab === "account" && (
         <Card>
-          <Row label="Status" value="Root Account · unlocked" />
-          <Row label="Source" value={session?.source || "useroot.sh/account"} />
-          <Row label="Session" value="HTTPS · useroot.sh" />
+          <Row label="Status" value={isConnected ? "Wallet connected" : "Guest — browsing"} />
+          <Row label="Source" value={isConnected ? "WalletConnect" : "—"} />
+          <Row label="Address" value={address ? shortenAddress(address) : "Not connected"} />
           <div className="flex flex-wrap gap-2 px-4 py-3">
-            <Primary onClick={() => window.open("https://useroot.sh/account", "_blank", "noopener,noreferrer")}>
-              Manage on useroot.sh
-            </Primary>
-            <Ghost
-              onClick={() => {
-                signOut();
-                notice("Signed out.");
-              }}
-            >
-              Sign out
+            {isConnected ? (
+              <>
+                <Primary onClick={() => open({ view: "Account" })}>Wallet</Primary>
+                <Ghost
+                  onClick={() => {
+                    disconnect();
+                    notice("Wallet disconnected.");
+                  }}
+                >
+                  Disconnect
+                </Ghost>
+              </>
+            ) : (
+              <Primary onClick={() => open({ view: "Connect" })}>Connect wallet</Primary>
+            )}
+            <Ghost onClick={() => window.open("https://useroot.sh/account", "_blank", "noopener,noreferrer")}>
+              useroot.sh/account
             </Ghost>
           </div>
         </Card>
       )}
       {tab === "manager" && (
-        <Section title="Optional">
+        <Section title="Wallet">
           <Card>
-            <Row label="Show Wallet tab" value="Hidden by default">
+            <Row label="Show Wallet tab" value="Balances and staking">
               <Toggle on={showWallet} onClick={() => setShowWallet((value) => !value)} />
             </Row>
             {showWallet && (
               <>
-                <Row label="Wallet" value={ADDRESS}>
-                  <Ghost
-                    onClick={() => {
-                      navigator.clipboard?.writeText(ADDRESS);
-                      notice("Address copied.");
-                    }}
-                  >
-                    Copy address
-                  </Ghost>
+                <Row label="Wallet" value={address || "Connect to show address"}>
+                  {address && (
+                    <Ghost
+                      onClick={() => {
+                        navigator.clipboard?.writeText(address);
+                        notice("Address copied.");
+                      }}
+                    >
+                      Copy address
+                    </Ghost>
+                  )}
                 </Row>
-                <Row label="ETH" value="0.00" />
-                <Row label="PALM" value="0.00" />
+                <Row label="ETH" value="—" />
+                <Row label="PALM" value="—" />
               </>
             )}
             <Row label="PALMStaking" value="Stake / withdraw from the wallet tab" />

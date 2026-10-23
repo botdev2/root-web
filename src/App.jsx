@@ -25,6 +25,7 @@ import TemplatesView from "./components/views/TemplatesView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
 import PluginsView from "./components/views/PluginsView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
+import WalletSync from "./components/WalletSync.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
@@ -44,7 +45,7 @@ function replyFor({ mode, autoPrompt, project, text }) {
 
 export default function App() {
   const state = useAppState();
-  const { addProject, addSession, mode, notice, project, signedIn } = state || {};
+  const { addProject, addSession, mode, notice, project } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperOn, setWallpaperOn] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -65,6 +66,7 @@ export default function App() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("appearance");
   const [attachments, setAttachments] = useState([]);
+  const [unlockOpen, setUnlockOpen] = useState(false);
   const theme = useMemo(() => findTheme(themeId), [themeId]);
 
   useEffect(() => {
@@ -73,7 +75,6 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (event) => {
-      if (!signedIn) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setPaletteOpen(true);
@@ -83,11 +84,12 @@ export default function App() {
         setNavOpen(false);
         setFilesOpen(false);
         setConnectOpen(false);
+        setUnlockOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [signedIn]);
+  }, []);
 
   const openView = (id) => {
     setView(id);
@@ -135,7 +137,7 @@ export default function App() {
   return (
     <div className="relative isolate h-full min-h-0 overflow-hidden">
       {wallpaperOn && <div className="wallpaper-layer" />}
-      <div className="shell relative z-[1] flex h-full min-h-0 flex-col text-[var(--ink)]" inert={!signedIn || undefined}>
+      <div className="shell relative z-[1] flex h-full min-h-0 flex-col text-[var(--ink)]">
         <TitleBar />
         <div className="relative flex min-h-0 flex-1">
           {navOpen && (
@@ -177,6 +179,7 @@ export default function App() {
                 setNavOpen((open) => !open);
               }}
               onHelp={() => openView("help")}
+              onUnlock={() => setUnlockOpen(true)}
               onFiles={() => {
                 setNavOpen(false);
                 setFilesOpen((open) => !open);
@@ -289,7 +292,8 @@ export default function App() {
       )}
       {connectOpen && <GettingStarted onClose={() => setConnectOpen(false)} />}
       <Toast />
-      {!signedIn && <SignupOverlay />}
+      <WalletSync />
+      {unlockOpen && <SignupOverlay onClose={() => setUnlockOpen(false)} />}
     </div>
   );
 }

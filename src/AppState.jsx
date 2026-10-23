@@ -60,7 +60,10 @@ export function AppStateProvider({ children }) {
   );
   const [automations, setAutomations] = useState(AUTOMATIONS);
   const [runs, setRuns] = useState(SEED_RUNS);
-  const [session, setSession] = useState(() => readStored("root-web-session", null));
+  const [session, setSession] = useState(() => {
+    const stored = readStored("root-web-session", null);
+    return stored?.address ? stored : null;
+  });
 
   const project = projects.find((item) => item.id === projectId) || projects[0];
   const doneCount = Number(onboarding.skills) + Number(onboarding.repos) + Number(onboarding.github);
@@ -110,7 +113,8 @@ export function AppStateProvider({ children }) {
       signIn: (profile) => {
         setSession({
           name: profile?.name || "you",
-          source: profile?.source || "useroot.sh/account",
+          source: profile?.source || "wallet",
+          address: profile?.address || "",
           at: Date.now(),
         });
       },

@@ -10,7 +10,7 @@ const HITS = [
   { id: "plugins", label: "Plugins", hint: "Shop and installed packs" },
   { id: "notes", label: "Notes", hint: "Daily goals" },
   { id: "settings", label: "Settings · Appearance", hint: "Themes, PALM, wallpaper" },
-  { id: "account", label: "Account", hint: "Access key and profile" },
+  { id: "account", label: "Account", hint: "Wallet and profile" },
   { id: "telemetry", label: "Telemetry", hint: "Session privacy" },
   { id: "updates", label: "Updates", hint: "Channel and version" },
   { id: "help", label: "Help", hint: "How /root works" },

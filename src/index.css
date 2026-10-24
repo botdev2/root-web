@@ -222,3 +222,80 @@ textarea {
   padding: 14px;
 }
 
+.uc-wrap {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.uc-wrap--block {
+  flex: none;
+  min-height: 280px;
+}
+
+.uc-blur {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  filter: blur(8px) saturate(1.08);
+  transform: scale(1.015);
+  transform-origin: center top;
+  pointer-events: none;
+  user-select: none;
+  animation: ucBlur 700ms ease both;
+}
+
+.uc-veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 55% 40% at 50% 45%, color-mix(in srgb, var(--bg) 18%, transparent), color-mix(in srgb, #000 28%, transparent) 72%);
+  animation: ucVeil 500ms ease both;
+}
+
+.uc-label {
+  margin: 0;
+  color: var(--ink);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-shadow: 0 8px 28px color-mix(in srgb, #000 50%, transparent);
+  animation: ucLabel 650ms ease both;
+}
+
+@keyframes ucBlur {
+  from {
+    filter: blur(0) saturate(1);
+    transform: scale(1);
+  }
+  to {
+    filter: blur(8px) saturate(1.08);
+    transform: scale(1.015);
+  }
+}
+
+@keyframes ucVeil {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ucLabel {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

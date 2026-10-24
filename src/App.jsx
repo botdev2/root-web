@@ -26,6 +26,7 @@ import EditorView from "./components/views/EditorView.jsx";
 import PluginsView from "./components/views/PluginsView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
+import UnderConstruction from "./components/UnderConstruction.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
@@ -214,36 +215,60 @@ export default function App() {
                     initialTab={settingsTab}
                   />
                 )}
-                {view === "automations" && <AutomationsView />}
-                {view === "reasoning" && <ReasoningView />}
-                {view === "crawler" && <CrawlerView />}
-                {view === "ops" && <OpsView />}
+                {view === "automations" && (
+                  <UnderConstruction>
+                    <AutomationsView />
+                  </UnderConstruction>
+                )}
+                {view === "reasoning" && (
+                  <UnderConstruction>
+                    <ReasoningView />
+                  </UnderConstruction>
+                )}
+                {view === "crawler" && (
+                  <UnderConstruction>
+                    <CrawlerView />
+                  </UnderConstruction>
+                )}
+                {view === "ops" && (
+                  <UnderConstruction>
+                    <OpsView />
+                  </UnderConstruction>
+                )}
                 {view === "notes" && <NotesView />}
-                {view === "plugins" && <PluginsView />}
+                {view === "plugins" && (
+                  <UnderConstruction>
+                    <PluginsView />
+                  </UnderConstruction>
+                )}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}
                 {view === "help" && <HelpView onOpen={openView} />}
                 {view === "templates" && (
-                  <TemplatesView
-                    onCreate={(item) => {
-                      addProject({ id: item.id, label: item.title, title: item.title });
-                      setSessionTitle("New Agent");
-                      setSessionId(null);
-                      setView("home");
-                      setDraft("Scaffold a " + item.title + " using " + item.stack + ".");
-                      notice(item.title + " added to Projects.");
-                    }}
-                  />
+                  <UnderConstruction>
+                    <TemplatesView
+                      onCreate={(item) => {
+                        addProject({ id: item.id, label: item.title, title: item.title });
+                        setSessionTitle("New Agent");
+                        setSessionId(null);
+                        setView("home");
+                        setDraft("Scaffold a " + item.title + " using " + item.stack + ".");
+                        notice(item.title + " added to Projects.");
+                      }}
+                    />
+                  </UnderConstruction>
                 )}
                 {view === "editor" && (
-                  <EditorView
-                    file={sessionTitle}
-                    onBack={() => {
-                      setView("home");
-                      setSessionTitle("New Agent");
-                    }}
-                  />
+                  <UnderConstruction>
+                    <EditorView
+                      file={sessionTitle}
+                      onBack={() => {
+                        setView("home");
+                        setSessionTitle("New Agent");
+                      }}
+                    />
+                  </UnderConstruction>
                 )}
                 {showComposer && (
                   <Composer

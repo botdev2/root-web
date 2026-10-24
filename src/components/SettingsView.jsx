@@ -2,6 +2,7 @@ import { useState } from "react";
 import { THEMES } from "../themes.js";
 import { useAppState } from "../AppState.jsx";
 import { Page, Card, Tabs, Row, Toggle, Ghost, Section } from "./ui.jsx";
+import UnderConstruction from "./UnderConstruction.jsx";
 
 const TABS = [
   { id: "general", label: "General" },
@@ -174,6 +175,7 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
       )}
 
       {tab === "subscriptions" && (
+        <UnderConstruction className="uc-wrap--block">
         <Card>
           <Row label="Claude" value="Anthropic · not connected">
             <Toggle on={flags.subClaude} onClick={() => toggle("subClaude")} />
@@ -182,9 +184,11 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
             <Toggle on={flags.subGpt} onClick={() => toggle("subGpt")} />
           </Row>
         </Card>
+        </UnderConstruction>
       )}
 
       {tab === "imagegen" && (
+        <UnderConstruction className="uc-wrap--block">
         <Card>
           <Row label="ImageGen" value="FLUX.2 Klein 4B · Comfy on port 8188">
             <Toggle on={flags.imagegen} onClick={() => toggle("imagegen")} />
@@ -204,9 +208,11 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
             </Ghost>
           </div>
         </Card>
+        </UnderConstruction>
       )}
 
       {tab === "video" && (
+        <UnderConstruction className="uc-wrap--block">
         <Card>
           <Row label="Root Video" value="HTML → MP4 in Agent chat">
             <Toggle on={flags.video} onClick={() => toggle("video")} />
@@ -214,6 +220,7 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
           <Row label="Runtime" value="Installed" />
           <Row label="Last render" value="none" />
         </Card>
+        </UnderConstruction>
       )}
 
       {tab === "privacy" && (

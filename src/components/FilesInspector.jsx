@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, Ghost } from "./ui.jsx";
 import { useAppState } from "../AppState.jsx";
+import UnderConstruction from "./UnderConstruction.jsx";
 
 const TREES = {
   "my-mobile-app": [
@@ -56,6 +57,7 @@ export default function FilesInspector({ onClose, onOpenFile }) {
             Hide
           </button>
         </div>
+        <UnderConstruction className="uc-wrap--block min-h-0 flex-1">
         <Tabs
           tabs={[
             { id: "files", label: "Files" },
@@ -109,6 +111,7 @@ export default function FilesInspector({ onClose, onOpenFile }) {
             ))}
           </div>
         )}
+        </UnderConstruction>
       </div>
     </aside>
   );

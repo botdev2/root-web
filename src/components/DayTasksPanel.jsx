@@ -10,13 +10,13 @@ export default function DayTasksPanel({ goals, onToggleGoal }) {
   const rows = goals.filter((item) => (item.part || dayPartFromDate()) === part);
 
   return (
-    <div className="mx-auto w-full max-w-[420px] px-2 pt-6 pb-2 text-center">
-      <div className="home-title text-[42px] font-light leading-none tabular-nums">{formatClock(now)}</div>
+    <div className="mx-auto w-full max-w-[420px] px-1 pt-2 pb-4 text-center md:px-2 md:pt-6 md:pb-2">
+      <div className="home-title text-[32px] font-light leading-none tabular-nums md:text-[42px]">{formatClock(now)}</div>
       <div className="mt-1 text-[13px] text-[var(--muted)]">{formatDateLine(now)}</div>
-      <div className="mt-4">
+      <div className="mt-3 md:mt-4">
         <DayRing now={now} goals={goals} selectedPart={filter} onSelectPart={setFilter} />
       </div>
-      <div className="mx-7 mt-5 space-y-1 text-left">
+      <div className="mx-4 mt-4 space-y-1 text-left md:mx-7 md:mt-5">
         {rows.length === 0 ? (
           <div className="py-2 text-center text-[12.5px] text-[var(--faint)]">
             No tasks for {DAY_PART_META[part].name} yet.

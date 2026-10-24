@@ -14,29 +14,29 @@
 }
 
 :root {
-  --bg: #0e1220;
-  --top: #131829;
-  --sidebar: #161c30;
-  --sidebar-sel: #1e2740;
-  --panel: #182036;
-  --panel-soft: #1c2440;
-  --input: #131a2c;
-  --stroke: #2e3a55;
-  --stroke-soft: #253048;
-  --ink: #e6ecf7;
-  --muted: #9fb0ce;
-  --faint: #6e7ea0;
-  --accent: #bfd2ff;
-  --accent-soft: #263250;
-  --hover: #1e2740;
-  --tab: #263250;
-  --code: #141b2e;
-  --bubble: #1e2842;
-  --green: #46b98a;
-  --amber: #d4a24a;
-  --rose: #c89ab8;
-  --shell: linear-gradient(160deg, #101527, #0c101c, #131a30);
-  --wallpaper-image: url("/wallpaper.png");
+  --bg: #121110;
+  --top: #171615;
+  --sidebar: #1c1b19;
+  --sidebar-sel: #262422;
+  --panel: #201f1d;
+  --panel-soft: #252320;
+  --input: #1a1918;
+  --stroke: #3a3835;
+  --stroke-soft: #2e2c29;
+  --ink: #f5f2ec;
+  --muted: #b8b0a6;
+  --faint: #8a837a;
+  --accent: #f5f2ec;
+  --accent-soft: #2e2c29;
+  --hover: #2a2826;
+  --tab: #33312e;
+  --code: #1e1d1b;
+  --bubble: #2a2825;
+  --green: #4bb87a;
+  --amber: #d4a04a;
+  --rose: #c48a84;
+  --shell: linear-gradient(160deg, #171615, #121110 55%, #1a1816);
+  --wallpaper-image: none;
   --radius: 12px;
   --ui-font: "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
   color-scheme: dark;
@@ -117,6 +117,7 @@ textarea {
 
 .day-ring {
   filter: drop-shadow(0 18px 36px color-mix(in srgb, #000 26%, transparent));
+  overflow: visible;
 }
 
 .day-ring-glow {

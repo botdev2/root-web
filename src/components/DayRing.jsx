@@ -38,9 +38,9 @@ export default function DayRing({ now, goals = [], selectedPart, onSelectPart })
   const wellness = scored.length ? done / scored.length : 0;
 
   return (
-    <div className="day-ring relative mx-auto h-[min(320px,86vw)] w-[min(320px,86vw)]">
+    <div className="day-ring relative mx-auto aspect-square w-[min(320px,calc(100%-5.5rem))]">
       <div
-        className="day-ring-glow pointer-events-none absolute left-1/2 top-1/2 h-[308px] w-[308px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        className="day-ring-glow pointer-events-none absolute left-1/2 top-1/2 h-[96%] w-[96%] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           background: `radial-gradient(circle, color-mix(in srgb, var(--green) ${Math.round(20 + wellness * 40)}%, transparent), transparent 72%)`,
         }}
@@ -60,12 +60,17 @@ export default function DayRing({ now, goals = [], selectedPart, onSelectPart })
                 key={cell.part}
                 type="button"
                 onClick={() => onSelectPart?.(selected ? null : cell.part)}
-                className={`relative overflow-hidden text-center transition-transform duration-200 ${
+                className={`relative overflow-hidden bg-[var(--bg)] text-center transition-transform duration-200 ${
                   selected ? "z-[1] scale-[1.03]" : "scale-100"
                 }`}
-                style={{ background: meta.tint, boxShadow: selected ? "inset 0 0 0 2.5px var(--accent)" : "none" }}
+                style={{ boxShadow: selected ? "inset 0 0 0 2.5px var(--accent)" : "none" }}
               >
-                <span className="absolute inset-0 bg-black/28" />
+                <span
+                  className="absolute inset-0 bg-cover bg-center opacity-[0.48]"
+                  style={{ backgroundImage: `url(/day/${cell.part}.jpg)` }}
+                />
+                <span className="absolute inset-0" style={{ background: meta.tint }} />
+                <span className="absolute inset-0 bg-black/[0.28]" />
                 {passed && <span className="absolute inset-0 bg-[rgb(48,52,60)]/78" />}
                 {complete && <span className="absolute inset-0 bg-[rgb(34,197,94)]/42" />}
                 {dimmed && <span className="absolute inset-0 bg-[rgb(8,10,16)]/58" />}
@@ -83,7 +88,10 @@ export default function DayRing({ now, goals = [], selectedPart, onSelectPart })
         </div>
       </div>
 
-      <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 320 320">
+      <svg
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[calc(100%+4.5rem)] w-[calc(100%+4.5rem)] -translate-x-1/2 -translate-y-1/2"
+        viewBox="-36 -36 392 392"
+      >
         {DAY_PARTS.map((part) => {
           const selected = selectedPart === part;
           return (
@@ -115,13 +123,13 @@ export default function DayRing({ now, goals = [], selectedPart, onSelectPart })
       <button
         type="button"
         onClick={() => onSelectPart?.(null)}
-        className={`absolute left-1/2 top-1/2 z-[4] flex h-[148px] w-[148px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--panel)_60%,transparent)] backdrop-blur-md ${
+        className={`absolute left-1/2 top-1/2 z-[4] flex h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--panel)_60%,transparent)] backdrop-blur-md ${
           selectedPart ? "border border-[var(--stroke)]" : "border-2 border-[var(--accent)]"
         }`}
       >
-        <div className="text-[15px] font-semibold">{formatWeekday(now)}</div>
-        <div className="mt-0.5 text-[11px] text-[var(--muted)]">{formatCenterDate(now)}</div>
-        <div className="mt-2 text-[28px] font-bold leading-none">
+        <div className="text-[13px] font-semibold md:text-[15px]">{formatWeekday(now)}</div>
+        <div className="mt-0.5 text-[10px] text-[var(--muted)] md:text-[11px]">{formatCenterDate(now)}</div>
+        <div className="mt-1.5 text-[22px] font-bold leading-none md:mt-2 md:text-[28px]">
           {done} / {scored.length}
         </div>
       </button>

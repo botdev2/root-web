@@ -545,7 +545,7 @@ export const THEMES = [
   },
 ];
 
-export const DEFAULT_THEME_ID = "midnight";
+export const DEFAULT_THEME_ID = "default";
 
 export function findTheme(id) {
   return THEMES.find((t) => t.id === id) || THEMES.find((t) => t.id === DEFAULT_THEME_ID);
@@ -556,7 +556,18 @@ export function wallpaperImage(theme, wallpaperOn) {
   return theme.wallpaper ? "/serenity-wallpaper.jpg" : "/wallpaper.png";
 }
 
-export function applyTheme(theme, wallpaperOn = true) {
+function settleAppearance() {
+  try {
+    if (localStorage.getItem("root-web-appearance-rev") === "2") return;
+    localStorage.setItem("root-web-theme", DEFAULT_THEME_ID);
+    localStorage.setItem("root-web-wallpaper", "0");
+    localStorage.setItem("root-web-appearance-rev", "2");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function applyTheme(theme, wallpaperOn = false) {
   const root = document.documentElement;
   Object.entries(theme.vars).forEach(([key, value]) => {
     root.style.setProperty(key, value);
@@ -575,6 +586,7 @@ export function applyTheme(theme, wallpaperOn = true) {
 }
 
 export function readSavedThemeId() {
+  settleAppearance();
   try {
     return localStorage.getItem("root-web-theme") || DEFAULT_THEME_ID;
   } catch {
@@ -583,10 +595,11 @@ export function readSavedThemeId() {
 }
 
 export function readSavedWallpaper() {
+  settleAppearance();
   try {
     const value = localStorage.getItem("root-web-wallpaper");
-    return value == null ? true : value !== "0";
+    return value === "1";
   } catch {
-    return true;
+    return false;
   }
 }

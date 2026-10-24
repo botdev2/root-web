@@ -27,6 +27,7 @@ import PluginsView from "./components/views/PluginsView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
 import UnderConstruction from "./components/UnderConstruction.jsx";
+import DayTasksToggle from "./components/DayTasksToggle.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
@@ -46,7 +47,7 @@ function replyFor({ mode, autoPrompt, project, text }) {
 
 export default function App() {
   const state = useAppState();
-  const { addProject, addSession, mode, notice, project } = state || {};
+  const { addProject, addSession, mode, notice, project, dayTasksEnabled, setDayTasksEnabled } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperOn, setWallpaperOn] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -68,11 +69,36 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState("appearance");
   const [attachments, setAttachments] = useState([]);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const [dayTasksIdle, setDayTasksIdle] = useState(false);
   const theme = useMemo(() => findTheme(themeId), [themeId]);
 
   useEffect(() => {
     applyTheme(theme, wallpaperOn);
   }, [theme, wallpaperOn]);
+
+  useEffect(() => {
+    if (dayTasksEnabled || view !== "home" || sessionId) {
+      setDayTasksIdle(false);
+      return;
+    }
+    let last = Date.now();
+    const note = () => {
+      last = Date.now();
+      setDayTasksIdle(false);
+    };
+    const tick = window.setInterval(() => {
+      if (Date.now() - last >= 10000) setDayTasksIdle(true);
+    }, 1000);
+    window.addEventListener("pointermove", note);
+    window.addEventListener("keydown", note);
+    window.addEventListener("pointerdown", note);
+    return () => {
+      window.clearInterval(tick);
+      window.removeEventListener("pointermove", note);
+      window.removeEventListener("keydown", note);
+      window.removeEventListener("pointerdown", note);
+    };
+  }, [dayTasksEnabled, view, sessionId]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -196,9 +222,10 @@ export default function App() {
               }}
             />
             <div className="relative flex min-h-0 flex-1">
-              <div className="flex min-w-0 flex-1 flex-col">
+              <div className="relative flex min-w-0 flex-1 flex-col">
                 {view === "home" && (
                   <HomeView
+                    clockOn={dayTasksEnabled || dayTasksIdle}
                     onTemplates={() => openView("templates")}
                     onChip={(chip) => send(chip)}
                     onResume={(item) => openSession(item.sessionId, item.sessionTitle)}
@@ -271,7 +298,19 @@ export default function App() {
                   </UnderConstruction>
                 )}
                 {showComposer && (
-                  <Composer
+                  <div className="relative">
+                    <div className="flex items-center md:pointer-events-none md:absolute md:inset-y-0 md:left-0 md:z-20 md:items-end md:pb-[18px] md:pl-3.5">
+                      <div className="pointer-events-auto">
+                        <DayTasksToggle
+                          enabled={dayTasksEnabled || (view === "home" && !sessionId && dayTasksIdle)}
+                          onChange={(value) => {
+                            setDayTasksIdle(false);
+                            setDayTasksEnabled(value);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <Composer
                     draft={draft}
                     setDraft={setDraft}
                     onSend={() => send()}
@@ -286,6 +325,7 @@ export default function App() {
                       openView("settings");
                     }}
                   />
+                  </div>
                 )}
               </div>
               {filesOpen && (

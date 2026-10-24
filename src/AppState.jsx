@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { AUTOMATIONS, SEED_RUNS } from "./mock.js";
+import { dayPartFromDate } from "./dayClock.js";
 
 const AppState = createContext(null);
 
@@ -64,6 +65,14 @@ export function AppStateProvider({ children }) {
     const stored = readStored("root-web-session", null);
     return stored?.address ? stored : null;
   });
+  const [dayTasksEnabled, setDayTasksEnabled] = useState(() => readStored("root-web-day-tasks", false));
+  const [dayGoals, setDayGoals] = useState(() =>
+    readStored("root-web-day-goals", [
+      { id: "1", done: true, text: "Ship Farm widget", part: "morning" },
+      { id: "2", done: false, text: "Theme the landing", part: "afternoon" },
+      { id: "3", done: false, text: "Write X post", part: "evening" },
+    ]),
+  );
 
   const project = projects.find((item) => item.id === projectId) || projects[0];
   const doneCount = Number(onboarding.skills) + Number(onboarding.repos) + Number(onboarding.github);
@@ -91,6 +100,14 @@ export function AppStateProvider({ children }) {
     writeStored("root-web-session", session);
   }, [session]);
 
+  useEffect(() => {
+    writeStored("root-web-day-tasks", dayTasksEnabled);
+  }, [dayTasksEnabled]);
+
+  useEffect(() => {
+    writeStored("root-web-day-goals", dayGoals);
+  }, [dayGoals]);
+
   const api = useMemo(
     () => ({
       projects,
@@ -106,6 +123,9 @@ export function AppStateProvider({ children }) {
       runs,
       session,
       signedIn: Boolean(session),
+      dayTasksEnabled,
+      setDayTasksEnabled,
+      dayGoals,
       setModel,
       setMode,
       setFontId,
@@ -119,6 +139,14 @@ export function AppStateProvider({ children }) {
         });
       },
       signOut: () => setSession(null),
+      toggleDayGoal: (id) => {
+        setDayGoals((prev) => prev.map((row) => (row.id === id ? { ...row, done: !row.done } : row)));
+      },
+      addDayGoal: (text, part) => {
+        const label = String(text || "").trim();
+        if (!label) return;
+        setDayGoals((prev) => [...prev, { id: String(Date.now()), done: false, text: label, part: part || dayPartFromDate() }]);
+      },
       notice: (text) => {
         setToast(text);
         window.clearTimeout(window.__rootToast);
@@ -180,7 +208,7 @@ export function AppStateProvider({ children }) {
         return record;
       },
     }),
-    [projects, project, projectId, toast, model, mode, fontId, onboarding, doneCount, automations, runs, session],
+    [projects, project, projectId, toast, model, mode, fontId, onboarding, doneCount, automations, runs, session, dayTasksEnabled, dayGoals],
   );
 
   return <AppState.Provider value={api}>{children}</AppState.Provider>;

@@ -1,5 +1,6 @@
 import { LEFT_OFF } from "../mock.js";
 import { useAppState } from "../AppState.jsx";
+import DayTasksPanel from "./DayTasksPanel.jsx";
 
 const CHIPS = [
   "Explain this project's structure",
@@ -8,8 +9,8 @@ const CHIPS = [
   "Add a small feature",
 ];
 
-export default function HomeView({ onChip, onTemplates, onResume }) {
-  const { project } = useAppState();
+export default function HomeView({ onChip, onTemplates, onResume, clockOn }) {
+  const { project, dayGoals, toggleDayGoal } = useAppState();
   const left = LEFT_OFF[project.id];
 
   return (
@@ -42,27 +43,31 @@ export default function HomeView({ onChip, onTemplates, onResume }) {
       </aside>
 
       <div className="flex min-h-[280px] items-center justify-center px-4 py-8 md:h-full md:min-h-0 md:px-8 md:py-0">
-        <div className="max-w-[560px] text-center">
-          <button type="button" onClick={onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
-            Create from Template <span className="text-[11px] text-[var(--faint)]">?</span>
-          </button>
-          <h1 className="home-title mt-3.5 text-[22px] font-normal md:text-[23px]">What should we build?</h1>
-          <p className="mx-auto mt-2 max-w-[520px] text-[13px] text-[var(--muted)]">
-            Coding agent ready on {project.label}. Ask anything about this project.
-          </p>
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            {CHIPS.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => onChip(chip)}
-                className="rounded-full border border-[var(--stroke)] bg-[color-mix(in_srgb,var(--panel)_70%,transparent)] px-3.5 py-2 text-[13px] hover:bg-[var(--hover)]"
-              >
-                {chip}
-              </button>
-            ))}
+        {clockOn ? (
+          <DayTasksPanel goals={dayGoals} onToggleGoal={toggleDayGoal} />
+        ) : (
+          <div className="max-w-[560px] text-center">
+            <button type="button" onClick={onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
+              Create from Template <span className="text-[11px] text-[var(--faint)]">?</span>
+            </button>
+            <h1 className="home-title mt-3.5 text-[22px] font-normal md:text-[23px]">What should we build?</h1>
+            <p className="mx-auto mt-2 max-w-[520px] text-[13px] text-[var(--muted)]">
+              Coding agent ready on {project.label}. Ask anything about this project.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              {CHIPS.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => onChip(chip)}
+                  className="rounded-full border border-[var(--stroke)] bg-[color-mix(in_srgb,var(--panel)_70%,transparent)] px-3.5 py-2 text-[13px] hover:bg-[var(--hover)]"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

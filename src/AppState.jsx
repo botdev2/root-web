@@ -53,7 +53,7 @@ export function AppStateProvider({ children }) {
   const [projects, setProjects] = useState(SEED_PROJECTS);
   const [projectId, setProjectId] = useState("my-mobile-app");
   const [toast, setToast] = useState("");
-  const [model, setModel] = useState(() => readStored("root-web-model", "qwen2.5:14b"));
+  const [model, setModel] = useState(() => readStored("root-web-model", "glm-5.2:cloud"));
   const [mode, setMode] = useState(() => readStored("root-web-mode", "agent"));
   const [fontId, setFontId] = useState(() => readStored("root-web-font", "palm"));
   const [onboarding, setOnboarding] = useState(() =>

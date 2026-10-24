@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { THEMES } from "../themes.js";
 import { useAppState } from "../AppState.jsx";
+import { CATALOG_MODELS, SUBSCRIPTION_PROVIDERS, formatModelLabel, subId } from "../models.js";
 import { Page, Card, Tabs, Row, Toggle, Ghost, Section } from "./ui.jsx";
 import UnderConstruction from "./UnderConstruction.jsx";
 
@@ -22,11 +23,6 @@ const FONTS = [
   { id: "system", label: "System", detail: "Browser default sans-serif" },
 ];
 
-const MODELS = [
-  { name: "qwen2.5:14b", state: "Active" },
-  { name: "qwen2.5:7b", state: "Installed" },
-  { name: "llama3.1:8b", state: "Catalog" },
-];
 
 export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper, initialTab }) {
   const { project, model, setModel, fontId, setFontId, notice } = useAppState();
@@ -40,6 +36,7 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
     video: false,
     subClaude: false,
     subGpt: false,
+    subGrok: false,
   });
   const toggle = (key) => setFlags((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -50,7 +47,7 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
       {tab === "general" && (
         <Card>
           <Row label="Workspace" value={`${project.label} · ${project.remote}`} />
-          <Row label="Default model" value={model} />
+          <Row label="Default model" value={formatModelLabel(model)} />
           <Row label="Auto-Prompt" value="Rewrite asks into a brief">
             <Toggle on={flags.autoprompt} onClick={() => toggle("autoprompt")} />
           </Row>
@@ -145,33 +142,47 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
       )}
 
       {tab === "models" && (
-        <Card>
-          {MODELS.map((item) => (
-            <Row key={item.name} label={item.name} value={item.name === model ? "Active" : item.state}>
-              {item.state === "Catalog" && item.name !== model ? (
-                <Ghost
-                  onClick={() => {
-                    setModel(item.name);
-                    notice(item.name + " pulled.");
-                  }}
-                >
-                  Pull
-                </Ghost>
-              ) : (
-                <Ghost
-                  active={item.name === model}
-                  onClick={() => {
-                    setModel(item.name);
-                    notice(item.name + " is the default.");
-                  }}
-                >
-                  {item.name === model ? "Active" : "Use"}
-                </Ghost>
-              )}
-            </Row>
+        <>
+          {SUBSCRIPTION_PROVIDERS.map((provider) => (
+            <Section key={provider.id} title={provider.label}>
+              <Card>
+                {provider.models.map((item) => {
+                  const id = subId(provider.id, item.api);
+                  return (
+                    <Row key={id} label={item.name} value="Your subscription · A">
+                      <Ghost
+                        active={model === id}
+                        onClick={() => {
+                          setModel(id);
+                          notice(item.name + " is the default.");
+                        }}
+                      >
+                        {model === id ? "Active" : "Use"}
+                      </Ghost>
+                    </Row>
+                  );
+                })}
+              </Card>
+            </Section>
           ))}
-          <Row label="Uncensored catalog" value="Off" />
-        </Card>
+          <Section title="Catalog">
+            <Card>
+              {CATALOG_MODELS.map((item) => (
+                <Row key={item.id} label={item.name} value={item.billing + " · " + item.grade}>
+                  <Ghost
+                    active={model === item.id}
+                    onClick={() => {
+                      setModel(item.id);
+                      notice(item.name + " is the default.");
+                    }}
+                  >
+                    {model === item.id ? "Active" : "Use"}
+                  </Ghost>
+                </Row>
+              ))}
+            </Card>
+          </Section>
+        </>
       )}
 
       {tab === "subscriptions" && (
@@ -182,6 +193,9 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
           </Row>
           <Row label="GPT" value="OpenAI · not connected">
             <Toggle on={flags.subGpt} onClick={() => toggle("subGpt")} />
+          </Row>
+          <Row label="Grok" value="xAI · not connected">
+            <Toggle on={flags.subGrok} onClick={() => toggle("subGrok")} />
           </Row>
         </Card>
         </UnderConstruction>

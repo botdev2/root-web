@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
-
-const MODELS = ["qwen2.5:14b", "qwen2.5:7b", "llama3.1:8b"];
+import ModelPicker, { ModelPillLabel } from "./ModelPicker.jsx";
 const MODES = [
   { id: "agent", label: "Agent", short: "Ag" },
   { id: "ask", label: "Ask", short: "Ask" },
@@ -84,35 +83,19 @@ export default function Composer({
             </Pill>
             <div className="relative">
               <Pill onClick={() => setOpen((value) => !value)}>
-                {model.split(":")[0]}
+                <ModelPillLabel model={model} />
                 <Icon name="chevron" size={12} className="hidden opacity-70 sm:block" />
               </Pill>
               {open && (
-                <div className="frost-panel absolute bottom-10 left-0 z-20 w-44 overflow-hidden rounded-xl border border-[var(--stroke)]">
-                  {MODELS.map((name) => (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => {
-                        setModel(name);
-                        setOpen(false);
-                      }}
-                      className="flex h-9 w-full items-center px-3 text-left text-[12px] hover:bg-[var(--hover)]"
-                    >
-                      {name}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      onOpenSettings();
-                    }}
-                    className="flex h-9 w-full items-center border-t border-[var(--stroke-soft)] px-3 text-left text-[12px] text-[var(--muted)] hover:bg-[var(--hover)]"
-                  >
-                    All models…
-                  </button>
-                </div>
+                <ModelPicker
+                  model={model}
+                  onPick={(id) => {
+                    setModel(id);
+                    setOpen(false);
+                  }}
+                  onClose={() => setOpen(false)}
+                  onOpenSettings={onOpenSettings}
+                />
               )}
             </div>
             <Pill className="hidden sm:flex" onClick={() => fileRef.current?.click()}>

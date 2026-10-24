@@ -8,7 +8,7 @@ export default function TitleBar() {
       <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[11.5px] text-[var(--faint)]">
         useroot.sh
       </div>
-      <div className="text-[11px] text-[var(--faint)]">web</div>
+      <div />
     </div>
   );
 }

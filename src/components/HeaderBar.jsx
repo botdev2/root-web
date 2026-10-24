@@ -31,7 +31,7 @@ export default function HeaderBar({
   onMenu,
   onUnlock,
 }) {
-  const { project, signedIn, session } = useAppState();
+  const { project, signedIn } = useAppState();
   const header = HEADERS[view] || HEADERS.home;
   const title =
     view === "chat" && sessionTitle ? sessionTitle : view === "editor" && sessionTitle ? sessionTitle : header.title;
@@ -51,15 +51,6 @@ export default function HeaderBar({
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15px] text-[var(--ink)]">{title}</div>
         <div className="truncate text-[11.5px] text-[var(--faint)]">{subtitle}</div>
-      </div>
-      <div className="mx-2 hidden shrink-0 items-center text-[11.5px] text-[var(--faint)] lg:flex">
-        HTTPS ·{" "}
-        <span className={`ml-1 ${signedIn ? "text-[var(--green)]" : "text-[var(--faint)]"}`}>
-          {signedIn ? "signed in" : "guest"}
-        </span>
-        {signedIn && session?.source && (
-          <span className="ml-2 hidden xl:inline">{session.source}</span>
-        )}
       </div>
       <WalletButton className="shrink-0" />
       {!signedIn && (

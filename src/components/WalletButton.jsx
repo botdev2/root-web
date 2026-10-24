@@ -11,7 +11,7 @@ export default function WalletButton({ className = "" }) {
       <button
         type="button"
         onClick={() => open({ view: "Account" })}
-        className={`h-[30px] rounded-lg px-2.5 text-[12.5px] text-[var(--ink)] hover:bg-[var(--hover)] ${className}`}
+        className={`h-[30px] shrink-0 rounded-full border border-[var(--stroke)] px-3 text-[12.5px] text-[var(--ink)] hover:bg-[var(--hover)] ${className}`}
       >
         {shortenAddress(address)}
       </button>
@@ -22,7 +22,7 @@ export default function WalletButton({ className = "" }) {
     <button
       type="button"
       onClick={() => open({ view: "Connect" })}
-      className={`h-[30px] rounded-lg px-2.5 text-[12.5px] text-[var(--ink)] hover:bg-[var(--hover)] ${className}`}
+        className={`h-[30px] shrink-0 rounded-full bg-[var(--accent)] px-3.5 text-[12.5px] text-[var(--bg)] hover:opacity-90 ${className}`}
     >
       Connect wallet
     </button>

@@ -1,15 +1,14 @@
 import { useEffect } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
-import { Icon } from "./Icons.jsx";
 
 const ACCOUNT = "https://useroot.sh/account";
+const OPS = "https://ops.palmaierc.com";
 
-const FEATURES = [
-  { icon: "spark", title: "Agent", body: "Ask / Plan / Agent. Auto-Prompt. Tools." },
-  { icon: "globe", title: "Farm", body: "Cloud Android. No emulator pack." },
-  { icon: "folder", title: "Ops", body: "Wallet signature. Live domain." },
-  { icon: "play", title: "Crawler", body: "Record. Play. OTP. Scrape." },
+const STACK = [
+  { n: "01", title: "Hosting", body: "Ship a site from git or a zip. The wallet is the account." },
+  { n: "02", title: "Domains", body: "Ops takes the name. You stay off the public record." },
+  { n: "03", title: "Ops Hub", body: "Git owned by the address. No username to create." },
 ];
 
 export default function SignupOverlay({ onClose }) {
@@ -49,11 +48,15 @@ export default function SignupOverlay({ onClose }) {
             </div>
 
             <h1 className="gate-title mt-7 text-[34px] leading-none md:text-[44px]">Unlock /root</h1>
-            <p className="mt-4 max-w-[40ch] text-[15px] leading-6 text-[var(--muted)]">
-              This unlocks the current Web version — Agent, Farm, Ops, Crawler in the browser.
+            <p className="mt-4 max-w-[42ch] text-[15px] leading-6 text-[var(--muted)]">
+              This unlocks the current Web version of the private harness — on the same wallet that opens{" "}
+              <a href={OPS} target="_blank" rel="noreferrer" className="text-[var(--ink)] underline decoration-[var(--stroke)] underline-offset-2 hover:decoration-[var(--ink)]">
+                ops.palmaierc.com
+              </a>
+              .
             </p>
-            <p className="mt-2 max-w-[42ch] text-[13px] leading-5 text-[var(--faint)]">
-              Connect a wallet, or unlock at useroot.sh/account. Same lifetime access. Card, crypto, or 1,000 $PALM.
+            <p className="mt-2 max-w-[44ch] text-[13px] leading-5 text-[var(--faint)]">
+              Ops is hosting, domains, and git for an address. No email. No name on the record. No GitHub username. One signature is the user.
             </p>
 
             <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center">
@@ -79,16 +82,32 @@ export default function SignupOverlay({ onClose }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 content-start">
-            {FEATURES.map((item) => (
-              <div key={item.title} className="gate-tile">
-                <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--stroke)] bg-[color-mix(in_srgb,var(--panel)_50%,transparent)] text-[var(--accent)]">
-                  <Icon name={item.icon} size={15} />
+          <div>
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div className="text-[11px] tracking-wide text-[var(--faint)]">The stack for a wallet</div>
+              <a
+                href={OPS}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] text-[var(--muted)] hover:text-[var(--ink)]"
+              >
+                ops.palmaierc.com ↗
+              </a>
+            </div>
+            <div className="space-y-2.5">
+              {STACK.map((item) => (
+                <div key={item.title} className="gate-tile !min-h-0">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="text-[13.5px]">{item.title}</div>
+                    <div className="text-[11px] tabular-nums text-[var(--faint)]">{item.n}</div>
+                  </div>
+                  <div className="mt-1.5 text-[12px] leading-5 text-[var(--muted)]">{item.body}</div>
                 </div>
-                <div className="text-[13.5px]">{item.title}</div>
-                <div className="mt-1 text-[11.5px] leading-4 text-[var(--muted)]">{item.body}</div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="mt-3 text-[11.5px] leading-4 text-[var(--faint)]">
+              No email. No card. No home address. Plan lives onchain — 48h free, then flat.
+            </div>
           </div>
         </div>
       </div>

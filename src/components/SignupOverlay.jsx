@@ -40,7 +40,7 @@ export default function SignupOverlay({ onClose }) {
                 </div>
                 <div>
                   <div className="text-[15px] tracking-wide">/root</div>
-                  <div className="text-[11px] text-[var(--faint)]">local AI harness</div>
+                  <div className="text-[11px] text-[var(--faint)]">private AI harness</div>
                 </div>
               </div>
               <button type="button" onClick={onClose} className="text-[12px] text-[var(--faint)] hover:text-[var(--ink)]">
@@ -49,11 +49,11 @@ export default function SignupOverlay({ onClose }) {
             </div>
 
             <h1 className="gate-title mt-7 text-[34px] leading-none md:text-[44px]">Unlock /root</h1>
-            <p className="mt-4 max-w-[36ch] text-[15px] leading-6 text-[var(--muted)]">
-              Local agent. Your projects. Farm, Ops, Crawler.
+            <p className="mt-4 max-w-[40ch] text-[15px] leading-6 text-[var(--muted)]">
+              This unlocks the current Web version — Agent, Farm, Ops, Crawler in the browser.
             </p>
-            <p className="mt-2 max-w-[40ch] text-[13px] leading-5 text-[var(--faint)]">
-              Connect a wallet, or unlock at useroot.sh/account. Lifetime. Card, crypto, or 1,000 $PALM.
+            <p className="mt-2 max-w-[42ch] text-[13px] leading-5 text-[var(--faint)]">
+              Connect a wallet, or unlock at useroot.sh/account. Same lifetime access. Card, crypto, or 1,000 $PALM.
             </p>
 
             <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center">

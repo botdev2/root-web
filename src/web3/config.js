@@ -18,8 +18,8 @@ const publicMainnetTransport = fallback(RPC_ENDPOINTS.map((url) => http(url)));
 
 const metadata = {
   name: "/root",
-  description: "Local AI harness on the web",
-  url: typeof window !== "undefined" ? window.location.origin : "https://useroot.sh",
+  description: "Private AI harness on the web",
+  url: typeof window !== "undefined" ? window.location.origin : "https://chat.useroot.sh",
   icons: [typeof window !== "undefined" ? `${window.location.origin}/palm.png` : "https://useroot.sh/palm.png"],
 };
 

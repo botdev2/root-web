@@ -223,7 +223,7 @@ export const HELP = [
     title: "Settings",
     summary: "Appearance, models, privacy.",
     body: "Nine tabs match the desktop. Theme and wallpaper apply live. Font changes the UI face — PALM is the default.",
-    bullets: ["17 themes", "Wallpaper: None, Nordic, Storm ocean, Serenity, Morning", "Models: installed and catalog"],
+    bullets: ["17 themes", "Wallpaper: None, Nordic, Storm ocean, Serenity, Morning", "GLM 5.2 cloud after a wallet is connected"],
   },
   {
     id: "telemetry",

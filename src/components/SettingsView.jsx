@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { THEMES, WALLPAPERS } from "../themes.js";
 import { useAppState } from "../AppState.jsx";
-import { CATALOG_MODELS, SUBSCRIPTION_PROVIDERS, formatModelLabel, subId } from "../models.js";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount } from "wagmi";
+import { formatModelLabel } from "../models.js";
 import { Page, Card, Tabs, Row, Toggle, Ghost, Section, Field, Primary } from "./ui.jsx";
 
 const TABS = [
@@ -24,7 +26,9 @@ const FONTS = [
 
 
 export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt }) {
-  const { project, model, setModel, fontId, setFontId, notice, prefs, togglePref, setPrefs, videos, upsertVideo, deleteVideo } = useAppState();
+  const { project, model, fontId, setFontId, notice, prefs, togglePref, setPrefs, videos, upsertVideo, deleteVideo } = useAppState();
+  const { isConnected } = useAccount();
+  const { open } = useAppKit();
   const [tab, setTab] = useState(initialTab || "appearance");
   const [imagePrompt, setImagePrompt] = useState("");
   const [videoId, setVideoId] = useState(videos[0]?.id || "");
@@ -38,7 +42,7 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
       {tab === "general" && (
         <Card>
           <Row label="Workspace" value={`${project.label} · ${project.remote}`} />
-          <Row label="Default model" value={formatModelLabel(model)} />
+          <Row label="Default model" value={isConnected ? formatModelLabel(model) : "Connect a wallet"} />
           <Row label="Auto-Prompt" value="Rewrite asks into a brief">
             <Toggle on={flags.autoprompt} onClick={() => toggle("autoprompt")} />
           </Row>
@@ -132,47 +136,17 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
       )}
 
       {tab === "models" && (
-        <>
-          {SUBSCRIPTION_PROVIDERS.map((provider) => (
-            <Section key={provider.id} title={provider.label}>
-              <Card>
-                {provider.models.map((item) => {
-                  const id = subId(provider.id, item.api);
-                  return (
-                    <Row key={id} label={item.name} value="Your subscription · A">
-                      <Ghost
-                        active={model === id}
-                        onClick={() => {
-                          setModel(id);
-                          notice(item.name + " is the default.");
-                        }}
-                      >
-                        {model === id ? "Active" : "Use"}
-                      </Ghost>
-                    </Row>
-                  );
-                })}
-              </Card>
-            </Section>
-          ))}
-          <Section title="Catalog">
-            <Card>
-              {CATALOG_MODELS.map((item) => (
-                <Row key={item.id} label={item.name} value={item.billing + " · " + item.grade}>
-                  <Ghost
-                    active={model === item.id}
-                    onClick={() => {
-                      setModel(item.id);
-                      notice(item.name + " is the default.");
-                    }}
-                  >
-                    {model === item.id ? "Active" : "Use"}
-                  </Ghost>
-                </Row>
-              ))}
-            </Card>
-          </Section>
-        </>
+        <Card>
+          {isConnected ? (
+            <Row label="GLM 5.2 cloud" value="The only model on this harness">
+              <Ghost active>Active</Ghost>
+            </Row>
+          ) : (
+            <Row label="Models" value="Connect a wallet to use GLM 5.2 cloud">
+              <Primary onClick={() => open({ view: "Connect" })}>Connect wallet</Primary>
+            </Row>
+          )}
+        </Card>
       )}
 
       {tab === "subscriptions" && (

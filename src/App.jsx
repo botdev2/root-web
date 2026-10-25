@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount } from "wagmi";
+import { askGlm } from "./glmChat.js";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
 import { useAppState } from "./AppState.jsx";
 import TitleBar from "./components/TitleBar.jsx";
@@ -30,20 +33,6 @@ import DayTasksToggle from "./components/DayTasksToggle.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
-function replyFor({ mode, autoPrompt, project, text }) {
-  if (mode === "ask") {
-    return "Ask mode stays read-only on " + project.label + ". I’ll answer from the tree without writing files.";
-  }
-  if (mode === "plan") {
-    return "Plan for " + project.label + ": 1) inspect the workspace 2) draft the change 3) wait for your approval before Agent writes.";
-  }
-  if (autoPrompt) {
-    return "Auto-Prompt turned that into a brief. First step on " + project.label + ": open the entry point and confirm the current behavior.";
-  }
-  const hint = text?.trim() ? " — “" + text.trim().slice(0, 72) + "”" : "";
-  return "On " + project.label + hint + ". I’ll read the workspace, then propose the smallest change that moves it forward.";
-}
-
 export default function App() {
   const state = useAppState();
   const { addProject, seedFiles, addSession, mode, notice, project, dayTasksEnabled, setDayTasksEnabled } = state || {};
@@ -68,6 +57,9 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState("appearance");
   const [attachments, setAttachments] = useState([]);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const { address, isConnected } = useAccount();
+  const { open } = useAppKit();
   const [dayTasksIdle, setDayTasksIdle] = useState(false);
   const [editorFile, setEditorFile] = useState("README.md");
   const theme = useMemo(() => findTheme(themeId), [themeId]);
@@ -131,21 +123,28 @@ export default function App() {
     setNavOpen(false);
   };
 
-  const send = (text = draft) => {
+  const send = async (text = draft) => {
     const value = text.trim();
     if (!value && attachments.length === 0) return;
+    if (!isConnected || !address) {
+      notice("Connect a wallet to use GLM 5.2 cloud.");
+      open({ view: "Connect" });
+      return;
+    }
+    if (sending) return;
     const id = sessionId || "draft-" + Date.now();
     const title = sessionTitle === "New Agent" && value ? value.slice(0, 42) : sessionTitle;
+    const replyId = "glm-" + Date.now();
+    const prior = (local[id] || [])
+      .filter((item) => !item.pending && (item.role === "user" || item.role === "assistant"))
+      .map((item) => ({ role: item.role, content: item.text }));
+    setSending(true);
     setLocal((prev) => ({
       ...prev,
       [id]: [
         ...(prev[id] || []),
         { role: "user", text: value || "Attached files", files: attachments.map((file) => file.name) },
-        {
-          role: "assistant",
-          text: replyFor({ mode, autoPrompt, project, text: value }),
-          tools: mode === "agent" ? [{ name: "project.read", detail: project.label }] : [],
-        },
+        { id: replyId, role: "assistant", text: "GLM 5.2 cloud is writing…", pending: true },
       ],
     }));
     if (!sessionId) {
@@ -156,6 +155,23 @@ export default function App() {
     setDraft("");
     setAttachments([]);
     setView("chat");
+    const finish = (answer) => {
+      setLocal((prev) => ({
+        ...prev,
+        [id]: (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: answer } : item)),
+      }));
+    };
+    try {
+      const answer = await askGlm({
+        address,
+        messages: [...prior, { role: "user", content: value || "Attached files" }],
+      });
+      finish(answer);
+    } catch (error) {
+      finish(error.message || "GLM 5.2 cloud did not answer.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const showComposer = CHAT_VIEWS.has(view);
@@ -297,6 +313,7 @@ export default function App() {
                     <Composer
                     draft={draft}
                     setDraft={setDraft}
+                    sending={sending}
                     onSend={() => send()}
                     autoPrompt={autoPrompt}
                     onAutoPrompt={() => setAutoPrompt((value) => !value)}

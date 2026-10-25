@@ -1,7 +1,8 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount } from "wagmi";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
-import ModelPicker, { ModelPillLabel } from "./ModelPicker.jsx";
 const MODES = [
   { id: "agent", label: "Agent", short: "Ag" },
   { id: "ask", label: "Ask", short: "Ask" },
@@ -18,11 +19,19 @@ export default function Composer({
   onAttach,
   onRemoveAttach,
   onFiles,
-  onOpenSettings,
+  sending,
 }) {
-  const { model, setModel, mode, setMode } = useAppState();
-  const [open, setOpen] = useState(false);
+  const { mode, setMode } = useAppState();
+  const { isConnected } = useAccount();
+  const { open } = useAppKit();
   const fileRef = useRef(null);
+  const submit = () => {
+    if (!isConnected) {
+      open({ view: "Connect" });
+      return;
+    }
+    if (!sending) onSend();
+  };
 
   return (
     <div className="px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-1.5 md:px-8 md:pb-3">
@@ -47,11 +56,11 @@ export default function Composer({
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey && window.innerWidth >= 768) {
               event.preventDefault();
-              onSend();
+              submit();
             }
           }}
           rows={1}
-          placeholder={mode === "ask" ? "Ask about this project…" : mode === "plan" ? "Describe what to plan…" : "Type a message here..."}
+          placeholder={isConnected ? (mode === "ask" ? "Ask about this project…" : mode === "plan" ? "Describe what to plan…" : "Type a message here...") : "Connect a wallet to use GLM 5.2 cloud"}
           className="min-h-[26px] w-full resize-none bg-transparent text-[16px] outline-none placeholder:text-[var(--faint)] md:text-[14px]"
         />
         <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-end">
@@ -81,23 +90,7 @@ export default function Composer({
               <span className="hidden sm:inline">Auto-Prompt{autoPrompt ? " · on" : ""}</span>
               <span className="sm:hidden">{autoPrompt ? "AP · on" : "AP"}</span>
             </Pill>
-            <div className="relative">
-              <Pill onClick={() => setOpen((value) => !value)}>
-                <ModelPillLabel model={model} />
-                <Icon name="chevron" size={12} className="hidden opacity-70 sm:block" />
-              </Pill>
-              {open && (
-                <ModelPicker
-                  model={model}
-                  onPick={(id) => {
-                    setModel(id);
-                    setOpen(false);
-                  }}
-                  onClose={() => setOpen(false)}
-                  onOpenSettings={onOpenSettings}
-                />
-              )}
-            </div>
+            {isConnected && <Pill>GLM 5.2 cloud</Pill>}
             <Pill className="hidden sm:flex" onClick={() => fileRef.current?.click()}>
               <Icon name="paperclip" size={14} />
               Attach
@@ -124,8 +117,9 @@ export default function Composer({
             </span>
             <button
               type="button"
-              onClick={onSend}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--bg)] shadow-md md:h-[34px] md:w-[34px]"
+              onClick={submit}
+              disabled={sending}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--bg)] shadow-md disabled:opacity-50 md:h-[34px] md:w-[34px]"
             >
               <Icon name="send" size={16} />
             </button>

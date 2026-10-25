@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount } from "wagmi";
 import { AUTOMATION_TEMPLATES } from "../../mock.js";
 import { useAppState } from "../../AppState.jsx";
-import { ALL_MODEL_IDS, formatModelShort } from "../../models.js";
 import { Page, Card, Section, Ghost, Primary, Field } from "../ui.jsx";
 
 const CATS = ["Popular", "Code Review", "Security", "Incidents & Triage", "Data & Research"];
@@ -10,6 +11,8 @@ const SCHEDULES = ["Manual", "Hourly", "Daily", "Weekly"];
 export default function AutomationsView() {
   const { automations, runs, upsertAutomation, toggleAutomation, deleteAutomation, runAutomation, project, projects, model, notice } =
     useAppState();
+  const { isConnected } = useAccount();
+  const { open } = useAppKit();
   const [screen, setScreen] = useState("list");
   const [draft, setDraft] = useState(null);
   const [editorTab, setEditorTab] = useState("settings");
@@ -44,7 +47,7 @@ export default function AutomationsView() {
       notice("Name the automation first.");
       return;
     }
-    upsertAutomation({ ...draft, title, hour: draft.schedule === "Manual" ? "" : draft.hour });
+    upsertAutomation({ ...draft, title, model: "glm-5.2:cloud", hour: draft.schedule === "Manual" ? "" : draft.hour });
     notice("Saved “" + title + "”.");
     setScreen("list");
   };
@@ -128,21 +131,10 @@ export default function AutomationsView() {
                 placeholder={draft.schedule === "Manual" ? "—" : "09:00"}
               />
             </div>
-            <label className="block">
+            <div>
               <div className="mb-1.5 text-[11px] text-[var(--faint)]">Model</div>
-              <select
-                value={draft.model}
-                onChange={(event) => setDraft((prev) => ({ ...prev, model: event.target.value }))}
-                className="h-10 w-full rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px] outline-none"
-              >
-                {!ALL_MODEL_IDS.includes(draft.model) && <option value={draft.model}>{formatModelShort(draft.model)}</option>}
-                {ALL_MODEL_IDS.map((id) => (
-                  <option key={id} value={id}>
-                    {formatModelShort(id)}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="text-[14px]">{isConnected ? "GLM 5.2 cloud" : "Connect a wallet"}</div>
+            </div>
             <label className="block">
               <div className="mb-1.5 text-[11px] text-[var(--faint)]">Agent instructions</div>
               <textarea
@@ -159,7 +151,12 @@ export default function AutomationsView() {
               <Primary onClick={save}>Save</Primary>
               <Ghost
                 onClick={() => {
-                  runAutomation({ ...draft, title: draft.title.trim() || "Untitled" });
+                  if (!isConnected) {
+                    notice("Connect a wallet to use GLM 5.2 cloud.");
+                    open({ view: "Connect" });
+                    return;
+                  }
+                  runAutomation({ ...draft, title: draft.title.trim() || "Untitled", model: "glm-5.2:cloud" });
                   notice("Run finished.");
                   setEditorTab("runs");
                 }}
@@ -268,7 +265,7 @@ export default function AutomationsView() {
               <div className="text-[14px]">{item.title}</div>
               <div className="mt-0.5 text-[11px] text-[var(--muted)]">
                 {item.project} · {item.schedule}
-                {item.hour ? " · " + item.hour : ""} · {formatModelShort(item.model)} · {item.active ? "Schedule on" : "Halted"} · {item.lastRun}
+                {item.hour ? " · " + item.hour : ""} · {isConnected ? "GLM 5.2 cloud" : "No wallet"} · {item.active ? "Schedule on" : "Halted"} · {item.lastRun}
               </div>
             </button>
             <div className="flex flex-wrap gap-2">
@@ -282,7 +279,12 @@ export default function AutomationsView() {
               </Ghost>
               <Ghost
                 onClick={() => {
-                  runAutomation(item);
+                  if (!isConnected) {
+                    notice("Connect a wallet to use GLM 5.2 cloud.");
+                    open({ view: "Connect" });
+                    return;
+                  }
+                  runAutomation({ ...item, model: "glm-5.2:cloud" });
                   notice("Run finished.");
                 }}
               >

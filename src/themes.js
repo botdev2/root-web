@@ -551,9 +551,16 @@ export function findTheme(id) {
   return THEMES.find((t) => t.id === id) || THEMES.find((t) => t.id === DEFAULT_THEME_ID);
 }
 
-export function wallpaperImage(theme, wallpaperOn) {
-  if (!wallpaperOn) return "";
-  return theme.wallpaper ? "/serenity-wallpaper.jpg" : "/wallpaper.png";
+export const WALLPAPERS = [
+  { id: "none", name: "None", src: "" },
+  { id: "default", name: "Nordic", src: "/default-wallpaper.png" },
+  { id: "storm", name: "Storm ocean", src: "/wallpaper.png" },
+  { id: "serenity", name: "Serenity", src: "/serenity-wallpaper.jpg" },
+  { id: "morning", name: "Morning", src: "/morning-wallpaper.png" },
+];
+
+export function resolveWallpaper(id) {
+  return WALLPAPERS.find((item) => item.id === id) || WALLPAPERS[0];
 }
 
 function settleAppearance() {
@@ -567,19 +574,19 @@ function settleAppearance() {
   }
 }
 
-export function applyTheme(theme, wallpaperOn = false) {
+export function applyTheme(theme, wallpaperId = "none") {
   const root = document.documentElement;
   Object.entries(theme.vars).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
-  const image = wallpaperImage(theme, wallpaperOn);
+  const image = resolveWallpaper(wallpaperId).src;
   root.style.setProperty("--wallpaper-image", image ? `url("${image}")` : "none");
   root.dataset.theme = theme.id;
-  root.dataset.wallpaper = wallpaperOn ? "on" : "off";
+  root.dataset.wallpaper = image ? "on" : "off";
   root.style.colorScheme = theme.isDark ? "dark" : "light";
   try {
     localStorage.setItem("root-web-theme", theme.id);
-    localStorage.setItem("root-web-wallpaper", wallpaperOn ? "1" : "0");
+    localStorage.setItem("root-web-wallpaper", resolveWallpaper(wallpaperId).id);
   } catch {
     /* ignore */
   }
@@ -598,8 +605,10 @@ export function readSavedWallpaper() {
   settleAppearance();
   try {
     const value = localStorage.getItem("root-web-wallpaper");
-    return value === "1";
+    if (value === "1") return "storm";
+    if (!value || value === "0") return "none";
+    return resolveWallpaper(value).id;
   } catch {
-    return false;
+    return "none";
   }
 }

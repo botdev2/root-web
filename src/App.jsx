@@ -49,7 +49,7 @@ export default function App() {
   const state = useAppState();
   const { addProject, addSession, mode, notice, project, dayTasksEnabled, setDayTasksEnabled } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
-  const [wallpaperOn, setWallpaperOn] = useState(readSavedWallpaper);
+  const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
     try {
       return new URLSearchParams(window.location.search).get("view") || "home";
@@ -73,8 +73,8 @@ export default function App() {
   const theme = useMemo(() => findTheme(themeId), [themeId]);
 
   useEffect(() => {
-    applyTheme(theme, wallpaperOn);
-  }, [theme, wallpaperOn]);
+    applyTheme(theme, wallpaperId);
+  }, [theme, wallpaperId]);
 
   useEffect(() => {
     if (dayTasksEnabled || view !== "home" || sessionId) {
@@ -163,7 +163,7 @@ export default function App() {
 
   return (
     <div className="relative isolate h-full min-h-0 overflow-hidden">
-      {wallpaperOn && <div className="wallpaper-layer" />}
+      {wallpaperId !== "none" && <div className="wallpaper-layer" />}
       <div className="shell relative z-[1] flex h-full min-h-0 flex-col text-[var(--ink)]">
         <TitleBar />
         <div className="relative flex min-h-0 flex-1">
@@ -237,8 +237,8 @@ export default function App() {
                     key={settingsTab}
                     theme={theme}
                     onTheme={setThemeId}
-                    wallpaperOn={wallpaperOn}
-                    onWallpaper={setWallpaperOn}
+                    wallpaperId={wallpaperId}
+                    onWallpaper={setWallpaperId}
                     initialTab={settingsTab}
                   />
                 )}

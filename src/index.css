@@ -175,10 +175,19 @@ textarea {
 }
 
 .gate-hero {
-  height: 132px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 168px;
   background:
-    linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg) 55%, transparent)),
-    var(--wallpaper-image) center 42% / cover no-repeat;
+    linear-gradient(180deg, transparent 10%, var(--bg) 96%),
+    var(--wallpaper-image) center 36% / cover no-repeat;
+  pointer-events: none;
+}
+
+[data-wallpaper="off"] .gate-hero {
+  display: none;
 }
 
 .gate-sheen {

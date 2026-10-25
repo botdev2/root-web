@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { THEMES } from "../themes.js";
+import { THEMES, WALLPAPERS } from "../themes.js";
 import { useAppState } from "../AppState.jsx";
 import { CATALOG_MODELS, SUBSCRIPTION_PROVIDERS, formatModelLabel, subId } from "../models.js";
 import { Page, Card, Tabs, Row, Toggle, Ghost, Section } from "./ui.jsx";
@@ -24,7 +24,7 @@ const FONTS = [
 ];
 
 
-export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper, initialTab }) {
+export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab }) {
   const { project, model, setModel, fontId, setFontId, notice } = useAppState();
   const [tab, setTab] = useState(initialTab || "appearance");
   const [flags, setFlags] = useState({
@@ -112,31 +112,30 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
             </Card>
           </Section>
           <Section title="Wallpaper">
-            <Card className="overflow-hidden">
-              <div
-                className="h-28 bg-cover bg-center"
-                style={{
-                  backgroundImage: theme.wallpaper ? "url('/serenity-wallpaper.jpg')" : "url('/wallpaper.png')",
-                }}
-              />
-              <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="text-[13px]">{theme.wallpaper ? "Serenity lakeside" : "Storm ocean"}</div>
-                  <div className="mt-0.5 text-[11px] text-[var(--muted)]">
-                    Storm ocean by default. Serenity family swaps to the lakeside still.
-                  </div>
-                </div>
-                <Ghost
-                  active={wallpaperOn}
-                  onClick={() => {
-                    onWallpaper(!wallpaperOn);
-                    notice(wallpaperOn ? "Wallpaper off." : "Wallpaper on.");
-                  }}
-                >
-                  {wallpaperOn ? "On" : "Off"}
-                </Ghost>
-              </div>
-            </Card>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {WALLPAPERS.map((item) => {
+                const selected = item.id === wallpaperId;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      onWallpaper(item.id);
+                      notice(item.id === "none" ? "Wallpaper off." : item.name + " wallpaper.");
+                    }}
+                    className={`overflow-hidden rounded-xl border text-left ${
+                      selected ? "border-[var(--accent)]" : "border-[var(--stroke)] hover:bg-[var(--hover)]"
+                    }`}
+                  >
+                    <div
+                      className="h-16 bg-[var(--panel)] bg-cover bg-center"
+                      style={item.src ? { backgroundImage: `url('${item.src}')` } : undefined}
+                    />
+                    <div className="px-3 py-2 text-[12.5px]">{item.name}</div>
+                  </button>
+                );
+              })}
+            </div>
           </Section>
         </>
       )}
@@ -279,8 +278,8 @@ export default function SettingsView({ theme, onTheme, wallpaperOn, onWallpaper,
                   localStorage.removeItem("root-web-theme");
                   localStorage.removeItem("root-web-wallpaper");
                   localStorage.removeItem("root-web-font");
-                  onTheme("midnight");
-                  onWallpaper(true);
+                  onTheme("default");
+                  onWallpaper("none");
                   setFontId("palm");
                   notice("Appearance reset.");
                 }}

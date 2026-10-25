@@ -1,12 +1,21 @@
-import { useState } from "react";
-import { REASONING_NODES } from "../../mock.js";
+import { useEffect, useState } from "react";
+import { BRAIN_GROUPS, BRAIN_NODES, BRAIN_TOUR } from "../../features.js";
 import { useAppState } from "../../AppState.jsx";
 import { Page, Card, Ghost } from "../ui.jsx";
 
 export default function ReasoningView() {
-  const { notice } = useAppState();
-  const [selected, setSelected] = useState("intake");
-  const node = REASONING_NODES.find((item) => item.id === selected);
+  const { brainEnabled, setBrainNode, resetBrain, notice } = useAppState();
+  const [selected, setSelected] = useState("entry.send");
+  const [tour, setTour] = useState(-1);
+  const node = BRAIN_NODES.find((item) => item.id === selected) || BRAIN_NODES[0];
+
+  useEffect(() => {
+    if (tour < 0) return undefined;
+    setSelected(BRAIN_TOUR[tour]);
+    if (tour >= BRAIN_TOUR.length - 1) return undefined;
+    const timer = window.setTimeout(() => setTour((value) => value + 1), 700);
+    return () => window.clearTimeout(timer);
+  }, [tour]);
 
   return (
     <Page wide>
@@ -14,41 +23,78 @@ export default function ReasoningView() {
         <Ghost onClick={() => notice("Brain saved.")}>Save brain</Ghost>
         <Ghost
           onClick={() => {
-            setSelected("intake");
+            resetBrain();
+            setSelected("entry.send");
+            setTour(-1);
             notice("Defaults restored.");
           }}
         >
           Reset defaults
         </Ghost>
-        <span className="text-[11px] text-[var(--muted)]">Changes apply to agent flow (auto-prompt, pipeline, approvals).</span>
+        <Ghost
+          active={tour >= 0}
+          onClick={() => {
+            setTour(0);
+            notice("Playing the Intake → Output tour.");
+          }}
+        >
+          Play tour
+        </Ghost>
+        <span className="text-[11px] text-[var(--muted)]">Optional stages change the agent path. Locked stages always run.</span>
       </div>
-      <Card className="relative min-h-[420px] overflow-hidden p-4">
-        <svg className="absolute inset-6 h-[calc(100%-48px)] w-[calc(100%-48px)] text-[var(--stroke)]" viewBox="0 0 100 60">
-          <path d="M16 42 C 22 42, 24 24, 32 24" fill="none" stroke="currentColor" strokeWidth="0.4" />
-          <path d="M36 24 C 42 24, 44 42, 52 42" fill="none" stroke="currentColor" strokeWidth="0.4" />
-          <path d="M56 42 C 62 42, 64 24, 72 24" fill="none" stroke="currentColor" strokeWidth="0.4" />
-          <path d="M76 24 C 80 24, 82 42, 88 42" fill="none" stroke="currentColor" strokeWidth="0.4" />
-        </svg>
-        {REASONING_NODES.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setSelected(item.id)}
-            style={{ left: item.x + "%", top: item.y + "%" }}
-            className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-xl border px-3 py-2 text-left ${
-              selected === item.id
-                ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                : "border-[var(--stroke)] bg-[var(--panel)]"
-            }`}
-          >
-            <div className="text-[13px]">{item.label}</div>
-            <div className="hidden text-[10px] text-[var(--muted)] sm:block">{item.hint}</div>
-          </button>
-        ))}
+      <Card className="overflow-x-auto p-4">
+        <div className="flex min-w-[760px] gap-3">
+          {BRAIN_GROUPS.map((group) => (
+            <div key={group} className="min-w-0 flex-1">
+              <div className="mb-2 text-[10px] uppercase tracking-wide text-[var(--faint)]">{group}</div>
+              <div className="space-y-2">
+                {BRAIN_NODES.filter((item) => item.group === group).map((item) => {
+                  const on = brainEnabled[item.id] !== false;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setTour(-1);
+                        setSelected(item.id);
+                      }}
+                      className={`w-full rounded-xl border px-2.5 py-2 text-left ${
+                        selected === item.id ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--stroke)] bg-[var(--panel)]"
+                      } ${on ? "" : "opacity-45"}`}
+                    >
+                      <div className="text-[12.5px]">{item.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </Card>
       <Card className="mt-4 px-4 py-3">
-        <div className="text-[13px]">{node.label}</div>
-        <div className="mt-1 text-[12px] text-[var(--muted)]">{node.hint}. Click a node to inspect it.</div>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-[15px]">{node.label}</div>
+            <div className="mt-1 max-w-[62ch] text-[12.5px] leading-5 text-[var(--muted)]">{node.hint}</div>
+            {node.setting && <div className="mt-1 text-[11px] text-[var(--faint)]">{node.setting}</div>}
+          </div>
+          {node.locked ? (
+            <span className="text-[11px] text-[var(--faint)]">Locked on</span>
+          ) : (
+            <Ghost
+              active={brainEnabled[node.id] !== false}
+              onClick={() => {
+                const next = brainEnabled[node.id] === false;
+                setBrainNode(node.id, next);
+                if (node.id === "loop.workflow" && next) setBrainNode("loop.simple", false);
+                if (node.id === "loop.simple" && next) setBrainNode("loop.workflow", false);
+                notice((next ? "On · " : "Off · ") + node.label);
+              }}
+            >
+              {brainEnabled[node.id] === false ? "Off" : "On"}
+            </Ghost>
+          )}
+        </div>
       </Card>
     </Page>
   );

@@ -143,7 +143,7 @@ export const HELP = [
     title: "Create from Template",
     summary: "Scaffold a project, then refine with Auto-Prompt.",
     body: "Templates add a project to the sidebar and drop a starter prompt in the composer.",
-    bullets: ["Web, Backend, and Mobile catalogs", "Mobile includes the Farm widget", "Create returns you to New Agent"],
+    bullets: ["Web, Full stack, Backend, Apps, and Mobile", "Create writes the starter files into the project", "The first-pass goal lands in the composer"],
   },
   {
     id: "ops",
@@ -159,7 +159,7 @@ export const HELP = [
     title: "Plugins",
     summary: "Persona packs and workflow extensions.",
     body: "Shop installs Farm, Ops, Crawler, Crypto, ImageGen, and Root Video. Installed packs stay on this account.",
-    bullets: ["Shop and Installed tabs", "Farm and Ops ship on", "ImageGen talks to Comfy on 8188"],
+    bullets: ["Shop and Installed, with search and categories", "Bundled packs ship on", "Coming soon packs stay locked"],
   },
   {
     id: "imagegen",
@@ -183,7 +183,7 @@ export const HELP = [
     title: "Crawler",
     summary: "Record, play, OTP, scrape in browser panes.",
     body: "Two panes and a flow list. Record a signup, play it back, pull OTP from the mail pane.",
-    bullets: ["Record a flow", "Play it back", "OTP from a mail pane"],
+    bullets: ["Edit steps: navigate, type, click, wait, otp, scrape", "Play writes a step log", "Live panes stay on the desktop crawler"],
   },
   {
     id: "automations",
@@ -199,7 +199,7 @@ export const HELP = [
     title: "Reasoning",
     summary: "Intake to Output — the agent brain.",
     body: "Click a node to inspect it. Save brain stores the selection. Tools sit on Farm, Ops, git, and shell.",
-    bullets: ["Intake, Auto-Prompt, Plan, Tools, Output", "Farm, Ops, git, and shell sit on Tools"],
+    bullets: ["Intake through Output, matching the desktop brain", "Optional stages toggle the path", "Play tour walks the default chain"],
   },
   {
     id: "notes",

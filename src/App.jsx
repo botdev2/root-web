@@ -26,7 +26,6 @@ import EditorView from "./components/views/EditorView.jsx";
 import PluginsView from "./components/views/PluginsView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
-import UnderConstruction from "./components/UnderConstruction.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
@@ -47,7 +46,7 @@ function replyFor({ mode, autoPrompt, project, text }) {
 
 export default function App() {
   const state = useAppState();
-  const { addProject, addSession, mode, notice, project, dayTasksEnabled, setDayTasksEnabled } = state || {};
+  const { addProject, seedFiles, addSession, mode, notice, project, dayTasksEnabled, setDayTasksEnabled } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -70,6 +69,7 @@ export default function App() {
   const [attachments, setAttachments] = useState([]);
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [dayTasksIdle, setDayTasksIdle] = useState(false);
+  const [editorFile, setEditorFile] = useState("README.md");
   const theme = useMemo(() => findTheme(themeId), [themeId]);
 
   useEffect(() => {
@@ -240,58 +240,46 @@ export default function App() {
                     wallpaperId={wallpaperId}
                     onWallpaper={setWallpaperId}
                     initialTab={settingsTab}
+                    onPrompt={(text) => {
+                      setSessionId(null);
+                      setSessionTitle("New Agent");
+                      setDraft(text);
+                      setView("home");
+                    }}
                   />
                 )}
                 {view === "automations" && <AutomationsView />}
-                {view === "reasoning" && (
-                  <UnderConstruction>
-                    <ReasoningView />
-                  </UnderConstruction>
-                )}
-                {view === "crawler" && (
-                  <UnderConstruction>
-                    <CrawlerView />
-                  </UnderConstruction>
-                )}
-                {view === "ops" && (
-                  <UnderConstruction>
-                    <OpsView />
-                  </UnderConstruction>
-                )}
+                {view === "reasoning" && <ReasoningView />}
+                {view === "crawler" && <CrawlerView />}
+                {view === "ops" && <OpsView />}
                 {view === "notes" && <NotesView />}
-                {view === "plugins" && (
-                  <UnderConstruction>
-                    <PluginsView />
-                  </UnderConstruction>
-                )}
+                {view === "plugins" && <PluginsView />}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}
                 {view === "help" && <HelpView onOpen={openView} />}
                 {view === "templates" && (
-                  <UnderConstruction>
-                    <TemplatesView
-                      onCreate={(item) => {
-                        addProject({ id: item.id, label: item.title, title: item.title });
-                        setSessionTitle("New Agent");
-                        setSessionId(null);
-                        setView("home");
-                        setDraft("Scaffold a " + item.title + " using " + item.stack + ".");
-                        notice(item.title + " added to Projects.");
-                      }}
-                    />
-                  </UnderConstruction>
+                  <TemplatesView
+                    onCreate={(item) => {
+                      addProject({ id: item.folder, label: item.folder, title: item.folder });
+                      seedFiles?.(item.folder, item.files);
+                      setEditorFile("README.md");
+                      setSessionTitle("New Agent");
+                      setSessionId(null);
+                      setView("home");
+                      setDraft(item.goal + " Stack: " + item.stack + ". Dev: " + item.dev);
+                    }}
+                  />
                 )}
                 {view === "editor" && (
-                  <UnderConstruction>
-                    <EditorView
-                      file={sessionTitle}
-                      onBack={() => {
-                        setView("home");
-                        setSessionTitle("New Agent");
-                      }}
-                    />
-                  </UnderConstruction>
+                  <EditorView
+                    file={editorFile}
+                    onFile={setEditorFile}
+                    onBack={() => {
+                      setView("home");
+                      setSessionTitle("New Agent");
+                    }}
+                  />
                 )}
                 {showComposer && (
                   <div className="relative">
@@ -329,7 +317,7 @@ export default function App() {
                   onClose={() => setFilesOpen(false)}
                   onOpenFile={(name) => {
                     setFilesOpen(false);
-                    setSessionTitle(name);
+                    setEditorFile(name);
                     setView("editor");
                   }}
                 />

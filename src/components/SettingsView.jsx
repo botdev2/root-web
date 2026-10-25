@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { THEMES, WALLPAPERS } from "../themes.js";
 import { useAppState } from "../AppState.jsx";
 import { CATALOG_MODELS, SUBSCRIPTION_PROVIDERS, formatModelLabel, subId } from "../models.js";
-import { Page, Card, Tabs, Row, Toggle, Ghost, Section } from "./ui.jsx";
-import UnderConstruction from "./UnderConstruction.jsx";
+import { Page, Card, Tabs, Row, Toggle, Ghost, Section, Field, Primary } from "./ui.jsx";
 
 const TABS = [
   { id: "general", label: "General" },
@@ -24,21 +23,13 @@ const FONTS = [
 ];
 
 
-export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab }) {
-  const { project, model, setModel, fontId, setFontId, notice } = useAppState();
+export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt }) {
+  const { project, model, setModel, fontId, setFontId, notice, prefs, togglePref, setPrefs, videos, upsertVideo, deleteVideo } = useAppState();
   const [tab, setTab] = useState(initialTab || "appearance");
-  const [flags, setFlags] = useState({
-    privacy: true,
-    autoprompt: false,
-    telemetry: true,
-    imagegen: false,
-    imageAlways: false,
-    video: false,
-    subClaude: false,
-    subGpt: false,
-    subGrok: false,
-  });
-  const toggle = (key) => setFlags((prev) => ({ ...prev, [key]: !prev[key] }));
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [videoId, setVideoId] = useState(videos[0]?.id || "");
+  const flags = prefs;
+  const toggle = (key) => togglePref(key);
 
   return (
     <Page wide>
@@ -185,55 +176,100 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
       )}
 
       {tab === "subscriptions" && (
-        <UnderConstruction className="uc-wrap--block">
         <Card>
-          <Row label="Claude" value="Anthropic · not connected">
-            <Toggle on={flags.subClaude} onClick={() => toggle("subClaude")} />
+          <Row label="Claude" value={flags.subClaude ? "Linked on this browser" : "Not linked"}>
+            <Ghost onClick={() => { toggle("subClaude"); notice(flags.subClaude ? "Claude unlinked." : "Claude linked."); }}>
+              {flags.subClaude ? "Unlink" : "Link"}
+            </Ghost>
           </Row>
-          <Row label="GPT" value="OpenAI · not connected">
-            <Toggle on={flags.subGpt} onClick={() => toggle("subGpt")} />
+          <p className="px-4 pb-3 text-[12px] leading-5 text-[var(--muted)]">
+            Uses the Claude Code login already on this PC. Linking here remembers the choice for this browser. The desktop harness still reads ~/.claude/.credentials.json.
+          </p>
+          <Row label="OpenAI (ChatGPT / Codex)" value={flags.subOpenAi ? "Linked on this browser" : "Not linked"}>
+            <Ghost onClick={() => { toggle("subOpenAi"); notice(flags.subOpenAi ? "OpenAI unlinked." : "OpenAI linked."); }}>
+              {flags.subOpenAi ? "Unlink" : "Link"}
+            </Ghost>
           </Row>
-          <Row label="Grok" value="xAI · not connected">
-            <Toggle on={flags.subGrok} onClick={() => toggle("subGrok")} />
+          <p className="px-4 pb-3 text-[12px] leading-5 text-[var(--muted)]">Browser device login at auth.openai.com/codex/device. Finish that on the machine that runs the desktop harness.</p>
+          <Row label="Grok (SuperGrok / X Premium+)" value={flags.subGrok ? "Linked on this browser" : "Not linked"}>
+            <Ghost onClick={() => { toggle("subGrok"); notice(flags.subGrok ? "Grok unlinked." : "Grok linked."); }}>
+              {flags.subGrok ? "Unlink" : "Link"}
+            </Ghost>
           </Row>
+          <p className="px-4 pb-3 text-[12px] leading-5 text-[var(--muted)]">Browser device login at auth.x.ai.</p>
         </Card>
-        </UnderConstruction>
       )}
 
       {tab === "imagegen" && (
-        <UnderConstruction className="uc-wrap--block">
-        <Card>
-          <Row label="ImageGen" value="FLUX.2 Klein 4B · Comfy on port 8188">
-            <Toggle on={flags.imagegen} onClick={() => toggle("imagegen")} />
-          </Row>
-          <Row label="Default size" value="1024 × 1024" />
-          <Row label="Always expose image tools" value="generate_image on every turn">
-            <Toggle on={flags.imageAlways} onClick={() => toggle("imageAlways")} />
-          </Row>
-          <div className="px-4 py-3">
-            <Ghost
+        <>
+          <Card>
+            <Row label="ImageGen" value={flags.imageCheckpoint + " · " + (flags.imagegen ? "enabled" : "off")}>
+              <Toggle on={flags.imagegen} onClick={() => toggle("imagegen")} />
+            </Row>
+            <Row label="Always expose image tools" value="generate_image on every turn">
+              <Toggle on={flags.imageAlways} onClick={() => toggle("imageAlways")} />
+            </Row>
+          </Card>
+          <Card className="mt-3 space-y-3 p-4">
+            <Field label="API URL" value={flags.imageUrl} onChange={(value) => setPrefs({ imageUrl: value })} />
+            <Field label="Checkpoint" value={flags.imageCheckpoint} onChange={(value) => setPrefs({ imageCheckpoint: value })} />
+            <Field label="Size" value={flags.imageSize} onChange={(value) => setPrefs({ imageSize: value })} />
+            <p className="text-[12px] leading-5 text-[var(--muted)]">
+              Comfy runs on the desktop harness at that URL. This page stores the preference. Other checkpoints are not supported.
+            </p>
+            <Field label="Queue a prompt" value={imagePrompt} onChange={setImagePrompt} placeholder="A quiet alpine lake at dusk" />
+            <Primary
               onClick={() => {
-                toggle("imagegen");
-                notice(flags.imagegen ? "ImageGen stopped." : "Comfy started on 8188.");
+                const text = imagePrompt.trim();
+                if (!text) {
+                  notice("Write a prompt first.");
+                  return;
+                }
+                onPrompt?.("Generate an image with " + flags.imageCheckpoint + " at " + flags.imageSize + ": " + text);
+                notice("Prompt is in the composer.");
               }}
             >
-              {flags.imagegen ? "Stop ComfyUI" : "Start ComfyUI"}
-            </Ghost>
-          </div>
-        </Card>
-        </UnderConstruction>
+              Send to Agent
+            </Primary>
+          </Card>
+        </>
       )}
 
       {tab === "video" && (
-        <UnderConstruction className="uc-wrap--block">
-        <Card>
-          <Row label="Root Video" value="HTML → MP4 in Agent chat">
-            <Toggle on={flags.video} onClick={() => toggle("video")} />
-          </Row>
-          <Row label="Runtime" value="Installed" />
-          <Row label="Last render" value="none" />
-        </Card>
-        </UnderConstruction>
+        <>
+          <Card>
+            <Row label="Root Video" value="HTML compositions rendered to MP4 in Agent chat">
+              <Toggle on={flags.video} onClick={() => toggle("video")} />
+            </Row>
+            <Row label="Runtime" value="Renders on the desktop harness" />
+          </Card>
+          <div className="mt-3 grid gap-3 lg:grid-cols-[220px_1fr]">
+            <Card className="p-2">
+              {videos.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setVideoId(item.id)}
+                  className={`w-full rounded-lg px-2 py-2 text-left text-[13px] ${item.id === videoId ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"}`}
+                >
+                  {item.name}
+                </button>
+              ))}
+              <div className="px-1 py-2">
+                <Ghost
+                  onClick={() => {
+                    const id = "vid-" + Date.now();
+                    upsertVideo({ id, name: "Untitled", html: "<section class=\"stage\"><h1>Untitled</h1></section>\n" });
+                    setVideoId(id);
+                  }}
+                >
+                  New
+                </Ghost>
+              </div>
+            </Card>
+            <VideoEditor id={videoId} videos={videos} upsertVideo={upsertVideo} deleteVideo={deleteVideo} onPrompt={onPrompt} notice={notice} />
+          </div>
+        </>
       )}
 
       {tab === "privacy" && (
@@ -291,5 +327,57 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
         </>
       )}
     </Page>
+  );
+}
+
+function VideoEditor({ id, videos, upsertVideo, deleteVideo, onPrompt, notice }) {
+  const video = videos.find((item) => item.id === id) || videos[0];
+  const [html, setHtml] = useState(video?.html || "");
+  const [name, setName] = useState(video?.name || "");
+
+  useEffect(() => {
+    setHtml(video?.html || "");
+    setName(video?.name || "");
+  }, [video?.id]);
+
+  if (!video) return <Card className="px-4 py-3 text-[13px] text-[var(--muted)]">No compositions yet.</Card>;
+
+  return (
+    <Card className="space-y-3 p-4">
+      <Field label="Name" value={name} onChange={setName} />
+      <textarea
+        value={html}
+        onChange={(event) => setHtml(event.target.value)}
+        rows={12}
+        spellCheck={false}
+        className="w-full resize-y rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 py-2 font-mono text-[12.5px] leading-5 outline-none"
+      />
+      <div className="flex flex-wrap gap-2">
+        <Primary
+          onClick={() => {
+            upsertVideo({ ...video, name: name.trim() || video.name, html });
+            notice("Composition saved.");
+          }}
+        >
+          Save
+        </Primary>
+        <Ghost
+          onClick={() => {
+            onPrompt?.("Render the Root Video composition “" + (name.trim() || video.name) + "” to MP4.\n\n" + html);
+            notice("Render request is in the composer.");
+          }}
+        >
+          Ask Agent to render
+        </Ghost>
+        <Ghost
+          onClick={() => {
+            deleteVideo(video.id);
+            notice("Composition removed.");
+          }}
+        >
+          Delete
+        </Ghost>
+      </div>
+    </Card>
   );
 }

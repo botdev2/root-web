@@ -229,9 +229,9 @@ export const HELP = [
     id: "telemetry",
     section: "Control",
     title: "Telemetry",
-    summary: "Session privacy and traces.",
-    body: "Telemetry is HTTPS and transfer traces, not Wi-Fi adapters.",
-    bullets: ["chat.send, farm.status, ops.probe", "Identity is the browser session", "IP is not collected"],
+    summary: "Whether this browser is full of trackers, and whether the connection is secure.",
+    body: "The check reads cookies for this site, tracker scripts, storage, and WebRTC address leaks. When Share traces is on, one request looks up the public IP.",
+    bullets: ["Clean, some trackers, or bloated", "Secure, leaking, or unsecure", "IP lookup follows Settings → Share traces"],
   },
   {
     id: "keyboard",

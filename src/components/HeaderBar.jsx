@@ -15,7 +15,7 @@ const HEADERS = {
   templates: { title: "Create from Template", subtitle: "Scaffold a project, then refine with Auto-Prompt" },
   account: { title: "Account", subtitle: "Access, skills, profile" },
   updates: { title: "Updates", subtitle: "App version and channel" },
-  telemetry: { title: "Telemetry", subtitle: "Session privacy and traces" },
+  telemetry: { title: "Telemetry", subtitle: "Tracker and network check" },
   help: { title: "Help", subtitle: "How /root works on the web" },
   editor: { title: "Editor", subtitle: "Project text editor" },
   history: { title: "Run history", subtitle: "Automation runs for this project" },

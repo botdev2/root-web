@@ -277,7 +277,7 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
           <Row label="Privacy Composer" value="Scan prompts before send">
             <Toggle on={flags.privacy} onClick={() => toggle("privacy")} />
           </Row>
-          <Row label="Share traces" value="Stay on this device">
+          <Row label="Share traces" value={flags.telemetry ? "IP lookup on the Telemetry check" : "IP lookup off"}>
             <Toggle on={flags.telemetry} onClick={() => toggle("telemetry")} />
           </Row>
         </Card>

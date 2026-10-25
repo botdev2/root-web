@@ -583,6 +583,7 @@ export function applyTheme(theme, wallpaperId = "none") {
   root.style.setProperty("--wallpaper-image", image ? `url("${image}")` : "none");
   root.dataset.theme = theme.id;
   root.dataset.wallpaper = image ? "on" : "off";
+  root.dataset.scheme = theme.isDark ? "dark" : "light";
   root.style.colorScheme = theme.isDark ? "dark" : "light";
   try {
     localStorage.setItem("root-web-theme", theme.id);

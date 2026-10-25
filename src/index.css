@@ -116,8 +116,37 @@ textarea {
 }
 
 .day-ring {
+  --ring-ink: #fff;
+  --ring-ink-soft: rgb(255 255 255 / 0.82);
+  --ring-edge: rgb(0 0 0 / 0.45);
+  --ring-scrim: rgb(0 0 0 / 0.28);
+  --ring-passed: rgb(48 52 60 / 0.78);
+  --ring-dim: rgb(8 10 16 / 0.58);
+  --ring-arc: var(--stroke);
+  --ring-photo: 0.48;
   filter: drop-shadow(0 18px 36px color-mix(in srgb, #000 26%, transparent));
   overflow: visible;
+}
+
+[data-scheme="light"] .day-ring {
+  --ring-ink: var(--ink);
+  --ring-ink-soft: var(--ink);
+  --ring-edge: rgb(255 255 255 / 0.92);
+  --ring-scrim: rgb(255 255 255 / 0.42);
+  --ring-passed: color-mix(in srgb, var(--bg) 58%, transparent);
+  --ring-dim: color-mix(in srgb, var(--bg) 64%, transparent);
+  --ring-arc: var(--ink);
+  --ring-photo: 0.78;
+  filter: drop-shadow(0 16px 28px color-mix(in srgb, var(--ink) 12%, transparent));
+}
+
+.day-ring-photo {
+  opacity: var(--ring-photo);
+}
+
+.day-ring-label {
+  color: var(--ring-ink);
+  text-shadow: 0 1px 2px var(--ring-edge);
 }
 
 .day-ring-glow {

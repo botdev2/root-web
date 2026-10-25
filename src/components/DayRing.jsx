@@ -66,15 +66,15 @@ export default function DayRing({ now, goals = [], selectedPart, onSelectPart })
                 style={{ boxShadow: selected ? "inset 0 0 0 2.5px var(--accent)" : "none" }}
               >
                 <span
-                  className="absolute inset-0 bg-cover bg-center opacity-[0.48]"
+                  className="day-ring-photo absolute inset-0 bg-cover bg-center"
                   style={{ backgroundImage: `url(/day/${cell.part}.jpg)` }}
                 />
                 <span className="absolute inset-0" style={{ background: meta.tint }} />
-                <span className="absolute inset-0 bg-black/[0.28]" />
-                {passed && <span className="absolute inset-0 bg-[rgb(48,52,60)]/78" />}
-                {complete && <span className="absolute inset-0 bg-[rgb(34,197,94)]/42" />}
-                {dimmed && <span className="absolute inset-0 bg-[rgb(8,10,16)]/58" />}
-                <span className="relative z-[1] flex h-full flex-col items-center justify-center text-white">
+                <span className="absolute inset-0" style={{ background: "var(--ring-scrim)" }} />
+                {passed && <span className="absolute inset-0" style={{ background: "var(--ring-passed)" }} />}
+                {complete && <span className="absolute inset-0 bg-[var(--green)]/40" />}
+                {dimmed && <span className="absolute inset-0" style={{ background: "var(--ring-dim)" }} />}
+                <span className="day-ring-label relative z-[1] flex h-full flex-col items-center justify-center">
                   <span className="text-[11px] font-semibold">{meta.name}</span>
                   {counts.total > 0 && (
                     <span className={`mt-0.5 text-[10px] font-semibold ${passed && counts.undone ? "line-through" : ""}`}>
@@ -99,23 +99,23 @@ export default function DayRing({ now, goals = [], selectedPart, onSelectPart })
               key={part}
               d={arcPath(ARC_START[part])}
               fill="none"
-              stroke={selected ? "var(--accent)" : "var(--stroke)"}
+              stroke={selected ? "var(--accent)" : "var(--ring-arc)"}
               strokeWidth={selected ? 4.5 : 2.5}
               strokeLinecap="round"
               opacity={selected ? 1 : selectedPart ? 0.22 : 0.55}
             />
           );
         })}
-        <line x1={mx1} y1={my1} x2={mx2} y2={my2} stroke="rgba(255,255,255,0.9)" strokeWidth="2.5" strokeLinecap="round" />
-        <circle cx={mdx} cy={mdy} r="3.2" fill="white" stroke="rgba(0,0,0,0.47)" strokeWidth="0.5" />
-        <text x={mlx} y={mly} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.82)" fontSize="8" fontWeight="600">
+        <line x1={mx1} y1={my1} x2={mx2} y2={my2} stroke="var(--ring-ink)" strokeWidth="2.5" strokeLinecap="round" />
+        <circle cx={mdx} cy={mdy} r="3.2" fill="var(--ring-ink)" stroke="var(--ring-edge)" strokeWidth="0.6" />
+        <text x={mlx} y={mly} textAnchor="middle" dominantBaseline="middle" fill="var(--ring-ink-soft)" fontSize="8" fontWeight="600">
           00:00
         </text>
         <g transform={`rotate(${angle} 160 160)`}>
-          <polygon points="319,155 319,165 305,160" fill="white" stroke="rgba(0,0,0,0.38)" strokeWidth="0.6" />
-          <circle cx="319" cy="160" r="3.5" fill="white" stroke="rgba(0,0,0,0.3)" strokeWidth="0.5" />
+          <polygon points="319,155 319,165 305,160" fill="var(--ring-ink)" stroke="var(--ring-edge)" strokeWidth="0.6" />
+          <circle cx="319" cy="160" r="3.5" fill="var(--ring-ink)" stroke="var(--ring-edge)" strokeWidth="0.5" />
         </g>
-        <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.82)" fontSize="8" fontWeight="600">
+        <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fill="var(--ring-ink-soft)" fontSize="8" fontWeight="600">
           {formatClockShort(now)}
         </text>
       </svg>

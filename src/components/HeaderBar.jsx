@@ -8,7 +8,7 @@ const HEADERS = {
   automations: { title: "Automations", subtitle: "Scheduled helpers for this project" },
   reasoning: { title: "Reasoning", subtitle: "Intake to Output — click a node" },
   crawler: { title: "Crawler", subtitle: "Record, play, OTP, scrape" },
-  ops: { title: "PALM Ops", subtitle: "Anonymous hosting · wallet signature only" },
+  ops: { title: "PALM Ops", subtitle: "Hosting, domains, and Ops Hub" },
   plugins: { title: "Plugins", subtitle: "Persona packs and workflow extensions" },
   notes: { title: "Notes", subtitle: "Daily goals and markdown" },
   settings: { title: "Settings", subtitle: "Appearance, models, privacy" },

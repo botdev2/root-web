@@ -150,8 +150,8 @@ export const HELP = [
     section: "Ship",
     title: "PALM Ops",
     summary: "Anonymous hosting signed with the Root wallet.",
-    body: "Ops embeds the console and lists live domains. The PALM setup card on Chat builds and uploads dist.",
-    bullets: ["ops.palmaierc.com", "Wallet signature only — nothing is spent on Start", "Live probe every 10 seconds"],
+    body: "The tab calls the Ops API for this wallet: sites, domain search, Hub git, and a GitHub publish. The same pages open on ops.palmaierc.com.",
+    bullets: ["Sign in with the wallet, then the authenticator code", "Publish uses a GitHub token once and does not store it", "Hosting, Domains, Ops Hub, Plans, and the palm-ops repos"],
   },
   {
     id: "plugins",

@@ -242,11 +242,7 @@ export default function App() {
                     initialTab={settingsTab}
                   />
                 )}
-                {view === "automations" && (
-                  <UnderConstruction>
-                    <AutomationsView />
-                  </UnderConstruction>
-                )}
+                {view === "automations" && <AutomationsView />}
                 {view === "reasoning" && (
                   <UnderConstruction>
                     <ReasoningView />

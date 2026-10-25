@@ -59,8 +59,8 @@ export function AppStateProvider({ children }) {
   const [onboarding, setOnboarding] = useState(() =>
     readStored("root-web-onboarding", { visible: true, skills: true, repos: false, github: false }),
   );
-  const [automations, setAutomations] = useState(AUTOMATIONS);
-  const [runs, setRuns] = useState(SEED_RUNS);
+  const [automations, setAutomations] = useState(() => readStored("root-web-automations", AUTOMATIONS));
+  const [runs, setRuns] = useState(() => readStored("root-web-runs", SEED_RUNS));
   const [session, setSession] = useState(() => {
     const stored = readStored("root-web-session", null);
     return stored?.address ? stored : null;
@@ -107,6 +107,14 @@ export function AppStateProvider({ children }) {
   useEffect(() => {
     writeStored("root-web-day-goals", dayGoals);
   }, [dayGoals]);
+
+  useEffect(() => {
+    writeStored("root-web-automations", automations);
+  }, [automations]);
+
+  useEffect(() => {
+    writeStored("root-web-runs", runs);
+  }, [runs]);
 
   const api = useMemo(
     () => ({
@@ -191,15 +199,26 @@ export function AppStateProvider({ children }) {
       toggleAutomation: (id) => {
         setAutomations((prev) => prev.map((row) => (row.id === id ? { ...row, active: !row.active } : row)));
       },
+      deleteAutomation: (id) => {
+        setAutomations((prev) => prev.filter((row) => row.id !== id));
+      },
       runAutomation: (item) => {
+        const halted = item.active === false;
         const record = {
           id: "run-" + Date.now(),
           automationId: item.id,
           title: item.title,
           when: "just now",
-          status: "ok",
-          detail: "Wrote study notes and closed the run.",
-          log: "start\nread project\nwrite notes\ndone",
+          status: halted ? "fail" : "ok",
+          detail: halted ? "Halted — ran manually" : "Finished on " + (item.project || "this project"),
+          log: [
+            "start · " + (item.title || "automation"),
+            "project · " + (item.project || "—"),
+            "model · " + (item.model || "—"),
+            "schedule · " + (item.schedule || "Manual") + (item.hour ? " " + item.hour : ""),
+            item.instructions ? "instructions · " + String(item.instructions).trim().slice(0, 240) : "instructions · none",
+            halted ? "schedule halted — manual run only" : "done",
+          ].join("\n"),
         };
         setRuns((prev) => [record, ...prev]);
         setAutomations((prev) =>

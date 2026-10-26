@@ -1,39 +1,11 @@
 import { useState } from "react";
+import { markdownHtml } from "../markdown.js";
 import { useAppState } from "../AppState.jsx";
-
-const THREADS = {
-  farm: [
-    {
-      role: "user",
-      text: "This Expo app should be testable without installing emulator packs.",
-    },
-    {
-      role: "assistant",
-      text: "Workspace looks like Expo. Use the Farm widget on this canvas: sign in with the Root wallet, start a cloud phone, then push an APK. Skip Android Studio and Xcode.",
-      tools: [{ name: "palm_farm_status", detail: "farm-api.palmaierc.com ok · Expo workspace" }],
-    },
-  ],
-  ops: [
-    { role: "user", text: "Publish the landing page." },
-    {
-      role: "assistant",
-      text: "PALM setup will build dist and upload it. Sign one Ops message — nothing is spent. The live domain lands on the card.",
-      tools: [{ name: "ops.probe", detail: "landing.palmaierc.com ready" }],
-    },
-  ],
-  wiki: [
-    { role: "user", text: "Port the help wiki to useroot.sh." },
-    {
-      role: "assistant",
-      text: "The /wiki route on useroot.sh already carries the help pages. Same PALM face as the rest of /root.",
-    },
-  ],
-};
 
 export default function ChatView({ sessionId, extras = [] }) {
   const showFarm = sessionId === "farm";
   const showOps = sessionId === "ops";
-  const messages = [...(THREADS[sessionId] || []), ...extras];
+  const messages = extras;
 
   return (
     <div className="relative min-h-0 flex-1">
@@ -74,7 +46,15 @@ function Bubble({ message }) {
           Copy
         </button>
       </div>
-      <div>{message.text}</div>
+      <div>
+        {message.think && (
+          <details className="mb-2 text-[12px] text-[var(--muted)]">
+            <summary className="cursor-pointer">Thinking</summary>
+            <div className="mt-1 whitespace-pre-wrap">{message.think}</div>
+          </details>
+        )}
+        {message.pending ? message.text : <div className="chat-md" dangerouslySetInnerHTML={{ __html: markdownHtml(message.text) }} />}
+      </div>
       {message.files?.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {message.files.map((name) => (

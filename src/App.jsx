@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
-import { askGlm } from "./glmChat.js";
+import { listConversations, loadConversation, removeConversation, sendTurn } from "./glmChat.js";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
 import { useAppState } from "./AppState.jsx";
 import TitleBar from "./components/TitleBar.jsx";
@@ -35,7 +35,7 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { addProject, seedFiles, addSession, mode, notice, project, dayTasksEnabled, setDayTasksEnabled } = state || {};
+  const { addProject, seedFiles, mode, notice, project, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -58,6 +58,8 @@ export default function App() {
   const [attachments, setAttachments] = useState([]);
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [cloudSessions, setCloudSessions] = useState([]);
+  const [usagePercent, setUsagePercent] = useState(0);
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
   const [dayTasksIdle, setDayTasksIdle] = useState(false);
@@ -116,11 +118,56 @@ export default function App() {
     if (id === "settings") setSettingsTab("appearance");
   };
 
-  const openSession = (id, title, nextView = "chat") => {
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setCloudSessions([]);
+      setLocal({});
+      setSessionId(null);
+      setSessionTitle("New Agent");
+      setUsagePercent(0);
+      return;
+    }
+    let cancelled = false;
+    listConversations(address)
+      .then((data) => {
+        if (!cancelled) setCloudSessions(data.conversations || []);
+      })
+      .catch((error) => {
+        if (!cancelled) notice?.(error.message || "Conversations did not load.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isConnected, address]);
+
+  const openSession = async (id, title, nextView = "chat") => {
     setSessionId(id);
     setSessionTitle(title);
     setView(nextView);
     setNavOpen(false);
+    if (!address || !/^[a-f0-9]{24}$/.test(id || "")) return;
+    try {
+      const data = await loadConversation(address, id);
+      const turns = (data.conversation?.turns || []).map((turn) => ({
+        role: turn.role,
+        text: turn.text,
+        think: turn.think || "",
+      }));
+      setLocal((prev) => ({ ...prev, [id]: turns }));
+      const chars = turns.reduce((sum, turn) => sum + String(turn.text || "").length + String(turn.think || "").length, 0);
+      setUsagePercent(Math.min(100, Math.round((Math.ceil(chars / 4) / 8192) * 100)));
+    } catch (error) {
+      notice(error.message || "That conversation did not load.");
+    }
+  };
+
+  const fileSnapshot = () => {
+    const tree = files?.[project?.id];
+    if (!tree || typeof tree !== "object") return "";
+    return Object.entries(tree)
+      .map(([path, text]) => "### " + path + "\n" + String(text || "").slice(0, 1500))
+      .join("\n\n")
+      .slice(0, 6000);
   };
 
   const send = async (text = draft) => {
@@ -132,12 +179,10 @@ export default function App() {
       return;
     }
     if (sending) return;
-    const id = sessionId || "draft-" + Date.now();
+    const known = /^[a-f0-9]{24}$/.test(sessionId || "");
+    const id = known ? sessionId : "pending-" + Date.now();
     const title = sessionTitle === "New Agent" && value ? value.slice(0, 42) : sessionTitle;
     const replyId = "glm-" + Date.now();
-    const prior = (local[id] || [])
-      .filter((item) => !item.pending && (item.role === "user" || item.role === "assistant"))
-      .map((item) => ({ role: item.role, content: item.text }));
     setSending(true);
     setLocal((prev) => ({
       ...prev,
@@ -147,28 +192,52 @@ export default function App() {
         { id: replyId, role: "assistant", text: "GLM 5.2 cloud is writing…", pending: true },
       ],
     }));
-    if (!sessionId) {
-      addSession({ id, title });
-      setSessionId(id);
-      setSessionTitle(title);
-    }
+    setSessionId(id);
+    setSessionTitle(title);
     setDraft("");
     setAttachments([]);
     setView("chat");
-    const finish = (answer) => {
+    try {
+      const result = await sendTurn(address, {
+        conversationId: known ? sessionId : "",
+        projectId: project?.id || "project",
+        projectLabel: project?.label || "",
+        projectRemote: project?.remote || "",
+        title,
+        mode,
+        text: value || "Attached files",
+        brain: brainEnabled || {},
+        files: fileSnapshot(),
+        autoprompt: autoPrompt,
+      });
+      const cloudId = result.conversation?.id || id;
+      const turns = (result.conversation?.turns || []).map((turn) => ({
+        role: turn.role,
+        text: turn.text,
+        think: turn.think || "",
+      }));
+      setSessionId(cloudId);
+      setLocal((prev) => {
+        const next = { ...prev };
+        if (id !== cloudId) delete next[id];
+        next[cloudId] = turns.length ? turns : (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: result.text, think: result.think } : item));
+        return next;
+      });
+      setUsagePercent(result.usage?.percent || 0);
+      setCloudSessions((prev) => {
+        const row = {
+          id: cloudId,
+          projectId: result.conversation?.projectId || project?.id || "project",
+          title: result.conversation?.title || title,
+          updatedAt: result.conversation?.updatedAt || new Date().toISOString(),
+        };
+        return [row, ...prev.filter((item) => item.id !== cloudId)];
+      });
+    } catch (error) {
       setLocal((prev) => ({
         ...prev,
-        [id]: (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: answer } : item)),
+        [id]: (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: error.message || "GLM 5.2 cloud did not answer." } : item)),
       }));
-    };
-    try {
-      const answer = await askGlm({
-        address,
-        messages: [...prior, { role: "user", content: value || "Attached files" }],
-      });
-      finish(answer);
-    } catch (error) {
-      finish(error.message || "GLM 5.2 cloud did not answer.");
     } finally {
       setSending(false);
     }
@@ -204,6 +273,8 @@ export default function App() {
               onNavigate={() => setNavOpen(false)}
               onConnect={() => setConnectOpen(true)}
               onAddProject={() => openView("templates")}
+              cloudSessions={cloudSessions}
+              walletReady={isConnected && !!address}
               onNewChat={() => {
                 setView("home");
                 setSessionId(null);
@@ -228,9 +299,19 @@ export default function App() {
                 setFilesOpen((open) => !open);
               }}
               onClear={() => {
-                setLocal({});
+                const id = sessionId;
+                if (address && /^[a-f0-9]{24}$/.test(id || "")) {
+                  removeConversation(address, id).catch(() => {});
+                  setCloudSessions((prev) => prev.filter((item) => item.id !== id));
+                }
+                setLocal((prev) => {
+                  const next = { ...prev };
+                  if (id) delete next[id];
+                  return next;
+                });
                 setDraft("");
                 setAttachments([]);
+                setUsagePercent(0);
                 setView("home");
                 setSessionId(null);
                 setSessionTitle("New Agent");
@@ -314,6 +395,7 @@ export default function App() {
                     draft={draft}
                     setDraft={setDraft}
                     sending={sending}
+                    usagePercent={usagePercent}
                     onSend={() => send()}
                     autoPrompt={autoPrompt}
                     onAutoPrompt={() => setAutoPrompt((value) => !value)}

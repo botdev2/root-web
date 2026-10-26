@@ -12,6 +12,13 @@ const NAV = [
   { id: "notes", label: "Notes" },
 ];
 
+function shortWhen(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 const FOOTER = [
   { id: "updates", label: "Updates" },
   { id: "account", label: "Account" },
@@ -29,6 +36,8 @@ export default function Sidebar({
   onNavigate,
   onConnect,
   onAddProject,
+  cloudSessions = [],
+  walletReady = false,
 }) {
   const { projects, projectId, setProjectId, onboarding, doneCount, dismissOnboarding } = useAppState();
   const [expanded, setExpanded] = useState({ [projectId]: true });
@@ -96,6 +105,7 @@ export default function Sidebar({
         {projects.map((project) => {
           const open = expanded[project.id];
           const active = project.id === projectId;
+          const sessions = walletReady ? cloudSessions.filter((item) => item.projectId === project.id) : [];
           return (
             <div key={project.id} className="mb-0.5">
               <button
@@ -111,10 +121,10 @@ export default function Sidebar({
                 <span className="mr-1.5 text-[11px] text-[var(--faint)]">{open ? "▾" : "▸"}</span>
                 <Icon name="folder" size={15} className="text-[var(--muted)]" />
                 <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
-                <span className="ml-2 text-[11px] text-[var(--faint)]">{project.sessions.length}</span>
+                <span className="ml-2 text-[11px] text-[var(--faint)]">{sessions.length}</span>
               </button>
               {open &&
-                project.sessions.map((session) => (
+                sessions.map((session) => (
                   <button
                     key={session.id}
                     type="button"
@@ -130,7 +140,7 @@ export default function Sidebar({
                   >
                     <Icon name="chat" size={13} className="text-[var(--muted)]" />
                     <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{session.title}</span>
-                    <span className="ml-2 text-[10px] text-[var(--faint)]">{session.when}</span>
+                    <span className="ml-2 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
                   </button>
                 ))}
             </div>

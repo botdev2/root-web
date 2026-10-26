@@ -20,6 +20,7 @@ export default function Composer({
   onRemoveAttach,
   onFiles,
   sending,
+  usagePercent = 0,
 }) {
   const { mode, setMode } = useAppState();
   const { isConnected } = useAccount();
@@ -112,8 +113,11 @@ export default function Composer({
           </div>
           <div className="flex shrink-0 items-center justify-end gap-2">
             <span className="hidden items-center gap-1.5 text-[11px] text-[var(--faint)] sm:flex">
-              <span className="h-[18px] w-[18px] rounded-full border border-[var(--stroke)]" />
-              0%
+              <span
+                className="h-[18px] w-[18px] rounded-full border border-[var(--stroke)]"
+                style={{ background: `conic-gradient(var(--accent) ${Math.min(100, usagePercent)}%, transparent 0)` }}
+              />
+              {usagePercent}%
             </span>
             <button
               type="button"

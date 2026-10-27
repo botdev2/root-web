@@ -1,10 +1,34 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import portrait from "../assets/avatar.png";
 import { sendTurn } from "../glmChat.js";
 
 const CHAT_KEY = "root-web-avatar-conversation";
+const POS_KEY = "root-web-avatar-pos";
+const PORTRAIT_W = 128;
+const PORTRAIT_H = Math.round((PORTRAIT_W * 993) / 871);
+
+function clampPos(x, y) {
+  const margin = 12;
+  const maxX = Math.max(margin, window.innerWidth - PORTRAIT_W - margin);
+  const maxY = Math.max(margin, window.innerHeight - PORTRAIT_H - margin);
+  return {
+    x: Math.min(maxX, Math.max(margin, x)),
+    y: Math.min(maxY, Math.max(margin, y)),
+  };
+}
+
+function initialPos() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(POS_KEY) || "null");
+    if (raw && Number.isFinite(raw.x) && Number.isFinite(raw.y)) return clampPos(raw.x, raw.y);
+  } catch {
+    /* ignore */
+  }
+  const bottom = window.innerWidth >= 768 ? 24 : 92;
+  return clampPos(window.innerWidth - PORTRAIT_W - 24, window.innerHeight - PORTRAIT_H - bottom);
+}
 
 export default function AvatarOverlay({ open, view, projectLabel }) {
   const { open: openWallet } = useAppKit();
@@ -13,7 +37,30 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
   const [draft, setDraft] = useState("");
   const [line, setLine] = useState("");
   const [busy, setBusy] = useState(false);
+  const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
+  const [failed, setFailed] = useState(false);
+  const [pos, setPos] = useState(initialPos);
   const busyRef = useRef(false);
+  const dragRef = useRef(null);
+  const suppressClick = useRef(false);
+
+  useEffect(() => {
+    const on = () => setOffline(false);
+    const off = () => setOffline(true);
+    const fit = () => setPos((current) => clampPos(current.x, current.y));
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    window.addEventListener("resize", fit);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+      window.removeEventListener("resize", fit);
+    };
+  }, []);
+
+  const status = offline || failed ? "red" : isConnected && address ? "green" : "yellow";
+  const statusLabel = status === "green" ? "Available" : status === "red" ? "Unavailable" : "Standard";
+  const statusColor = status === "green" ? "#3cba6a" : status === "red" ? "#e24b4b" : "#f0c419";
 
   const speak = async (text) => {
     const said = String(text || "").trim();
@@ -57,8 +104,10 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
           /* ignore */
         }
       }
+      setFailed(false);
       setLine(String(result.text || "").replace(/\s+/g, " ").trim() || "I lost that one.");
     } catch (error) {
+      setFailed(true);
       setLine(error.message || "I could not answer.");
     } finally {
       busyRef.current = false;
@@ -68,43 +117,98 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
 
   if (!open) return null;
 
+  const bubbleAbove = pos.y > 96;
+
   return (
-    <div className="pointer-events-none fixed bottom-[92px] right-3 z-[70] flex flex-col items-end gap-2 md:bottom-6 md:right-6">
-      {talking && (
-        <form
-          className="pointer-events-auto frost-panel w-[min(260px,calc(100vw-1.5rem))] rounded-2xl border border-[var(--stroke)] p-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const text = draft.trim();
-            if (!text) return;
-            setDraft("");
-            setTalking(false);
-            speak(text);
+    <div className="fixed z-[70]" style={{ left: pos.x, top: pos.y, width: PORTRAIT_W }}>
+      <div
+        className={`pointer-events-none absolute right-0 flex w-max max-w-[240px] flex-col items-end gap-2 ${
+          bubbleAbove ? "bottom-full mb-2" : "top-full mt-2"
+        }`}
+      >
+        {talking && (
+          <form
+            className="pointer-events-auto frost-panel w-[min(240px,calc(100vw-1.5rem))] rounded-2xl border border-[var(--stroke)] p-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const text = draft.trim();
+              if (!text) return;
+              setDraft("");
+              setTalking(false);
+              speak(text);
+            }}
+          >
+            <input
+              autoFocus
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={isConnected ? "Talk" : "Connect a wallet to talk"}
+              className="h-10 w-full bg-transparent px-2 text-[13px] outline-none"
+            />
+          </form>
+        )}
+        {line && (
+          <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
+            {line}
+          </div>
+        )}
+      </div>
+      <div className="relative" style={{ width: PORTRAIT_W, height: PORTRAIT_H }}>
+        <button
+          type="button"
+          aria-label="Avatar"
+          className="block h-full w-full cursor-grab touch-none overflow-hidden rounded-[32px] shadow-lg active:cursor-grabbing"
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            dragRef.current = { x: event.clientX, y: event.clientY, originX: pos.x, originY: pos.y, moved: false };
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            const drag = dragRef.current;
+            if (!drag) return;
+            const dx = event.clientX - drag.x;
+            const dy = event.clientY - drag.y;
+            if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+            drag.moved = true;
+            const next = clampPos(drag.originX + dx, drag.originY + dy);
+            drag.next = next;
+            setPos(next);
+          }}
+          onPointerUp={() => {
+            const drag = dragRef.current;
+            dragRef.current = null;
+            if (!drag?.moved || !drag.next) return;
+            suppressClick.current = true;
+            try {
+              localStorage.setItem(POS_KEY, JSON.stringify(drag.next));
+            } catch {
+              /* ignore */
+            }
+          }}
+          onClick={() => {
+            if (suppressClick.current) {
+              suppressClick.current = false;
+              return;
+            }
+            if (!busy) setTalking((value) => !value);
           }}
         >
-          <input
-            autoFocus
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={isConnected ? "Talk" : "Connect a wallet to talk"}
-            className="h-10 w-full bg-transparent px-2 text-[13px] outline-none"
+          <img
+            src={portrait}
+            alt=""
+            width={871}
+            height={993}
+            draggable={false}
+            className="pointer-events-none h-full w-full object-cover"
           />
-        </form>
-      )}
-      {line && (
-        <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
-          {line}
-        </div>
-      )}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => setTalking((value) => !value)}
-        className="pointer-events-auto overflow-hidden rounded-2xl shadow-lg disabled:opacity-70"
-        aria-label="Avatar"
-      >
-        <img src={portrait} alt="" width={112} height={112} className="h-28 w-28 object-cover object-top" draggable={false} />
-      </button>
+        </button>
+        <span
+          className="pointer-events-none absolute left-0 top-1/2 z-10 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--bg)]"
+          style={{ background: statusColor }}
+          title={statusLabel}
+          aria-label={statusLabel}
+        />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
 import AddProjectMenu from "./AddProjectMenu.jsx";
@@ -52,6 +52,7 @@ export default function Sidebar({
   const projects = listedProjects ?? state.projects;
   const projectId = listedProjects ? listedProjectId : state.projectId;
   const [addOpen, setAddOpen] = useState(false);
+  const addButtonRef = useRef(null);
   const pickProject = (id) => {
     if (onPickProject) onPickProject(id);
     else setProjectId(id);
@@ -116,6 +117,7 @@ export default function Sidebar({
             {walletReady && <span className="text-[11px]">{Math.min(cloudSessions.length, convoMax)}/{convoMax} chats</span>}
           </span>
           <button
+            ref={addButtonRef}
             type="button"
             data-add-project
             onClick={() => setAddOpen((value) => !value)}
@@ -125,6 +127,7 @@ export default function Sidebar({
           </button>
           <AddProjectMenu
             open={addOpen}
+            anchorRef={addButtonRef}
             token={opsToken}
             onToken={onOpsToken}
             recents={projects}

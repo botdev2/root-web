@@ -4,7 +4,7 @@ import { useAccount, useSignMessage } from "wagmi";
 import { desktopSeedFiles, projectFolderName } from "../projectSeed.js";
 import { opsFetch, readOpsSession, writeOpsSession } from "../opsApi.js";
 
-export default function AddProjectMenu({ open, token, onToken, recents = [], onCreate, onTemplates, onClose }) {
+export default function AddProjectMenu({ open, anchorRef, token, onToken, recents = [], onCreate, onTemplates, onClose }) {
   const { address, isConnected } = useAccount();
   const { open: openWallet } = useAppKit();
   const { signMessageAsync } = useSignMessage();
@@ -14,6 +14,22 @@ export default function AddProjectMenu({ open, token, onToken, recents = [], onC
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(null);
   const [code, setCode] = useState("");
+  const [box, setBox] = useState(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const place = () => {
+      const node = anchorRef?.current;
+      if (!node) return;
+      const rect = node.getBoundingClientRect();
+      const width = 300;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+      setBox({ top: rect.bottom + 6, left, width });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open, anchorRef]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -25,7 +41,7 @@ export default function AddProjectMenu({ open, token, onToken, recents = [], onC
     return () => window.removeEventListener("pointerdown", close);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !box) return null;
 
   const needle = query.trim().toLowerCase();
   const shown = recents.filter((item) => !needle || String(item.label || "").toLowerCase().includes(needle)).slice(0, 4);
@@ -102,7 +118,8 @@ export default function AddProjectMenu({ open, token, onToken, recents = [], onC
   return (
     <div
       data-add-project
-      className="absolute right-0 top-9 z-40 w-[300px] rounded-[14px] border border-[var(--stroke)] bg-[var(--panel)] p-3 shadow-lg"
+      style={{ top: box.top, left: box.left, width: box.width }}
+      className="fixed z-50 max-h-[min(520px,calc(100vh-24px))] overflow-y-auto rounded-[14px] border border-[var(--stroke)] bg-[var(--panel)] p-3 shadow-lg"
     >
       <input
         value={query}

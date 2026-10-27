@@ -299,6 +299,9 @@ export function AppStateProvider({ children }) {
       seedFiles: (projectKey, tree) => {
         setFiles((prev) => ({ ...prev, [projectKey]: { ...(prev[projectKey] || {}), ...tree } }));
       },
+      replaceFiles: (projectKey, tree) => {
+        setFiles((prev) => ({ ...prev, [projectKey]: tree && typeof tree === "object" ? tree : {} }));
+      },
       recordCommit: (projectKey, msg) => {
         const hash = Math.random().toString(16).slice(2, 8);
         setCommits((prev) => ({ ...prev, [projectKey]: [{ hash, msg, when: "just now" }, ...(prev[projectKey] || [])] }));

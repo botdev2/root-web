@@ -2,18 +2,18 @@ import { useState } from "react";
 import { Tabs, Ghost, Field } from "./ui.jsx";
 import { useAppState } from "../AppState.jsx";
 
-export default function FilesInspector({ onClose, onOpenFile }) {
-  const { project, files, commits, charts, upsertChart, deleteChart, notice } = useAppState();
+export default function FilesInspector({ onClose, onOpenFile, project }) {
+  const { files, commits, charts, upsertChart, deleteChart, notice } = useAppState();
   const [tab, setTab] = useState("files");
   const [query, setQuery] = useState("");
   const [chartId, setChartId] = useState(null);
   const [node, setNode] = useState("");
-  const tree = files[project.id] || {};
+  const tree = project ? files[project.id] || {} : {};
   const names = Object.keys(tree)
     .filter((name) => name.toLowerCase().includes(query.toLowerCase()))
     .sort();
-  const history = commits[project.id] || [];
-  const projectCharts = charts.filter((item) => item.project === project.id);
+  const history = project ? commits[project.id] || [] : [];
+  const projectCharts = project ? charts.filter((item) => item.project === project.id) : [];
   const chart = charts.find((item) => item.id === chartId);
 
   return (
@@ -36,7 +36,7 @@ export default function FilesInspector({ onClose, onOpenFile }) {
         />
         {tab === "files" && (
           <>
-            <div className="mb-2 text-[12px] text-[var(--muted)]">{project.label}</div>
+            <div className="mb-2 text-[12px] text-[var(--muted)]">{project ? project.label : "No repository"}</div>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -51,7 +51,11 @@ export default function FilesInspector({ onClose, onOpenFile }) {
                   </button>
                 </li>
               ))}
-              {names.length === 0 && <li className="px-2 py-2 text-[12px] text-[var(--faint)]">No files yet.</li>}
+              {names.length === 0 && (
+                <li className="px-2 py-2 text-[12px] text-[var(--faint)]">
+                  {project ? "No files in this repository yet." : "Open a repository to list its files."}
+                </li>
+              )}
             </ul>
           </>
         )}
@@ -120,6 +124,7 @@ export default function FilesInspector({ onClose, onOpenFile }) {
                 ))}
                 <Ghost
                   onClick={() => {
+                    if (!project) return;
                     const id = "chart-" + Date.now();
                     upsertChart({ id, name: "New flowchart", project: project.id, nodes: ["Start"] });
                     setChartId(id);

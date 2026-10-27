@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useAppState } from "../../AppState.jsx";
 import { Page, Card, Field, Ghost, Primary } from "../ui.jsx";
 
-export default function EditorView({ file, onFile, onBack }) {
-  const { project, files, writeFile, deleteFile, recordCommit, notice } = useAppState();
-  const tree = files[project.id] || {};
+export default function EditorView({ file, onFile, onBack, project }) {
+  const { files, writeFile, deleteFile, recordCommit, notice } = useAppState();
+  const tree = project ? files[project.id] || {} : {};
   const names = Object.keys(tree).sort();
   const current = names.includes(file) ? file : names[0] || "";
   const [text, setText] = useState(tree[current] || "");
@@ -12,19 +12,19 @@ export default function EditorView({ file, onFile, onBack }) {
 
   useEffect(() => {
     setText(tree[current] || "");
-  }, [current, project.id, files]);
+  }, [current, project?.id, files]);
 
   return (
     <Page wide>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[15px]">{current || "No files"}</div>
-          <div className="text-[11px] text-[var(--faint)]">{project.label} · project text editor</div>
+          <div className="text-[11px] text-[var(--faint)]">{project ? project.label : "No repository"} · project text editor</div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Primary
             onClick={() => {
-              if (!current) return;
+              if (!current || !project) return;
               writeFile(project.id, current, text);
               recordCommit(project.id, "Save " + current);
               notice("Saved " + current + ".");
@@ -55,7 +55,7 @@ export default function EditorView({ file, onFile, onBack }) {
             <Ghost
               onClick={() => {
                 const path = draftName.trim();
-                if (!path) return;
+                if (!path || !project) return;
                 writeFile(project.id, path, "");
                 setDraftName("");
                 onFile?.(path);
@@ -67,6 +67,7 @@ export default function EditorView({ file, onFile, onBack }) {
             {current && (
               <Ghost
                 onClick={() => {
+                  if (!project) return;
                   deleteFile(project.id, current);
                   notice(current + " removed.");
                   onFile?.(names.find((name) => name !== current) || "");

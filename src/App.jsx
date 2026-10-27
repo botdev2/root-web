@@ -36,7 +36,7 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { seedFiles, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
+  const { seedFiles, replaceFiles, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -192,6 +192,30 @@ export default function App() {
   const listedProjects = opsProjects || [];
   const listedProjectId = opsProjectId || opsProjects?.[0]?.id || "";
   const activeProject = listedProjects.find((item) => item.id === listedProjectId) || null;
+
+  useEffect(() => {
+    const owner = activeProject?.owner;
+    const name = activeProject?.label;
+    const id = activeProject?.id;
+    if (!opsToken || !owner || !name || !id) return undefined;
+    let cancelled = false;
+    opsFetch(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, { token: opsToken })
+      .then((detail) => {
+        if (cancelled) return;
+        const tree = {};
+        for (const file of detail.files || []) {
+          if (!file?.path) continue;
+          tree[file.path] = typeof file.content === "string" ? file.content : "";
+        }
+        replaceFiles?.(id, tree);
+      })
+      .catch((error) => {
+        if (!cancelled && error.status !== 401) notice?.(error.message || "Repository files did not load.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [opsToken, activeProject?.id, activeProject?.owner, activeProject?.label]);
 
   const createOpsProject = async ({ name, about, files: tree }) => {
     const token = opsToken || readOpsSession();
@@ -475,6 +499,7 @@ export default function App() {
                 )}
                 {view === "editor" && (
                   <EditorView
+                    project={activeProject}
                     file={editorFile}
                     onFile={setEditorFile}
                     onBack={() => {
@@ -518,6 +543,7 @@ export default function App() {
               </div>
               {filesOpen && (
                 <FilesInspector
+                  project={activeProject}
                   onClose={() => setFilesOpen(false)}
                   onOpenFile={(name) => {
                     setFilesOpen(false);

@@ -19,7 +19,6 @@ import GettingStarted from "./components/GettingStarted.jsx";
 import Toast from "./components/Toast.jsx";
 import AutomationsView from "./components/views/AutomationsView.jsx";
 import ReasoningView from "./components/views/ReasoningView.jsx";
-import CrawlerView from "./components/views/CrawlerView.jsx";
 import OpsView from "./components/views/OpsView.jsx";
 import NotesView from "./components/views/NotesView.jsx";
 import AccountView from "./components/views/AccountView.jsx";
@@ -42,7 +41,8 @@ export default function App() {
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
     try {
-      return new URLSearchParams(window.location.search).get("view") || "home";
+      const id = new URLSearchParams(window.location.search).get("view") || "home";
+      return id === "crawler" ? "home" : id;
     } catch {
       return "home";
     }
@@ -440,10 +440,9 @@ export default function App() {
                 )}
                 {view === "automations" && <AutomationsView />}
                 {view === "reasoning" && <ReasoningView />}
-                {view === "crawler" && <CrawlerView />}
                 {view === "ops" && <OpsView />}
                 {view === "notes" && <NotesView />}
-                {view === "plugins" && <PluginsView />}
+                {view === "plugins" && <PluginsView onToken={setOpsToken} />}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}

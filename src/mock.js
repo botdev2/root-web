@@ -96,7 +96,7 @@ export const HELP = [
     summary: "Agentic coding in the browser — chat, tools, git, notes, automations, and ship.",
     body: "/root is an agentic coding workspace. Chat, tools, git, notes, automations, and ship from the same chrome. A Root Account on useroot.sh unlocks the session.",
     bullets: [
-      "Sidebar: New Agent, Automations, Reasoning, Crawler, Ops, Plugins, Notes",
+      "Sidebar: New Agent, Automations, Reasoning, Ops, Plugins, Notes",
       "Composer: Agent / Ask / Plan, Auto-Prompt, model, Attach, Files, send",
       "Projects use GitHub remotes — github.com/you/…",
     ],
@@ -118,7 +118,7 @@ export const HELP = [
     section: "Workspace",
     title: "Chat and projects",
     summary: "New Agent is a draft until the first message. Projects group sessions.",
-    body: "Attach a GitHub project when you want file, shell, and git tools. Without a project you get general Q&A. The left-off card resumes the last thread for the active project.",
+    body: "Attach a project when you want file context. Without a project you get general Q&A. Repositories are created on the Ops Hub.",
     bullets: ["New Agent opens a draft composer", "Files opens the inspector", "Sessions live under each project"],
   },
   {
@@ -157,9 +157,9 @@ export const HELP = [
     id: "plugins",
     section: "Ship",
     title: "Plugins",
-    summary: "Persona packs and workflow extensions.",
-    body: "Shop installs Farm, Ops, Crawler, Crypto, ImageGen, and Root Video. Installed packs stay on this account.",
-    bullets: ["Shop and Installed, with search and categories", "Bundled packs ship on", "Coming soon packs stay locked"],
+    summary: "Hosting, domains, and Ops Hub for this wallet.",
+    body: "Plugins is the three Ops panels. Hosting lists sites, Domains searches and lists names, and Ops Hub lists the git for this address. Each panel links to the same page on ops.palmaierc.com.",
+    bullets: ["Sign in with the wallet, then the authenticator code", "The same Ops session loads the sidebar repositories", "Open each panel on ops.palmaierc.com"],
   },
   {
     id: "imagegen",
@@ -176,14 +176,6 @@ export const HELP = [
     summary: "HTML compositions rendered to MP4 in chat.",
     body: "Ask in Agent chat to make a video. The model writes index.html, you approve, then Root renders and plays the MP4 inline.",
     bullets: ["Settings → Video installs the runtime", "Outputs land under root-video/…/out/", "Play an existing MP4 from Files"],
-  },
-  {
-    id: "crawler",
-    section: "Ship",
-    title: "Crawler",
-    summary: "Record, play, OTP, scrape in browser panes.",
-    body: "Two panes and a flow list. Record a signup, play it back, pull OTP from the mail pane.",
-    bullets: ["Edit steps: navigate, type, click, wait, otp, scrape", "Play writes a step log", "Live panes stay on the desktop crawler"],
   },
   {
     id: "automations",

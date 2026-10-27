@@ -3,13 +3,31 @@ export const OPS_ORIGIN = "https://ops.palmaierc.com";
 export const OPS_LINKS = [
   { label: "Hosting", href: `${OPS_ORIGIN}/` },
   { label: "Domains", href: `${OPS_ORIGIN}/domains` },
-  { label: "Cart", href: `${OPS_ORIGIN}/domains/cart` },
   { label: "Ops Hub", href: `${OPS_ORIGIN}/hub` },
   { label: "Plans", href: `${OPS_ORIGIN}/#plans` },
-  { label: "Rankings", href: `${OPS_ORIGIN}/rankings` },
-  { label: "Pay", href: `${OPS_ORIGIN}/pay` },
   { label: "palm-ops", href: "https://github.com/botdev2/palm-ops" },
   { label: "palm-ops-backend", href: "https://github.com/botdev2/palm-ops-backend" },
+];
+
+export const OPS_PANELS = [
+  {
+    id: "hosting",
+    label: "Hosting",
+    href: `${OPS_ORIGIN}/`,
+    detail: "Ship a site from git or a zip. The wallet is the account.",
+  },
+  {
+    id: "domains",
+    label: "Domains",
+    href: `${OPS_ORIGIN}/domains`,
+    detail: "Ops takes the name. You stay off the public record.",
+  },
+  {
+    id: "hub",
+    label: "Ops Hub",
+    href: `${OPS_ORIGIN}/hub`,
+    detail: "Git owned by the address. No username to create.",
+  },
 ];
 
 const SESSION_KEY = "root-web-ops-session";

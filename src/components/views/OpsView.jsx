@@ -27,7 +27,6 @@ export default function OpsView() {
   const { signMessageAsync } = useSignMessage();
   const [token, setToken] = useState(() => readOpsSession());
   const [health, setHealth] = useState(null);
-  const [rankings, setRankings] = useState([]);
   const [apps, setApps] = useState([]);
   const [orders, setOrders] = useState([]);
   const [repos, setRepos] = useState([]);
@@ -48,12 +47,11 @@ export default function OpsView() {
   const [publishing, setPublishing] = useState(false);
 
   const loadPublic = useCallback(async () => {
-    const [healthResult, rankResult] = await Promise.allSettled([
-      opsFetch("/api/health"),
-      opsFetch("/api/rankings"),
-    ]);
-    setHealth(healthResult.status === "fulfilled" ? healthResult.value : { ok: false, error: healthResult.reason?.message });
-    setRankings(rankResult.status === "fulfilled" ? rankResult.value.sites || [] : []);
+    try {
+      setHealth(await opsFetch("/api/health"));
+    } catch (error) {
+      setHealth({ ok: false, error: error.message });
+    }
   }, []);
 
   const loadAccount = useCallback(async (session) => {
@@ -457,27 +455,6 @@ export default function OpsView() {
         <RepoList title="Shared" items={shared} />
       </Section>
 
-      <Section title="Rankings">
-        {rankings.length === 0 ? (
-          <Card className="px-4 py-3 text-[13px] text-[var(--muted)]">No public sites are listed.</Card>
-        ) : (
-          <div className="space-y-2">
-            {rankings.map((site) => (
-              <Card key={site.url || site.name} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div>
-                  <div className="text-[13px]">{site.name}</div>
-                  <div className="text-[11px] text-[var(--muted)]">{site.status} · {site.source}</div>
-                </div>
-                {site.url && (
-                  <a href={site.url} target="_blank" rel="noreferrer" className="text-[12.5px] underline">
-                    Open
-                  </a>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-      </Section>
     </Page>
   );
 }

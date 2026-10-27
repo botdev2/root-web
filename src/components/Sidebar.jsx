@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
 import AddProjectMenu from "./AddProjectMenu.jsx";
@@ -48,14 +48,12 @@ export default function Sidebar({
   onCreateProject,
 }) {
   const state = useAppState();
-  const { onboarding, doneCount, dismissOnboarding, setProjectId } = state;
-  const projects = listedProjects ?? state.projects;
-  const projectId = listedProjects ? listedProjectId : state.projectId;
+  const { onboarding, doneCount, dismissOnboarding } = state;
+  const projects = listedProjects ?? [];
+  const projectId = listedProjectId || "";
   const [addOpen, setAddOpen] = useState(false);
-  const addButtonRef = useRef(null);
   const pickProject = (id) => {
     if (onPickProject) onPickProject(id);
-    else setProjectId(id);
   };
   const [expanded, setExpanded] = useState({ [projectId]: true });
 
@@ -117,46 +115,55 @@ export default function Sidebar({
             {walletReady && <span className="text-[11px]">{Math.min(cloudSessions.length, convoMax)}/{convoMax} chats</span>}
           </span>
           <button
-            ref={addButtonRef}
             type="button"
-            data-add-project
-            onClick={() => setAddOpen((value) => !value)}
+            onClick={() => setAddOpen(true)}
             className="flex h-7 w-7 items-center justify-center text-[16px] text-[var(--muted)] hover:text-[var(--ink)]"
           >
             +
           </button>
           <AddProjectMenu
             open={addOpen}
-            anchorRef={addButtonRef}
             token={opsToken}
             onToken={onOpsToken}
-            recents={projects}
             onCreate={onCreateProject}
             onTemplates={() => onAddProject?.()}
             onClose={() => setAddOpen(false)}
           />
         </div>
+        {projects.length === 0 && (
+          <div className="px-2 py-2 text-[12.5px] text-[var(--muted)]">No repositories yet.</div>
+        )}
         {projects.map((project) => {
           const open = expanded[project.id];
           const active = project.id === projectId;
           const sessions = walletReady ? cloudSessions.filter((item) => item.projectId === project.id) : [];
           return (
             <div key={project.id} className="mb-0.5">
-              <button
-                type="button"
-                onClick={() => {
-                  pickProject(project.id);
-                  setExpanded((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
-                }}
-                className={`flex h-10 w-full items-center rounded-[10px] px-2 text-left ${
-                  active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
-                }`}
-              >
-                <span className="mr-1.5 text-[11px] text-[var(--faint)]">{open ? "▾" : "▸"}</span>
-                <Icon name="folder" size={15} className="text-[var(--muted)]" />
-                <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
-                <span className="ml-2 text-[11px] text-[var(--faint)]">{sessions.length}</span>
-              </button>
+              <div className={`flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    pickProject(project.id);
+                    setExpanded((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
+                  }}
+                  className="flex h-10 min-w-0 flex-1 items-center rounded-[10px] px-2 text-left hover:bg-[var(--hover)]"
+                >
+                  <span className="mr-1.5 text-[11px] text-[var(--faint)]">{open ? "▾" : "▸"}</span>
+                  <Icon name="folder" size={15} className="text-[var(--muted)]" />
+                  <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
+                  <span className="ml-2 text-[11px] text-[var(--faint)]">{sessions.length}</span>
+                </button>
+                {project.href && (
+                  <a
+                    href={project.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 px-1.5 text-[11px] text-[var(--muted)] underline"
+                  >
+                    Hub
+                  </a>
+                )}
+              </div>
               {open &&
                 sessions.map((session) => (
                   <button
@@ -180,6 +187,23 @@ export default function Sidebar({
             </div>
           );
         })}
+        {walletReady &&
+          cloudSessions
+            .filter((session) => !projects.some((item) => item.id === session.projectId))
+            .map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                onClick={() => go(() => onSession(session.id, session.title))}
+                className={`mb-0.5 flex h-10 w-full items-center rounded-[10px] px-2.5 text-left ${
+                  view === "chat" && sessionId === session.id ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
+                }`}
+              >
+                <Icon name="chat" size={13} className="text-[var(--muted)]" />
+                <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{session.title}</span>
+                <span className="ml-2 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
+              </button>
+            ))}
       </div>
 
       <div className="px-3.5 pb-[max(14px,env(safe-area-inset-bottom))] pt-1.5">

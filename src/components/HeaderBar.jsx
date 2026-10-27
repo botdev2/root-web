@@ -30,12 +30,13 @@ export default function HeaderBar({
   filesOpen,
   onMenu,
   onUnlock,
+  project: liveProject,
 }) {
-  const { project, signedIn } = useAppState();
+  const { signedIn } = useAppState();
   const header = HEADERS[view] || HEADERS.home;
   const title =
     view === "chat" && sessionTitle ? sessionTitle : view === "editor" && sessionTitle ? sessionTitle : header.title;
-  const subtitle = header.subtitle || `${project.label} · ${project.remote}`;
+  const subtitle = header.subtitle || (liveProject ? liveProject.label : "Create a repository on the Ops Hub");
 
   return (
     <header className="frost-header flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[var(--stroke-soft)] px-3 pt-[env(safe-area-inset-top)] md:px-7">
@@ -50,7 +51,17 @@ export default function HeaderBar({
       <img src="/palm.png" alt="" className="h-6 w-6 shrink-0 object-contain md:hidden" />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15px] text-[var(--ink)]">{title}</div>
-        <div className="truncate text-[11.5px] text-[var(--faint)]">{subtitle}</div>
+        <div className="truncate text-[11.5px] text-[var(--faint)]">
+          {header.subtitle ? (
+            subtitle
+          ) : liveProject?.href ? (
+            <a href={liveProject.href} target="_blank" rel="noreferrer" className="underline">
+              {liveProject.label} on Ops Hub
+            </a>
+          ) : (
+            subtitle
+          )}
+        </div>
       </div>
       <WalletButton className="shrink-0" />
       {!signedIn && (

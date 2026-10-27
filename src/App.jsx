@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { listConversations, loadConversation, removeConversation, sendTurn } from "./glmChat.js";
-import { createHubProject, hubCloneUrl, opsFetch, readOpsSession, writeOpsSession } from "./opsApi.js";
+import { createHubProject, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, writeOpsSession } from "./opsApi.js";
 import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
 import { useAppState } from "./AppState.jsx";
@@ -37,7 +37,7 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { seedFiles, setProjectId, mode, notice, project, projects: localProjects = [], dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
+  const { seedFiles, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -169,6 +169,7 @@ export default function App() {
             id: `${repo.owner}/${repo.name}`,
             label: repo.name,
             remote: hubCloneUrl(repo.owner, repo.name),
+            href: hubRepoUrl(repo.owner, repo.name),
             owner: repo.owner,
             sessions: [],
           })),
@@ -188,18 +189,9 @@ export default function App() {
     };
   }, [opsToken]);
 
-  const listedProjects = opsProjects
-    ? [
-        ...opsProjects,
-        ...localProjects.filter(
-          (item) =>
-            cloudSessions.some((session) => session.projectId === item.id) &&
-            !opsProjects.some((row) => row.id === item.id || row.label === item.label),
-        ),
-      ]
-    : localProjects;
-  const listedProjectId = opsProjects ? opsProjectId || opsProjects[0]?.id || listedProjects[0]?.id || "" : project?.id;
-  const activeProject = listedProjects.find((item) => item.id === listedProjectId) || project;
+  const listedProjects = opsProjects || [];
+  const listedProjectId = opsProjectId || opsProjects?.[0]?.id || "";
+  const activeProject = listedProjects.find((item) => item.id === listedProjectId) || null;
 
   const createOpsProject = async ({ name, about, files: tree }) => {
     const token = opsToken || readOpsSession();
@@ -210,6 +202,7 @@ export default function App() {
       id: `${created.owner}/${repoName}`,
       label: repoName,
       remote: hubCloneUrl(created.owner, repoName),
+      href: hubRepoUrl(created.owner, repoName),
       owner: created.owner,
       sessions: [],
     };
@@ -221,6 +214,7 @@ export default function App() {
     setView("home");
     setNavOpen(false);
     notice(repoName + " is on the Ops Hub.");
+    return row;
   };
 
   const openSession = async (id, title, nextView = "chat") => {
@@ -385,6 +379,7 @@ export default function App() {
             <HeaderBar
               view={view}
               sessionTitle={sessionTitle}
+              project={activeProject}
               filesOpen={filesOpen}
               onMenu={() => {
                 setFilesOpen(false);
@@ -420,10 +415,10 @@ export default function App() {
               <div className="relative flex min-w-0 flex-1 flex-col">
                 {view === "home" && (
                   <HomeView
+                    project={activeProject}
                     clockOn={dayTasksEnabled || dayTasksIdle}
                     onTemplates={() => openView("templates")}
                     onChip={(chip) => send(chip)}
-                    onResume={(item) => openSession(item.sessionId, item.sessionTitle)}
                   />
                 )}
                 {view === "chat" && <ChatView sessionId={sessionId} extras={local[sessionId] || []} />}

@@ -7,6 +7,14 @@ const TONE = {
   ok: "text-[var(--green)]",
   warn: "text-[var(--amber)]",
   bad: "text-[var(--rose)]",
+  note: "text-[var(--faint)]",
+};
+
+const MARK = {
+  ok: "Pass",
+  warn: "Attention",
+  bad: "Fail",
+  note: "Note",
 };
 
 export default function TelemetryView() {
@@ -33,7 +41,7 @@ export default function TelemetryView() {
     <Page>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-[62ch] text-[13px] leading-5 text-[var(--muted)]">
-          A check of this browser and this connection: cookies, tracker scripts, storage, and whether the network address is exposed.
+          A check of this browser, then a full pass over the connection: TLS, response headers, mixed content, WebRTC candidates, and the address path.
         </p>
         <Ghost onClick={run}>{running ? "Checking…" : "Check again"}</Ghost>
       </div>
@@ -90,15 +98,15 @@ export default function TelemetryView() {
 
           <Section title="Network">
             <Card>
-              <Row label="Page" value={report.https ? "HTTPS" : "HTTP"} />
-              <Row label="Secure context" value={report.secure ? "Yes" : "No"} />
-              <Row label="Link" value={linkLine(report.link)} />
-              <Row label="Public IP" value={ipLine(report)} />
-              <Row label="Place" value={report.lookup?.place || (report.lookedUp ? "Lookup returned no place" : "Lookup skipped")} />
-              <Row label="Network name" value={report.lookup?.isp || "—"} />
-              <Row label="Flags" value={flagLine(report.lookup)} />
-              <Row label="WebRTC public" value={report.publicAddresses.length ? report.publicAddresses.join(", ") : "No public address exposed"} />
-              <Row label="WebRTC local" value={report.privateAddresses.length ? report.privateAddresses.join(", ") : "No local address exposed"} />
+              {(report.network.findings || []).map((item) => (
+                <div key={item.title} className="border-b border-[var(--stroke-soft)] px-4 py-3 last:border-b-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-[13px]">{item.title}</div>
+                    <div className={`text-[11px] ${TONE[item.tone] || TONE.note}`}>{MARK[item.tone] || "Note"}</div>
+                  </div>
+                  <p className="mt-1 text-[12px] leading-5 text-[var(--muted)]">{item.detail}</p>
+                </div>
+              ))}
             </Card>
           </Section>
         </>
@@ -109,27 +117,4 @@ export default function TelemetryView() {
 
 function otherHosts(report) {
   return report.hosts.filter((host) => !report.trackerHosts.includes(host)).slice(0, 8).join(", ");
-}
-
-function linkLine(link) {
-  if (!link?.type) return "Hidden by this browser";
-  const parts = [link.type];
-  if (link.rtt != null) parts.push(link.rtt + " ms");
-  if (link.saveData) parts.push("data saver");
-  return parts.join(" · ");
-}
-
-function ipLine(report) {
-  if (!report.lookedUp) return "Off — Share traces is disabled in Settings";
-  return report.lookup?.ip || "Lookup failed";
-}
-
-function flagLine(lookup) {
-  if (!lookup) return "—";
-  const flags = [];
-  if (lookup.vpn) flags.push("VPN");
-  if (lookup.proxy) flags.push("Proxy");
-  if (lookup.tor) flags.push("Tor");
-  if (lookup.hosting) flags.push("Datacenter");
-  return flags.length ? flags.join(" · ") : "No proxy, VPN, or Tor flag";
 }

@@ -222,8 +222,8 @@ export const HELP = [
     section: "Control",
     title: "Telemetry",
     summary: "Whether this browser is full of trackers, and whether the connection is secure.",
-    body: "The check reads cookies for this site, tracker scripts, storage, and WebRTC address leaks. When Share traces is on, one request looks up the public IP.",
-    bullets: ["Clean, some trackers, or bloated", "Secure, leaking, or unsecure", "IP lookup follows Settings → Share traces"],
+    body: "The browser check reads cookies, tracker scripts, and storage. The network check reads the TLS handshake, security headers, mixed content, WebRTC candidate types, and whether that address matches the path the page used. When Share traces is on, one request looks up the public address.",
+    bullets: ["Clean, some trackers, or bloated", "Secure, exposed, or unsecure, with a line for each check", "IP lookup follows Settings → Share traces"],
   },
   {
     id: "keyboard",

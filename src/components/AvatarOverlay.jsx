@@ -203,7 +203,7 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
           />
         </button>
         <span
-          className="pointer-events-none absolute left-0 top-1/2 z-10 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--bg)]"
+          className="pointer-events-none absolute bottom-2 left-2 z-10 h-5 w-5 rounded-full ring-2 ring-[var(--bg)]"
           style={{ background: statusColor }}
           title={statusLabel}
           aria-label={statusLabel}

@@ -59,6 +59,7 @@ export default function App() {
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [cloudSessions, setCloudSessions] = useState([]);
+  const [convoMax, setConvoMax] = useState(10);
   const [usagePercent, setUsagePercent] = useState(0);
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
@@ -130,7 +131,10 @@ export default function App() {
     let cancelled = false;
     listConversations(address)
       .then((data) => {
-        if (!cancelled) setCloudSessions(data.conversations || []);
+        if (cancelled) return;
+        setCloudSessions(data.conversations || []);
+        setConvoMax(data.maxConversations || 10);
+        if (data.dropped?.length) notice?.("Older cloud chats were removed. A wallet keeps " + (data.maxConversations || 10) + ".");
       })
       .catch((error) => {
         if (!cancelled) notice?.(error.message || "Conversations did not load.");
@@ -219,20 +223,25 @@ export default function App() {
       setSessionId(cloudId);
       setLocal((prev) => {
         const next = { ...prev };
+        for (const dropId of result.dropped || []) delete next[dropId];
         if (id !== cloudId) delete next[id];
         next[cloudId] = turns.length ? turns : (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: result.text, think: result.think } : item));
         return next;
       });
       setUsagePercent(result.usage?.percent || 0);
       setCloudSessions((prev) => {
+        const dropped = new Set(result.dropped || []);
         const row = {
           id: cloudId,
           projectId: result.conversation?.projectId || project?.id || "project",
           title: result.conversation?.title || title,
           updatedAt: result.conversation?.updatedAt || new Date().toISOString(),
         };
-        return [row, ...prev.filter((item) => item.id !== cloudId)];
+        const max = result.maxConversations || convoMax;
+        return [row, ...prev.filter((item) => item.id !== cloudId && !dropped.has(item.id))].slice(0, max);
       });
+      if (result.maxConversations) setConvoMax(result.maxConversations);
+      if (result.dropped?.length) notice("The oldest cloud chat was removed. A wallet keeps " + (result.maxConversations || 10) + ".");
     } catch (error) {
       setLocal((prev) => ({
         ...prev,
@@ -274,6 +283,7 @@ export default function App() {
               onConnect={() => setConnectOpen(true)}
               onAddProject={() => openView("templates")}
               cloudSessions={cloudSessions}
+              convoMax={convoMax}
               walletReady={isConnected && !!address}
               onNewChat={() => {
                 setView("home");

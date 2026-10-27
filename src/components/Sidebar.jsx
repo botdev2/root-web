@@ -37,6 +37,7 @@ export default function Sidebar({
   onConnect,
   onAddProject,
   cloudSessions = [],
+  convoMax = 10,
   walletReady = false,
 }) {
   const { projects, projectId, setProjectId, onboarding, doneCount, dismissOnboarding } = useAppState();
@@ -93,7 +94,10 @@ export default function Sidebar({
 
       <div className="scroll-thin mt-1 min-h-0 flex-1 overflow-y-auto px-3.5">
         <div className="mb-1 flex items-center justify-between px-2 pt-3">
-          <span className="text-[12px] text-[var(--faint)]">Projects</span>
+          <span className="flex items-center gap-2 text-[12px] text-[var(--faint)]">
+            Projects
+            {walletReady && <span className="text-[11px]">{Math.min(cloudSessions.length, convoMax)}/{convoMax} chats</span>}
+          </span>
           <button
             type="button"
             onClick={() => go(() => onAddProject?.())}

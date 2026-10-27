@@ -13,6 +13,7 @@ import HomeView from "./components/HomeView.jsx";
 import ChatView from "./components/ChatView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import Composer from "./components/Composer.jsx";
+import AvatarOverlay from "./components/AvatarOverlay.jsx";
 import FilesInspector from "./components/FilesInspector.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
 import GettingStarted from "./components/GettingStarted.jsx";
@@ -52,6 +53,13 @@ export default function App() {
   const [draft, setDraft] = useState("");
   const [local, setLocal] = useState({});
   const [filesOpen, setFilesOpen] = useState(false);
+  const [avatarOn, setAvatarOn] = useState(() => {
+    try {
+      return localStorage.getItem("root-web-avatar-on") !== "0";
+    } catch {
+      return true;
+    }
+  });
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [autoPrompt, setAutoPrompt] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -137,7 +145,7 @@ export default function App() {
     listConversations(address)
       .then((data) => {
         if (cancelled) return;
-        setCloudSessions(data.conversations || []);
+        setCloudSessions((data.conversations || []).filter((item) => item.projectId !== "__avatar__"));
         setConvoMax(data.maxConversations || 10);
         if (data.dropped?.length) notice?.("Older cloud chats were removed. A wallet keeps " + (data.maxConversations || 10) + ".");
       })
@@ -410,6 +418,18 @@ export default function App() {
                 setNavOpen((open) => !open);
               }}
               onHelp={() => openView("help")}
+              avatarOn={avatarOn}
+              onAvatar={() => {
+                setAvatarOn((value) => {
+                  const next = !value;
+                  try {
+                    localStorage.setItem("root-web-avatar-on", next ? "1" : "0");
+                  } catch {
+                    /* ignore */
+                  }
+                  return next;
+                });
+              }}
               onUnlock={() => setUnlockOpen(true)}
               onFiles={() => {
                 setNavOpen(false);
@@ -556,6 +576,14 @@ export default function App() {
           </main>
         </div>
       </div>
+      <AvatarOverlay open={avatarOn} onClose={() => {
+        setAvatarOn(false);
+        try {
+          localStorage.setItem("root-web-avatar-on", "0");
+        } catch {
+          /* ignore */
+        }
+      }} view={view} projectLabel={activeProject?.label || ""} />
       {paletteOpen && (
         <CommandPalette
           onClose={() => setPaletteOpen(false)}

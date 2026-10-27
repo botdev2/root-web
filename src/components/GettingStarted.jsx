@@ -9,10 +9,9 @@ const TABS = [
 ];
 
 export default function GettingStarted({ onClose }) {
-  const { completeOnboarding, addProject, notice, onboarding } = useAppState();
+  const { completeOnboarding, notice, onboarding } = useAppState();
   const [tab, setTab] = useState(onboarding.github ? "github" : onboarding.repos ? "github" : onboarding.skills ? "repos" : "skills");
   const [token, setToken] = useState("");
-  const [repo, setRepo] = useState("github.com/you/my-mobile-app");
 
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-[color-mix(in_srgb,#000_40%,transparent)] px-4" onClick={onClose}>
@@ -43,19 +42,18 @@ export default function GettingStarted({ onClose }) {
 
         {tab === "repos" && (
           <div>
-            <p className="mb-3 text-[13px] text-[var(--muted)]">Import a GitHub project as the active workspace.</p>
-            <Field label="Repository" value={repo} onChange={setRepo} />
+            <p className="mb-3 text-[13px] text-[var(--muted)]">
+              Repositories are created on the Ops Hub. Use Projects + and sign in with this wallet.
+            </p>
             <div className="mt-4 flex gap-2">
               <Primary
                 onClick={() => {
-                  const label = repo.split("/").pop() || "project";
-                  addProject({ id: label, label, title: label });
                   completeOnboarding("repos");
-                  notice("Project connected.");
+                  notice("Create the repository from Projects +.");
                   setTab("github");
                 }}
               >
-                Import
+                Continue
               </Primary>
               <Ghost onClick={onClose}>Later</Ghost>
             </div>

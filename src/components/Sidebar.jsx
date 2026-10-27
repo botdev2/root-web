@@ -188,7 +188,7 @@ export default function Sidebar({
         })}
         {walletReady &&
           cloudSessions
-            .filter((session) => !projects.some((item) => item.id === session.projectId))
+            .filter((session) => session.projectId !== "__avatar__" && !projects.some((item) => item.id === session.projectId))
             .map((session) => (
               <button
                 key={session.id}

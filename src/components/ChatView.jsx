@@ -1,23 +1,18 @@
-import { useState } from "react";
 import { markdownHtml } from "../markdown.js";
 import { useAppState } from "../AppState.jsx";
 
 export default function ChatView({ sessionId, extras = [] }) {
-  const showFarm = sessionId === "farm";
-  const showOps = sessionId === "ops";
   const messages = extras;
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div className={`scroll-thin h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6 ${showFarm || showOps ? "pt-4 md:pt-24" : ""}`}>
+      <div className="scroll-thin h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
         <div className="mx-auto flex max-w-[820px] flex-col gap-3">
           {messages.map((message, index) => (
             <Bubble key={`${sessionId}-${index}`} message={message} />
           ))}
         </div>
       </div>
-      {showFarm && <FarmWidget />}
-      {showOps && <OpsWidget />}
     </div>
   );
 }
@@ -64,113 +59,6 @@ function Bubble({ message }) {
           ))}
         </div>
       )}
-      {message.tools?.length > 0 && (
-        <div className="mt-2 space-y-1">
-          {message.tools.map((tool) => (
-            <div key={tool.name} className="rounded-lg bg-[color-mix(in_srgb,var(--code)_70%,transparent)] px-2.5 py-1.5 text-[12px] text-[var(--muted)]">
-              {tool.name} · {tool.detail}
-            </div>
-          ))}
-        </div>
-      )}
     </article>
-  );
-}
-
-function FarmWidget() {
-  const { notice } = useAppState();
-  const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState("Expo · cloud Android phone, no local emulator pack");
-
-  return (
-    <aside className="relative z-10 mx-4 mt-3 w-auto max-w-none fade-up md:absolute md:left-7 md:top-4 md:mx-0 md:mt-0 md:w-[320px] md:max-w-[calc(100%-2rem)]">
-      <div className="frost-panel rounded-[16px] border border-[var(--stroke)] p-3.5">
-        <div className="flex gap-2.5">
-          <img src="/palm.png" alt="" className="mt-0.5 h-4 w-5 object-contain" />
-          <div>
-            <div className="text-[13px]">Expo · Farm</div>
-            <div className="mt-0.5 text-[11px] leading-4 text-[var(--muted)]">{status}</div>
-          </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Chip
-            onClick={() => {
-              setOpen(true);
-              setStatus("Signed in. Start a phone to stream it here.");
-              notice("Farm signed in.");
-            }}
-          >
-            Sign in
-          </Chip>
-          {open && (
-            <>
-              <Chip
-                onClick={() => {
-                  setStatus("Starting phone1 — no local emulator pack.");
-                  notice("Farm phone starting.");
-                }}
-              >
-                Start phone
-              </Chip>
-              <Chip
-                onClick={() => {
-                  setStatus("Push an APK when you have a build.");
-                  notice("APK push queued.");
-                }}
-              >
-                Push APK
-              </Chip>
-              <Chip onClick={() => setOpen(false)}>Collapse</Chip>
-            </>
-          )}
-        </div>
-        {open && (
-          <div className="mt-3 flex h-[220px] items-center justify-center rounded-[10px] border border-[var(--stroke)] bg-[var(--code)] text-[11px] text-[var(--faint)]">
-            farm.palmaierc.com · noVNC
-          </div>
-        )}
-      </div>
-    </aside>
-  );
-}
-
-function OpsWidget() {
-  const { notice } = useAppState();
-  const [status, setStatus] = useState("landing → live domain");
-  return (
-    <aside className="relative z-10 mx-4 mt-3 w-auto fade-up md:absolute md:left-7 md:top-4 md:mx-0 md:mt-0 md:w-[320px]">
-      <div className="frost-panel rounded-[16px] border border-[var(--stroke)] p-3.5">
-        <div className="flex gap-2.5">
-          <img src="/palm.png" alt="" className="mt-0.5 h-4 w-5 object-contain" />
-          <div>
-            <div className="text-[13px]">PALM setup</div>
-            <div className="mt-0.5 text-[11px] text-[var(--muted)]">{status}</div>
-          </div>
-        </div>
-        <div className="mt-3 text-[11px] text-[var(--faint)]">Frontend · wallet · upload dist · probe</div>
-        <div className="mt-3">
-          <Chip
-            onClick={() => {
-              setStatus("Signed · building dist · upload queued");
-              notice("Ops start queued.");
-            }}
-          >
-            Start
-          </Chip>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function Chip({ children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-lg border border-[var(--stroke)] px-2.5 py-1 text-[12px] hover:bg-[var(--hover)]"
-    >
-      {children}
-    </button>
   );
 }

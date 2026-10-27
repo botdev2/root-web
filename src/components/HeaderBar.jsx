@@ -27,6 +27,8 @@ export default function HeaderBar({
   onFiles,
   onClear,
   filesOpen,
+  avatarOn,
+  onAvatar,
   onMenu,
   onUnlock,
   project: liveProject,
@@ -67,6 +69,9 @@ export default function HeaderBar({
         <Ghost onClick={onUnlock}>Unlock</Ghost>
       )}
       <div className="hidden shrink-0 items-center gap-0.5 sm:flex">
+        <Ghost onClick={onAvatar} active={avatarOn}>
+          Avatar
+        </Ghost>
         <Ghost onClick={onHelp}>Help</Ghost>
         <Ghost onClick={onFiles} active={filesOpen}>
           Files

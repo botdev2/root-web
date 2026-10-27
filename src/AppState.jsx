@@ -1,17 +1,33 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { AUTOMATIONS, SEED_RUNS } from "./mock.js";
 import { dayPartFromDate } from "./dayClock.js";
-import {
-  BRAIN_NODES,
-  DEFAULT_PREFS,
-  SEED_CHARTS,
-  SEED_COMMITS,
-  SEED_FILES,
-  SEED_FLOWS,
-  SEED_SITES,
-  SEED_VIDEOS,
-  defaultPluginState,
-} from "./features.js";
+import { BRAIN_NODES, DEFAULT_PREFS, defaultPluginState } from "./features.js";
+
+const SAMPLE_PROJECTS = new Set(["my-mobile-app", "landing", "wiki"]);
+const SAMPLE_AUTOMATIONS = new Set(["nightly", "readme", "lint"]);
+const SAMPLE_RUNS = new Set(["r1", "r2", "r3"]);
+const SAMPLE_FLOWS = new Set(["sample-signup"]);
+const SAMPLE_SITES = new Set(["landing", "docs", "wiki"]);
+const SAMPLE_VIDEOS = new Set(["intro"]);
+const SAMPLE_CHARTS = new Set(["onboarding", "farm-push", "ops-deploy"]);
+const SAMPLE_GOALS = new Set(["Ship Farm widget", "Theme the landing", "Write X post"]);
+
+function withoutIds(list, ids) {
+  if (!Array.isArray(list)) return [];
+  return list.filter((item) => item && !ids.has(item.id));
+}
+
+function withoutSampleFiles(map) {
+  if (!map || typeof map !== "object" || Array.isArray(map)) return {};
+  const next = { ...map };
+  for (const id of SAMPLE_PROJECTS) delete next[id];
+  return next;
+}
+
+function readGoals() {
+  const rows = readStored("root-web-day-goals", []);
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((item) => item && !SAMPLE_GOALS.has(item.text));
+}
 
 const AppState = createContext(null);
 
@@ -20,27 +36,6 @@ const FONTS = {
   inter: '"Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
   system: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
 };
-
-const SEED_PROJECTS = [
-  {
-    id: "my-mobile-app",
-    label: "my-mobile-app",
-    remote: "github.com/you/my-mobile-app",
-    sessions: [{ id: "farm", title: "Fixing expo-asset", when: "now" }],
-  },
-  {
-    id: "landing",
-    label: "landing",
-    remote: "github.com/you/landing",
-    sessions: [{ id: "ops", title: "Publish landing", when: "2h" }],
-  },
-  {
-    id: "wiki",
-    label: "wiki",
-    remote: "github.com/you/wiki",
-    sessions: [{ id: "wiki", title: "Wiki port", when: "yesterday" }],
-  },
-];
 
 function readStored(key, fallback) {
   try {
@@ -61,8 +56,11 @@ function writeStored(key, value) {
 }
 
 export function AppStateProvider({ children }) {
-  const [projects, setProjects] = useState(() => readStored("root-web-projects", SEED_PROJECTS));
-  const [projectId, setProjectId] = useState(() => readStored("root-web-project", "my-mobile-app"));
+  const [projects, setProjects] = useState(() => withoutIds(readStored("root-web-projects", []), SAMPLE_PROJECTS));
+  const [projectId, setProjectId] = useState(() => {
+    const stored = readStored("root-web-project", "");
+    return SAMPLE_PROJECTS.has(stored) ? "" : stored || "";
+  });
   const [toast, setToast] = useState("");
   const [model, setModelState] = useState("glm-5.2:cloud");
   const setModel = (id) => {
@@ -73,36 +71,30 @@ export function AppStateProvider({ children }) {
   const [onboarding, setOnboarding] = useState(() =>
     readStored("root-web-onboarding", { visible: true, skills: true, repos: false, github: false }),
   );
-  const [automations, setAutomations] = useState(() => readStored("root-web-automations", AUTOMATIONS));
-  const [runs, setRuns] = useState(() => readStored("root-web-runs", SEED_RUNS));
+  const [automations, setAutomations] = useState(() => withoutIds(readStored("root-web-automations", []), SAMPLE_AUTOMATIONS));
+  const [runs, setRuns] = useState(() => withoutIds(readStored("root-web-runs", []), SAMPLE_RUNS));
   const [session, setSession] = useState(() => {
     const stored = readStored("root-web-session", null);
     return stored?.address ? stored : null;
   });
   const [dayTasksEnabled, setDayTasksEnabled] = useState(() => readStored("root-web-day-tasks", false));
-  const [dayGoals, setDayGoals] = useState(() =>
-    readStored("root-web-day-goals", [
-      { id: "1", done: true, text: "Ship Farm widget", part: "morning" },
-      { id: "2", done: false, text: "Theme the landing", part: "afternoon" },
-      { id: "3", done: false, text: "Write X post", part: "evening" },
-    ]),
-  );
+  const [dayGoals, setDayGoals] = useState(readGoals);
   const [pluginState, setPluginState] = useState(() => ({ ...defaultPluginState(), ...readStored("root-web-plugins", {}) }));
   const [brainEnabled, setBrainEnabled] = useState(() => {
     const stored = readStored("root-web-brain", null);
     const base = Object.fromEntries(BRAIN_NODES.map((node) => [node.id, node.enabled]));
     return stored ? { ...base, ...stored } : base;
   });
-  const [flows, setFlows] = useState(() => readStored("root-web-flows", SEED_FLOWS));
-  const [sites, setSites] = useState(() => readStored("root-web-ops-sites", SEED_SITES));
+  const [flows, setFlows] = useState(() => withoutIds(readStored("root-web-flows", []), SAMPLE_FLOWS));
+  const [sites, setSites] = useState(() => withoutIds(readStored("root-web-ops-sites", []), SAMPLE_SITES));
   const [deploys, setDeploys] = useState(() => readStored("root-web-ops-deploys", []));
-  const [files, setFiles] = useState(() => readStored("root-web-files", SEED_FILES));
-  const [commits, setCommits] = useState(() => readStored("root-web-commits", SEED_COMMITS));
-  const [charts, setCharts] = useState(() => readStored("root-web-charts", SEED_CHARTS));
-  const [videos, setVideos] = useState(() => readStored("root-web-videos", SEED_VIDEOS));
+  const [files, setFiles] = useState(() => withoutSampleFiles(readStored("root-web-files", {})));
+  const [commits, setCommits] = useState(() => withoutSampleFiles(readStored("root-web-commits", {})));
+  const [charts, setCharts] = useState(() => withoutIds(readStored("root-web-charts", []), SAMPLE_CHARTS));
+  const [videos, setVideos] = useState(() => withoutIds(readStored("root-web-videos", []), SAMPLE_VIDEOS));
   const [prefs, setPrefs] = useState(() => ({ ...DEFAULT_PREFS, ...readStored("root-web-prefs", {}) }));
 
-  const project = projects.find((item) => item.id === projectId) || projects[0];
+  const project = projects.find((item) => item.id === projectId) || projects[0] || { id: "", label: "", sessions: [] };
   const doneCount = Number(onboarding.skills) + Number(onboarding.repos) + Number(onboarding.github);
 
   useEffect(() => {

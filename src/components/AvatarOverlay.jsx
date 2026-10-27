@@ -114,7 +114,10 @@ export default function AvatarOverlay({ open, onClose, view, projectLabel }) {
             Name
             <input
               value={look.name}
-              onChange={(event) => setLook({ ...look, name: event.target.value.slice(0, 32) })}
+              onChange={(event) => {
+                const name = event.target.value.slice(0, 32);
+                setLook((prev) => ({ ...prev, name }));
+              }}
               className="mt-1 h-9 w-full rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-2 text-[13px] text-[var(--ink)] outline-none"
             />
           </label>
@@ -123,7 +126,7 @@ export default function AvatarOverlay({ open, onClose, view, projectLabel }) {
               <button
                 key={style}
                 type="button"
-                onClick={() => setLook({ ...look, style })}
+                onClick={() => setLook((prev) => ({ ...prev, style }))}
                 className={`h-8 rounded-lg border px-2 text-[11px] ${
                   look.style === style ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--stroke)] text-[var(--muted)]"
                 }`}
@@ -132,17 +135,17 @@ export default function AvatarOverlay({ open, onClose, view, projectLabel }) {
               </button>
             ))}
           </div>
-          <LookField label="Hair" value={look.hair} onChange={(hair) => setLook({ ...look, hair })} />
-          <LookField label="Eyes" value={look.eyes} onChange={(eyes) => setLook({ ...look, eyes })} />
-          <LookField label="Outfit" value={look.outfit} onChange={(outfit) => setLook({ ...look, outfit })} />
-          <LookField label="Vibe" value={look.vibe} onChange={(vibe) => setLook({ ...look, vibe })} />
-          <LookField label="Notes" value={look.notes} onChange={(notes) => setLook({ ...look, notes })} />
+          <LookField label="Hair" value={look.hair} onChange={(hair) => setLook((prev) => ({ ...prev, hair }))} />
+          <LookField label="Eyes" value={look.eyes} onChange={(eyes) => setLook((prev) => ({ ...prev, eyes }))} />
+          <LookField label="Outfit" value={look.outfit} onChange={(outfit) => setLook((prev) => ({ ...prev, outfit }))} />
+          <LookField label="Vibe" value={look.vibe} onChange={(vibe) => setLook((prev) => ({ ...prev, vibe }))} />
+          <LookField label="Notes" value={look.notes} onChange={(notes) => setLook((prev) => ({ ...prev, notes }))} />
           <div className="mb-2 flex flex-wrap gap-1">
             {AVATAR_MOODS.map(([id, label]) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => setLook({ ...look, mood: id })}
+                onClick={() => setLook((prev) => ({ ...prev, mood: id }))}
                 className={`h-8 rounded-lg border px-2 text-[11px] ${
                   look.mood === id ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--stroke)] text-[var(--muted)]"
                 }`}

@@ -43,6 +43,7 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
   const busyRef = useRef(false);
   const dragRef = useRef(null);
   const suppressClick = useRef(false);
+  const replyRef = useRef(null);
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -117,6 +118,8 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
     } finally {
       busyRef.current = false;
       setBusy(false);
+      setTalking(true);
+      requestAnimationFrame(() => replyRef.current?.focus());
     }
   };
 
@@ -131,31 +134,31 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
           bubbleAbove ? "bottom-full mb-2" : "top-full mt-2"
         }`}
       >
-        {talking && (
+        {line && (
+          <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
+            {line}
+          </div>
+        )}
+        {(talking || line) && (
           <form
             className="pointer-events-auto frost-panel w-[min(240px,calc(100vw-1.5rem))] rounded-2xl border border-[var(--stroke)] p-2"
             onSubmit={(event) => {
               event.preventDefault();
               const text = draft.trim();
-              if (!text) return;
+              if (!text || busy) return;
               setDraft("");
-              setTalking(false);
               speak(text);
             }}
           >
             <input
+              ref={replyRef}
               autoFocus
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder={isConnected ? "Talk" : "Connect a wallet to talk"}
+              placeholder={isConnected ? "Reply" : "Connect a wallet to talk"}
               className="h-10 w-full bg-transparent px-2 text-[13px] outline-none"
             />
           </form>
-        )}
-        {line && (
-          <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
-            {line}
-          </div>
         )}
       </div>
       <div className="relative" style={{ width: PORTRAIT_W, height: PORTRAIT_H }}>

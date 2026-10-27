@@ -60,7 +60,12 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
 
   const status = offline || failed ? "red" : isConnected && address ? "green" : "yellow";
   const statusLabel = status === "green" ? "Available" : status === "red" ? "Unavailable" : "Standard";
-  const statusColor = status === "green" ? "#3cba6a" : status === "red" ? "#e24b4b" : "#f0c419";
+  const statusTone =
+    status === "green"
+      ? { hi: "#8eecc0", lo: "#2ea85c", glow: "rgba(60,186,106,0.85)" }
+      : status === "red"
+        ? { hi: "#ffb4b4", lo: "#d63a3a", glow: "rgba(226,75,75,0.8)" }
+        : { hi: "#ffe58a", lo: "#e2b30e", glow: "rgba(240,196,25,0.85)" };
 
   const speak = async (text) => {
     const said = String(text || "").trim();
@@ -203,8 +208,11 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
           />
         </button>
         <span
-          className="pointer-events-none absolute bottom-2 left-2 z-10 h-5 w-5 rounded-full ring-2 ring-[var(--bg)]"
-          style={{ background: statusColor }}
+          className="pointer-events-none absolute -bottom-1 left-1.5 z-10 h-5 w-5 rounded-full border-0"
+          style={{
+            background: `radial-gradient(circle at 35% 30%, ${statusTone.hi}, ${statusTone.lo} 72%)`,
+            boxShadow: `0 0 6px 1px ${statusTone.glow}, 0 0 14px 3px ${statusTone.glow}`,
+          }}
           title={statusLabel}
           aria-label={statusLabel}
         />

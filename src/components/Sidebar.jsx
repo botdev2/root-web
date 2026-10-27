@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
+import AddProjectMenu from "./AddProjectMenu.jsx";
 
 const NAV = [
   { id: "home", label: "New Agent" },
@@ -39,8 +40,22 @@ export default function Sidebar({
   cloudSessions = [],
   convoMax = 10,
   walletReady = false,
+  listedProjects,
+  listedProjectId,
+  onPickProject,
+  opsToken = "",
+  onOpsToken,
+  onCreateProject,
 }) {
-  const { projects, projectId, setProjectId, onboarding, doneCount, dismissOnboarding } = useAppState();
+  const state = useAppState();
+  const { onboarding, doneCount, dismissOnboarding, setProjectId } = state;
+  const projects = listedProjects ?? state.projects;
+  const projectId = listedProjects ? listedProjectId : state.projectId;
+  const [addOpen, setAddOpen] = useState(false);
+  const pickProject = (id) => {
+    if (onPickProject) onPickProject(id);
+    else setProjectId(id);
+  };
   const [expanded, setExpanded] = useState({ [projectId]: true });
 
   const go = (fn) => {
@@ -78,8 +93,10 @@ export default function Sidebar({
         <button
           type="button"
           onClick={() => {
+            if (!projects.length) return;
             const next = projects[(projects.findIndex((item) => item.id === projectId) + 1) % projects.length];
-            setProjectId(next.id);
+            if (!next) return;
+            pickProject(next.id);
             setExpanded((prev) => ({ ...prev, [next.id]: true }));
           }}
           className="mt-2 flex w-full items-center gap-2.5 rounded-xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left"
@@ -87,24 +104,34 @@ export default function Sidebar({
           <Icon name="folder" size={16} className="text-[var(--accent)]" />
           <span className="min-w-0">
             <div className="text-[10.5px] text-[var(--faint)]">Project</div>
-            <div className="truncate text-[12.5px]">{projects.find((item) => item.id === projectId)?.label}</div>
+            <div className="truncate text-[12.5px]">{projects.find((item) => item.id === projectId)?.label || "No repositories yet"}</div>
           </span>
         </button>
       </div>
 
       <div className="scroll-thin mt-1 min-h-0 flex-1 overflow-y-auto px-3.5">
-        <div className="mb-1 flex items-center justify-between px-2 pt-3">
+        <div className="relative mb-1 flex items-center justify-between px-2 pt-3">
           <span className="flex items-center gap-2 text-[12px] text-[var(--faint)]">
             Projects
             {walletReady && <span className="text-[11px]">{Math.min(cloudSessions.length, convoMax)}/{convoMax} chats</span>}
           </span>
           <button
             type="button"
-            onClick={() => go(() => onAddProject?.())}
+            data-add-project
+            onClick={() => setAddOpen((value) => !value)}
             className="flex h-7 w-7 items-center justify-center text-[16px] text-[var(--muted)] hover:text-[var(--ink)]"
           >
             +
           </button>
+          <AddProjectMenu
+            open={addOpen}
+            token={opsToken}
+            onToken={onOpsToken}
+            recents={projects}
+            onCreate={onCreateProject}
+            onTemplates={() => onAddProject?.()}
+            onClose={() => setAddOpen(false)}
+          />
         </div>
         {projects.map((project) => {
           const open = expanded[project.id];
@@ -115,7 +142,7 @@ export default function Sidebar({
               <button
                 type="button"
                 onClick={() => {
-                  setProjectId(project.id);
+                  pickProject(project.id);
                   setExpanded((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
                 }}
                 className={`flex h-10 w-full items-center rounded-[10px] px-2 text-left ${
@@ -134,7 +161,7 @@ export default function Sidebar({
                     type="button"
                     onClick={() =>
                       go(() => {
-                        setProjectId(project.id);
+                        pickProject(project.id);
                         onSession(session.id, session.title, project.id);
                       })
                     }

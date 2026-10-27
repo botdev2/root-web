@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { listConversations, loadConversation, removeConversation, sendTurn } from "./glmChat.js";
+import { createHubProject, hubCloneUrl, opsFetch, readOpsSession, writeOpsSession } from "./opsApi.js";
+import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
 import { useAppState } from "./AppState.jsx";
 import TitleBar from "./components/TitleBar.jsx";
@@ -35,7 +37,7 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { addProject, seedFiles, mode, notice, project, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
+  const { seedFiles, setProjectId, mode, notice, project, projects: localProjects = [], dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -60,6 +62,9 @@ export default function App() {
   const [sending, setSending] = useState(false);
   const [cloudSessions, setCloudSessions] = useState([]);
   const [convoMax, setConvoMax] = useState(10);
+  const [opsToken, setOpsToken] = useState(() => readOpsSession());
+  const [opsProjects, setOpsProjects] = useState(null);
+  const [opsProjectId, setOpsProjectId] = useState("");
   const [usagePercent, setUsagePercent] = useState(0);
   const { address, isConnected } = useAccount();
   const { open } = useAppKit();
@@ -144,6 +149,80 @@ export default function App() {
     };
   }, [isConnected, address]);
 
+  useEffect(() => {
+    const current = readOpsSession();
+    setOpsToken((prev) => (prev === current ? prev : current));
+  }, [view]);
+
+  useEffect(() => {
+    if (!opsToken) {
+      setOpsProjects(null);
+      return;
+    }
+    let cancelled = false;
+    opsFetch("/api/hub/repos", { token: opsToken })
+      .then((data) => {
+        if (cancelled) return;
+        const yours = (data.repos || []).filter((item) => item.space === "yours");
+        setOpsProjects(
+          yours.map((repo) => ({
+            id: `${repo.owner}/${repo.name}`,
+            label: repo.name,
+            remote: hubCloneUrl(repo.owner, repo.name),
+            owner: repo.owner,
+            sessions: [],
+          })),
+        );
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        if (error.status === 401) {
+          writeOpsSession("");
+          setOpsToken("");
+          return;
+        }
+        notice?.(error.message || "Ops projects did not load.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [opsToken]);
+
+  const listedProjects = opsProjects
+    ? [
+        ...opsProjects,
+        ...localProjects.filter(
+          (item) =>
+            cloudSessions.some((session) => session.projectId === item.id) &&
+            !opsProjects.some((row) => row.id === item.id || row.label === item.label),
+        ),
+      ]
+    : localProjects;
+  const listedProjectId = opsProjects ? opsProjectId || opsProjects[0]?.id || listedProjects[0]?.id || "" : project?.id;
+  const activeProject = listedProjects.find((item) => item.id === listedProjectId) || project;
+
+  const createOpsProject = async ({ name, about, files: tree }) => {
+    const token = opsToken || readOpsSession();
+    if (!token) throw new Error("Sign in to Ops first.");
+    const created = await createHubProject({ token, name, about, files: tree });
+    const repoName = created.name || name;
+    const row = {
+      id: `${created.owner}/${repoName}`,
+      label: repoName,
+      remote: hubCloneUrl(created.owner, repoName),
+      owner: created.owner,
+      sessions: [],
+    };
+    setOpsProjects((prev) => [row, ...(prev || []).filter((item) => item.id !== row.id)]);
+    setOpsProjectId(row.id);
+    seedFiles?.(row.id, tree);
+    setSessionId(null);
+    setSessionTitle("New Agent");
+    setView("home");
+    setNavOpen(false);
+    notice(repoName + " is on the Ops Hub.");
+  };
+
   const openSession = async (id, title, nextView = "chat") => {
     setSessionId(id);
     setSessionTitle(title);
@@ -166,7 +245,7 @@ export default function App() {
   };
 
   const fileSnapshot = () => {
-    const tree = files?.[project?.id];
+    const tree = files?.[activeProject?.id];
     if (!tree || typeof tree !== "object") return "";
     return Object.entries(tree)
       .map(([path, text]) => "### " + path + "\n" + String(text || "").slice(0, 1500))
@@ -204,9 +283,9 @@ export default function App() {
     try {
       const result = await sendTurn(address, {
         conversationId: known ? sessionId : "",
-        projectId: project?.id || "project",
-        projectLabel: project?.label || "",
-        projectRemote: project?.remote || "",
+        projectId: activeProject?.id || "project",
+        projectLabel: activeProject?.label || "",
+        projectRemote: activeProject?.remote || "",
         title,
         mode,
         text: value || "Attached files",
@@ -233,7 +312,7 @@ export default function App() {
         const dropped = new Set(result.dropped || []);
         const row = {
           id: cloudId,
-          projectId: result.conversation?.projectId || project?.id || "project",
+          projectId: result.conversation?.projectId || activeProject?.id || "project",
           title: result.conversation?.title || title,
           updatedAt: result.conversation?.updatedAt || new Date().toISOString(),
         };
@@ -285,6 +364,15 @@ export default function App() {
               cloudSessions={cloudSessions}
               convoMax={convoMax}
               walletReady={isConnected && !!address}
+              listedProjects={listedProjects}
+              listedProjectId={listedProjectId}
+              onPickProject={(id) => {
+                setOpsProjectId(id);
+                setProjectId?.(id);
+              }}
+              opsToken={opsToken}
+              onOpsToken={setOpsToken}
+              onCreateProject={createOpsProject}
               onNewChat={() => {
                 setView("home");
                 setSessionId(null);
@@ -367,14 +455,27 @@ export default function App() {
                 {view === "help" && <HelpView onOpen={openView} />}
                 {view === "templates" && (
                   <TemplatesView
-                    onCreate={(item) => {
-                      addProject({ id: item.folder, label: item.folder, title: item.folder });
-                      seedFiles?.(item.folder, item.files);
-                      setEditorFile("README.md");
-                      setSessionTitle("New Agent");
-                      setSessionId(null);
-                      setView("home");
-                      setDraft(item.goal + " Stack: " + item.stack + ". Dev: " + item.dev);
+                    onCreate={async (item) => {
+                      const checked = projectFolderName(item.folder);
+                      if (checked.error) {
+                        notice(checked.error);
+                        return;
+                      }
+                      if (!opsToken && !readOpsSession()) {
+                        notice("Sign in to Ops from Projects +. The folder is created on the Hub.");
+                        return;
+                      }
+                      try {
+                        await createOpsProject({
+                          name: checked.name,
+                          about: item.subtitle,
+                          files: { ...desktopSeedFiles(checked.name), ...item.files },
+                        });
+                        setEditorFile("README.md");
+                        setDraft(item.goal + " Stack: " + item.stack + ". Dev: " + item.dev);
+                      } catch (error) {
+                        notice(error.message);
+                      }
                     }}
                   />
                 )}

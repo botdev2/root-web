@@ -39,6 +39,48 @@ export function hubCloneUrl(owner, name) {
   return `${OPS_ORIGIN}/hub/${owner}/${name}.git`;
 }
 
+export async function createHubProject({ token, name, about, files }) {
+  const created = await opsFetch("/api/hub/repos", {
+    token,
+    method: "POST",
+    body: { name, about: about || "A /root project." },
+  });
+  const owner = created.owner;
+  const repo = created.name || name;
+  const paths = Object.keys(files || {});
+  if (owner && paths.length) {
+    const form = new FormData();
+    form.append("branch", created.branch || "main");
+    form.append("message", "Seed /root project files");
+    form.append("manifest", JSON.stringify(paths));
+    for (const filePath of paths) {
+      form.append("files", new Blob([String(files[filePath] ?? "")], { type: "text/plain" }), filePath);
+    }
+    await opsUpload(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/files`, { token, form });
+  }
+  return created;
+}
+
+export async function opsUpload(path, { token, form }) {
+  let response;
+  try {
+    response = await fetch(`${OPS_ORIGIN}${path}`, {
+      method: "POST",
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+  } catch {
+    throw new Error("Ops did not answer. Check the connection and try again.");
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || `Ops returned ${response.status}.`);
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
 export async function opsFetch(path, { token, method = "GET", body } = {}) {
   const headers = {};
   if (token) headers.authorization = `Bearer ${token}`;

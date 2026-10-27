@@ -53,8 +53,32 @@ export function Icon({ name, size = 16, className = "" }) {
       );
     case "send":
       return (
-        <svg {...props} fill="currentColor" stroke="none">
-          <path d="M12 5.2 6.4 14h3.3v5h4.6v-5h3.3z" />
+        <svg {...props} strokeWidth={2.2}>
+          <path d="m6 14 6-6 6 6" />
+        </svg>
+      );
+    case "bot":
+      return (
+        <svg {...props}>
+          <rect x="5.5" y="8" width="13" height="9.5" rx="2.5" />
+          <path d="M12 8V4.5" />
+          <circle cx="9.5" cy="12.5" r="1" fill="currentColor" stroke="none" />
+          <circle cx="14.5" cy="12.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case "list":
+      return (
+        <svg {...props}>
+          <path d="M10 7h9M10 12h9M10 17h9" />
+          <circle cx="6" cy="7" r="1" fill="currentColor" stroke="none" />
+          <circle cx="6" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="6" cy="17" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case "cloud":
+      return (
+        <svg {...props}>
+          <path d="M7 18h9.2a3.8 3.8 0 0 0 .3-7.6 5.2 5.2 0 0 0-10 1.5A3.3 3.3 0 0 0 7 18z" />
         </svg>
       );
     case "chevron":

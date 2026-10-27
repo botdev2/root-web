@@ -4,9 +4,9 @@ import { useAccount } from "wagmi";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
 const MODES = [
-  { id: "agent", label: "Agent", short: "Ag" },
-  { id: "ask", label: "Ask", short: "Ask" },
-  { id: "plan", label: "Plan", short: "Pl" },
+  { id: "agent", label: "Agent", icon: "bot" },
+  { id: "ask", label: "Ask", icon: "chat" },
+  { id: "plan", label: "Plan", icon: "list" },
 ];
 
 export default function Composer({
@@ -64,15 +64,16 @@ export default function Composer({
           placeholder={isConnected ? (mode === "ask" ? "Ask about this project…" : mode === "plan" ? "Describe what to plan…" : "Type a message here...") : "Connect a wallet to use GLM 5.2 cloud"}
           className="min-h-[26px] w-full resize-none bg-transparent text-[16px] outline-none placeholder:text-[var(--faint)] md:text-[14px]"
         />
-        <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-end">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 md:gap-2">
-            <div className="flex overflow-hidden rounded-[9px] border border-[var(--stroke)]">
+        <div className="mt-2 flex items-center gap-2">
+          <div className="scroll-thin flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:gap-2">
+            <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-[var(--stroke)]">
               {MODES.map((item) => (
                 <button
                   key={item.id}
                   type="button"
+                  title={item.label}
                   onClick={() => setMode(item.id)}
-                  className={`h-8 px-2 text-[12px] md:h-[30px] md:px-2.5 ${
+                  className={`flex h-8 items-center gap-1 px-2 text-[12px] md:h-[30px] md:px-2.5 ${
                     mode === item.id
                       ? item.id === "ask"
                         ? "bg-[color-mix(in_srgb,#7ea4d9_22%,transparent)] text-[#9ec0ea]"
@@ -82,23 +83,28 @@ export default function Composer({
                       : "text-[var(--ink)] hover:bg-[var(--hover)]"
                   }`}
                 >
+                  <Icon name={item.icon} size={14} />
                   <span className="hidden sm:inline">{item.label}</span>
-                  <span className="sm:hidden">{item.short}</span>
                 </button>
               ))}
             </div>
-            <Pill onClick={onAutoPrompt} active={autoPrompt}>
+            <Pill onClick={onAutoPrompt} active={autoPrompt} title="Auto-Prompt">
+              <Icon name="spark" size={14} />
               <span className="hidden sm:inline">Auto-Prompt{autoPrompt ? " · on" : ""}</span>
-              <span className="sm:hidden">{autoPrompt ? "AP · on" : "AP"}</span>
             </Pill>
-            {isConnected && <Pill>GLM 5.2 cloud</Pill>}
-            <Pill className="hidden sm:flex" onClick={() => fileRef.current?.click()}>
+            {isConnected && (
+              <Pill title="GLM 5.2 cloud">
+                <Icon name="cloud" size={14} />
+                <span className="hidden sm:inline">GLM 5.2 cloud</span>
+              </Pill>
+            )}
+            <Pill title="Attach" onClick={() => fileRef.current?.click()}>
               <Icon name="paperclip" size={14} />
-              Attach
+              <span className="hidden sm:inline">Attach</span>
             </Pill>
-            <Pill onClick={onFiles} className="hidden md:flex">
+            <Pill onClick={onFiles} title="Files">
               <Icon name="folder" size={14} />
-              Files
+              <span className="hidden md:inline">Files</span>
             </Pill>
             <input
               ref={fileRef}
@@ -111,7 +117,7 @@ export default function Composer({
               }}
             />
           </div>
-          <div className="flex shrink-0 items-center justify-end gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <span className="hidden items-center gap-1.5 text-[11px] text-[var(--faint)] sm:flex">
               <span
                 className="h-[18px] w-[18px] rounded-full border border-[var(--stroke)]"
@@ -123,7 +129,8 @@ export default function Composer({
               type="button"
               onClick={submit}
               disabled={sending}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--bg)] shadow-md disabled:opacity-50 md:h-[34px] md:w-[34px]"
+              aria-label="Send"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--bg)] disabled:opacity-50 md:h-[34px] md:w-[34px]"
             >
               <Icon name="send" size={16} />
             </button>
@@ -134,7 +141,7 @@ export default function Composer({
   );
 }
 
-function Pill({ children, onClick, active, className = "", tone }) {
+function Pill({ children, onClick, active, className = "", tone, title }) {
   const toneClass =
     active && tone === "ask"
       ? "border-[#7ea4d9] bg-[color-mix(in_srgb,#7ea4d9_18%,transparent)] text-[#9ec0ea]"
@@ -144,8 +151,9 @@ function Pill({ children, onClick, active, className = "", tone }) {
   return (
     <button
       type="button"
+      title={title}
       onClick={onClick}
-      className={`flex h-8 items-center gap-1.5 rounded-[9px] border px-2 text-[12px] md:h-[30px] md:px-2.5 ${
+      className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[9px] border px-2 text-[12px] md:h-[30px] md:px-2.5 ${
         active
           ? toneClass || "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
           : "border-[var(--stroke)] text-[var(--ink)] hover:bg-[var(--hover)]"

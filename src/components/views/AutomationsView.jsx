@@ -8,9 +8,8 @@ import { Page, Card, Section, Ghost, Primary, Field } from "../ui.jsx";
 const CATS = ["Popular", "Code Review", "Security", "Incidents & Triage", "Data & Research"];
 const SCHEDULES = ["Manual", "Hourly", "Daily", "Weekly"];
 
-export default function AutomationsView() {
-  const { automations, runs, upsertAutomation, toggleAutomation, deleteAutomation, runAutomation, project, projects, model, notice } =
-    useAppState();
+export default function AutomationsView({ hubProjects = [], activeProjectId = "", onRun }) {
+  const { automations, runs, upsertAutomation, toggleAutomation, deleteAutomation, model, notice } = useAppState();
   const { isConnected } = useAccount();
   const { open } = useAppKit();
   const [screen, setScreen] = useState("list");
@@ -18,6 +17,7 @@ export default function AutomationsView() {
   const [editorTab, setEditorTab] = useState("settings");
   const [cat, setCat] = useState("Popular");
   const [query, setQuery] = useState("");
+  const [runningId, setRunningId] = useState("");
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -29,7 +29,7 @@ export default function AutomationsView() {
     setDraft({
       id: (template?.id || "auto") + "-" + Date.now(),
       title: template?.title || "",
-      project: project.id,
+      project: activeProjectId,
       schedule: template?.schedule || "Daily",
       hour: template?.schedule === "Manual" ? "" : "09:00",
       model,
@@ -39,6 +39,26 @@ export default function AutomationsView() {
     });
     setEditorTab("settings");
     setScreen("edit");
+  };
+
+  const run = async (item) => {
+    if (!isConnected) {
+      notice("Connect a wallet to use GLM 5.2 cloud.");
+      open({ view: "Connect" });
+      return;
+    }
+    if (!onRun || runningId) return;
+    const next = { ...item, title: item.title?.trim() || "Untitled", model: "glm-5.2:cloud", hour: item.schedule === "Manual" ? "" : item.hour };
+    upsertAutomation(next);
+    setRunningId(next.id);
+    try {
+      await onRun(next, { openChat: true });
+      notice("Run finished. Changes are on the Ops Hub repository.");
+    } catch (error) {
+      notice(error.message || "The run failed.");
+    } finally {
+      setRunningId("");
+    }
   };
 
   const save = () => {
@@ -104,7 +124,8 @@ export default function AutomationsView() {
                 onChange={(event) => setDraft((prev) => ({ ...prev, project: event.target.value }))}
                 className="h-10 w-full rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px] outline-none"
               >
-                {projects.map((item) => (
+                {hubProjects.length === 0 && <option value="">Sign in to Ops to choose a repository</option>}
+                {hubProjects.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
                   </option>
@@ -145,23 +166,17 @@ export default function AutomationsView() {
               />
             </label>
             <div className="text-[12px] leading-5 text-[var(--faint)]">
-              Schedule on runs this on its timer. Halted automations stay in the list and can still be run by hand.
+              Schedule on runs this while the app is open, at the chosen time. Run now asks GLM 5.2 to commit the work on the Ops Hub repository and writes the result in chat.
             </div>
             <div className="flex flex-wrap gap-2">
               <Primary onClick={save}>Save</Primary>
               <Ghost
                 onClick={() => {
-                  if (!isConnected) {
-                    notice("Connect a wallet to use GLM 5.2 cloud.");
-                    open({ view: "Connect" });
-                    return;
-                  }
-                  runAutomation({ ...draft, title: draft.title.trim() || "Untitled", model: "glm-5.2:cloud" });
-                  notice("Run finished.");
+                  run({ ...draft, title: draft.title.trim() || "Untitled" });
                   setEditorTab("runs");
                 }}
               >
-                Run now
+                {runningId === draft.id ? "Running…" : "Run now"}
               </Ghost>
               <Ghost
                 onClick={() => {
@@ -277,19 +292,7 @@ export default function AutomationsView() {
               >
                 {item.active ? "Halt schedule" : "Resume"}
               </Ghost>
-              <Ghost
-                onClick={() => {
-                  if (!isConnected) {
-                    notice("Connect a wallet to use GLM 5.2 cloud.");
-                    open({ view: "Connect" });
-                    return;
-                  }
-                  runAutomation({ ...item, model: "glm-5.2:cloud" });
-                  notice("Run finished.");
-                }}
-              >
-                Run now
-              </Ghost>
+              <Ghost onClick={() => run(item)}>{runningId === item.id ? "Running…" : "Run now"}</Ghost>
             </div>
           </Card>
         ))}

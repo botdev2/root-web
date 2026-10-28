@@ -1,8 +1,9 @@
 import { markdownHtml } from "../markdown.js";
+import { presentTurn } from "../agentRun.js";
 import { useAppState } from "../AppState.jsx";
 
 export default function ChatView({ sessionId, extras = [] }) {
-  const messages = extras;
+  const messages = extras.map(presentTurn).filter(Boolean);
 
   return (
     <div className="relative min-h-0 flex-1">

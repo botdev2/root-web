@@ -41,15 +41,15 @@ export const SEED_RUNS = [
 ];
 
 export const AUTOMATION_TEMPLATES = [
-  { id: "bugs", cat: "Popular", title: "Find critical bugs", desc: "Analyze recent commits for high-severity bugs.", schedule: "Daily", instructions: "Review the latest commits. Look for high-severity bugs and report file paths with suggested fixes." },
-  { id: "docs", cat: "Popular", title: "Generate docs", desc: "Refresh README sections for changed modules.", schedule: "Weekly", instructions: "Refresh README sections for modules that changed since the last run." },
+  { id: "bugs", cat: "Popular", title: "Find critical bugs", desc: "Analyze recent commits for high-severity bugs.", schedule: "Daily", instructions: "Review the repository for high-severity bugs. Fix them in the files and commit those changes to Ops Hub." },
+  { id: "docs", cat: "Popular", title: "Generate docs", desc: "Refresh README sections for changed modules.", schedule: "Weekly", instructions: "Refresh the README for modules that changed and commit the file to Ops Hub." },
   { id: "deps", cat: "Popular", title: "Dependency audit", desc: "Scan manifests for outdated or risky packages.", schedule: "Weekly", instructions: "Scan package manifests for outdated or risky packages." },
   { id: "pr", cat: "Code Review", title: "PR readiness review", desc: "Check diff quality, tests, and naming.", schedule: "Manual", instructions: "Review the current diff for quality, tests, and naming. Do not push." },
   { id: "tests", cat: "Code Review", title: "Test gap scan", desc: "Find changed paths without coverage.", schedule: "Daily", instructions: "Find changed paths without tests and list the gaps." },
   { id: "secrets", cat: "Security", title: "Secret scan", desc: "Search for committed credentials.", schedule: "Daily", instructions: "Search the tree for committed credentials. Report only." },
   { id: "auth", cat: "Security", title: "Auth flow review", desc: "Review auth and session handling.", schedule: "Weekly", instructions: "Review auth and session handling for obvious mistakes." },
   { id: "triage", cat: "Incidents & Triage", title: "Incident digest", desc: "Summarize failing logs and open issues.", schedule: "Daily", instructions: "Summarize failing logs and open issues into a short digest." },
-  { id: "research", cat: "Data & Research", title: "Weekly research", desc: "Collect notes on a topic into study.md.", schedule: "Weekly", instructions: "Collect notes on the current topic into study.md." },
+  { id: "research", cat: "Data & Research", title: "Weekly research", desc: "Collect notes on a topic into study.md.", schedule: "Weekly", instructions: "Write notes on the current topic into study.md and commit that file to Ops Hub." },
 ];
 
 export const TEMPLATES = [

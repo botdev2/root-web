@@ -355,27 +355,28 @@ export function AppStateProvider({ children }) {
       deleteAutomation: (id) => {
         setAutomations((prev) => prev.filter((row) => row.id !== id));
       },
-      runAutomation: (item) => {
-        const halted = item.active === false;
+      finishAutomationRun: (item, outcome) => {
         const record = {
           id: "run-" + Date.now(),
           automationId: item.id,
           title: item.title,
           when: "just now",
-          status: halted ? "fail" : "ok",
-          detail: halted ? "Halted — ran manually" : "Finished on " + (item.project || "this project"),
-          log: [
-            "start · " + (item.title || "automation"),
-            "project · " + (item.project || "—"),
-            "model · " + (item.model || "—"),
-            "schedule · " + (item.schedule || "Manual") + (item.hour ? " " + item.hour : ""),
-            item.instructions ? "instructions · " + String(item.instructions).trim().slice(0, 240) : "instructions · none",
-            halted ? "schedule halted — manual run only" : "done",
-          ].join("\n"),
+          status: outcome?.ok ? "ok" : "fail",
+          detail: outcome?.detail || "The run did not finish.",
+          log: outcome?.log || "",
         };
         setRuns((prev) => [record, ...prev]);
         setAutomations((prev) =>
-          prev.map((row) => (row.id === item.id ? { ...row, lastRun: "just now" } : row)),
+          prev.map((row) =>
+            row.id === item.id
+              ? {
+                  ...row,
+                  lastRun: "just now",
+                  lastRunAt: new Date().toISOString(),
+                  conversationId: outcome?.conversationId || row.conversationId || "",
+                }
+              : row,
+          ),
         );
         return record;
       },

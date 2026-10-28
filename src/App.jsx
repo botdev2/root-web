@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { listConversations, loadConversation, removeConversation, sendTurn } from "./glmChat.js";
 import { createHubProject, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, writeOpsSession } from "./opsApi.js";
+import { automationDue, runAgentTurn } from "./agentRun.js";
 import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
 import { useAppState } from "./AppState.jsx";
@@ -37,7 +38,7 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { seedFiles, replaceFiles, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files } = state || {};
+  const { seedFiles, replaceFiles, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, automations } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -307,18 +308,37 @@ export default function App() {
     setAttachments([]);
     setView("chat");
     try {
-      const result = await sendTurn(address, {
+      const outcome = await runAgentTurn({
+        address,
         conversationId: known ? sessionId : "",
-        projectId: activeProject?.id || "project",
-        projectLabel: activeProject?.label || "",
-        projectRemote: activeProject?.remote || "",
-        title,
+        project: activeProject,
+        token: opsToken || readOpsSession(),
         mode,
+        allowTools: mode === "agent",
         text: value || "Attached files",
         brain: brainEnabled || {},
         files: fileSnapshot(),
+        fileTree: files?.[activeProject?.id] || {},
         autoprompt: autoPrompt,
+        title,
+        onStatus: (status) => {
+          setLocal((prev) => ({
+            ...prev,
+            [id]: (prev[id] || []).map((item) => (item.id === replyId ? { ...item, text: status } : item)),
+          }));
+        },
+        onProject: (projectRow, tree) => {
+          setOpsProjects((prev) => [projectRow, ...(prev || []).filter((item) => item.id !== projectRow.id)]);
+          setOpsProjectId(projectRow.id);
+          seedFiles?.(projectRow.id, tree);
+        },
+        onWrote: (projectRow, payload, message) => {
+          seedFiles?.(projectRow.id, payload);
+          recordCommit?.(projectRow.id, String(message || "Update from /root").slice(0, 72));
+        },
       });
+      const result = outcome.result;
+      if (!result) throw new Error("GLM 5.2 cloud did not answer.");
       const cloudId = result.conversation?.id || id;
       const turns = (result.conversation?.turns || []).map((turn) => ({
         role: turn.role,
@@ -356,6 +376,103 @@ export default function App() {
       setSending(false);
     }
   };
+
+  const runLock = useRef(new Set());
+  const scheduleRef = useRef(() => {});
+
+  const rememberRepo = (projectRow, tree) => {
+    setOpsProjects((prev) => [projectRow, ...(prev || []).filter((item) => item.id !== projectRow.id)]);
+    setOpsProjectId(projectRow.id);
+    if (tree) seedFiles?.(projectRow.id, tree);
+  };
+
+  const runSavedAutomation = async (item, { openChat = false } = {}) => {
+    if (!isConnected || !address) throw new Error("Connect a wallet to use GLM 5.2 cloud.");
+    const token = opsToken || readOpsSession();
+    if (!token) throw new Error("Sign in to Ops from Projects + so the changes can be committed.");
+    if (runLock.current.has(item.id)) return null;
+    runLock.current.add(item.id);
+    const repo = listedProjects.find((row) => row.id === item.project) || activeProject;
+    const title = item.title || "Automation";
+    try {
+      const outcome = await runAgentTurn({
+        address,
+        conversationId: item.conversationId || "",
+        project: repo,
+        token,
+        mode: "agent",
+        allowTools: true,
+        title,
+        text: item.instructions || title,
+        brain: brainEnabled || {},
+        files: repo?.id && files?.[repo.id]
+          ? Object.entries(files[repo.id]).map(([path, text]) => "### " + path + "\n" + String(text || "").slice(0, 1500)).join("\n\n").slice(0, 6000)
+          : "",
+        fileTree: (repo?.id && files?.[repo.id]) || {},
+        autoprompt: false,
+        onProject: (projectRow, tree) => rememberRepo(projectRow, tree),
+        onWrote: (projectRow, payload, message) => {
+          seedFiles?.(projectRow.id, payload);
+          recordCommit?.(projectRow.id, String(message || title).slice(0, 72));
+        },
+      });
+      const wrote = outcome.actions || [];
+      finishAutomationRun?.(item, {
+        ok: true,
+        detail: wrote.length ? "Committed " + wrote.slice(0, 4).join(", ") : "Finished with no file changes",
+        log: [title, repo?.id || "no repository", ...wrote].join("\n"),
+        conversationId: outcome.conversationId,
+      });
+      const result = outcome.result;
+      const cloudId = result?.conversation?.id || outcome.conversationId;
+      if (cloudId) {
+        const turns = (result?.conversation?.turns || []).map((turn) => ({
+          role: turn.role,
+          text: turn.text,
+          think: turn.think || "",
+        }));
+        if (turns.length) setLocal((prev) => ({ ...prev, [cloudId]: turns }));
+        setCloudSessions((prev) => {
+          const row = {
+            id: cloudId,
+            projectId: result?.conversation?.projectId || repo?.id || "project",
+            title: result?.conversation?.title || title,
+            updatedAt: result?.conversation?.updatedAt || new Date().toISOString(),
+          };
+          return [row, ...prev.filter((entry) => entry.id !== cloudId)].slice(0, convoMax);
+        });
+        if (openChat) {
+          setSessionId(cloudId);
+          setSessionTitle(title);
+          setView("chat");
+        }
+      }
+      return outcome;
+    } catch (error) {
+      finishAutomationRun?.(item, { ok: false, detail: error.message || "The run failed.", log: error.message || "The run failed." });
+      throw error;
+    } finally {
+      runLock.current.delete(item.id);
+    }
+  };
+
+  scheduleRef.current = async () => {
+    if (document.visibilityState === "hidden" || !isConnected || !address) return;
+    for (const item of automations || []) {
+      if (!automationDue(item) || runLock.current.has(item.id)) continue;
+      try {
+        await runSavedAutomation(item, { openChat: false });
+      } catch {
+        /* the run record stores the failure */
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isConnected || !address || !opsToken) return undefined;
+    const timer = window.setInterval(() => scheduleRef.current(), 30000);
+    return () => window.clearInterval(timer);
+  }, [isConnected, address, opsToken]);
 
   const showComposer = CHAT_VIEWS.has(view);
   if (!state) return null;
@@ -482,7 +599,9 @@ export default function App() {
                     }}
                   />
                 )}
-                {view === "automations" && <AutomationsView />}
+                {view === "automations" && (
+                  <AutomationsView hubProjects={listedProjects} activeProjectId={activeProject?.id || ""} onRun={runSavedAutomation} />
+                )}
                 {view === "reasoning" && <ReasoningView />}
                 {view === "ops" && <OpsView />}
                 {view === "notes" && <NotesView />}

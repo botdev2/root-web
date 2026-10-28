@@ -79,6 +79,18 @@ export async function createHubProject({ token, name, about, files }) {
   return created;
 }
 
+export async function writeHubFiles({ token, owner, name, message, files }) {
+  const paths = Object.keys(files || {});
+  if (!owner || !name || !paths.length) throw new Error("Name the repository and the files to commit.");
+  const form = new FormData();
+  form.append("message", String(message || "Update from /root").slice(0, 120));
+  form.append("manifest", JSON.stringify(paths));
+  for (const filePath of paths) {
+    form.append("files", new Blob([String(files[filePath] ?? "")], { type: "text/plain" }), filePath);
+  }
+  return opsUpload(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/files`, { token, form });
+}
+
 export async function opsUpload(path, { token, form }) {
   let response;
   try {

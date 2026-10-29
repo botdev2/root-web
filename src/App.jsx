@@ -65,9 +65,9 @@ export default function App() {
   const [filesOpen, setFilesOpen] = useState(false);
   const [avatarOn, setAvatarOn] = useState(() => {
     try {
-      return localStorage.getItem("root-web-avatar-on") !== "0";
+      return localStorage.getItem("root-web-avatar-on") === "1";
     } catch {
-      return true;
+      return false;
     }
   });
   const [paletteOpen, setPaletteOpen] = useState(false);

@@ -18,7 +18,7 @@ import {
   writeShowWalletTab,
   writeSkills,
 } from "../../account.js";
-import { readCredits } from "../../glmChat.js";
+import { formatCredits, PALM_PER_CREDIT, readCredits } from "../../glmChat.js";
 import { Page, Card, Tabs, Row, Field, Ghost, Primary, Toggle, Section } from "../ui.jsx";
 
 export default function AccountView() {
@@ -88,10 +88,11 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
       cancelled = true;
     };
   }, [address, isConnected]);
+  const rate = Number(credit?.palmPerCredit) || PALM_PER_CREDIT;
   const creditLine = !isConnected
     ? "Connect a wallet"
     : credit
-      ? `${Number(credit.remaining || 0).toLocaleString()} of ${Number(credit.allowance || 0).toLocaleString()} tokens · resets ${String(credit.resetsAt || "").slice(0, 10)}`
+      ? `${formatCredits(credit.remaining)} of ${formatCredits(credit.allowance)} · ${rate.toLocaleString()} $PALM = 1 credit · resets ${String(credit.resetsAt || "").slice(0, 10)}`
       : "Sign in to read this window";
   return (
     <Card>
@@ -114,7 +115,7 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
         <Ghost onClick={() => window.open(ACCOUNT_URL, "_blank", "noopener,noreferrer")}>useroot.sh/account</Ghost>
       </div>
       <div className="px-4 pb-4 text-[12px] leading-5 text-[var(--faint)]">
-        Unlock at useroot.sh/account. Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM. GLM 5.2 spends 2,000 tokens per $PALM held or staked, and that window resets every 14 days.
+        Unlock at useroot.sh/account. Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM. GLM 5.2 uses credits from $PALM held or staked — {rate.toLocaleString()} $PALM = 1 credit — and that window resets every 14 days.
       </div>
     </Card>
   );

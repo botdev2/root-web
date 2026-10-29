@@ -52,3 +52,27 @@ export function sendTurn(address, body) {
 export function readCredits(address) {
   return call("/v1/credits", { address });
 }
+
+export const PALM_PER_CREDIT = 1000;
+
+export function formatCredits(value) {
+  const amount = Number(value) || 0;
+  if (amount >= 100) return amount.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (amount >= 1) return amount.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return amount.toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+
+export function creditTitle(credit) {
+  if (!credit || !Number.isFinite(credit.allowance)) return "";
+  const rate = Number(credit.palmPerCredit) || PALM_PER_CREDIT;
+  return (
+    formatCredits(credit.remaining) +
+    " of " +
+    formatCredits(credit.allowance) +
+    " credits left. " +
+    rate.toLocaleString() +
+    " $PALM held or staked = 1 credit. Resets " +
+    String(credit.resetsAt || "").slice(0, 10) +
+    "."
+  );
+}

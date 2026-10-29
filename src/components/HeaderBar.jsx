@@ -1,5 +1,6 @@
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
+import { creditTitle, formatCredits, PALM_PER_CREDIT } from "../glmChat.js";
 import WalletButton from "./WalletButton.jsx";
 
 const HEADERS = {
@@ -32,12 +33,14 @@ export default function HeaderBar({
   onMenu,
   onUnlock,
   project: liveProject,
+  credit = null,
 }) {
   const { signedIn } = useAppState();
   const header = HEADERS[view] || HEADERS.home;
   const title =
     view === "chat" && sessionTitle ? sessionTitle : view === "editor" && sessionTitle ? sessionTitle : header.title;
   const subtitle = header.subtitle || (liveProject ? liveProject.label : "Create a repository on the Ops Hub");
+  const rate = Number(credit?.palmPerCredit) || PALM_PER_CREDIT;
 
   return (
     <header className="frost-header flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[var(--stroke-soft)] px-3 pt-[env(safe-area-inset-top)] md:px-7">
@@ -64,6 +67,20 @@ export default function HeaderBar({
           )}
         </div>
       </div>
+      {credit && Number.isFinite(credit.allowance) ? (
+        <div
+          title={creditTitle(credit)}
+          className="flex shrink-0 flex-col items-end leading-tight rounded-lg border border-[var(--stroke)] bg-[var(--panel)] px-2.5 py-1"
+        >
+          <div className="tabular-nums text-[13px] text-[var(--ink)]">
+            {formatCredits(credit.remaining)}
+            <span className="ml-1 text-[11px] text-[var(--faint)]">credits</span>
+          </div>
+          <div className="text-[10px] text-[var(--faint)]">
+            {rate.toLocaleString()} $PALM = 1 credit
+          </div>
+        </div>
+      ) : null}
       <WalletButton className="shrink-0" />
       {!signedIn && (
         <Ghost onClick={onUnlock}>Unlock</Ghost>

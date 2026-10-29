@@ -3,6 +3,7 @@ import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
+import { creditTitle, formatCredits } from "../glmChat.js";
 const MODES = [
   { id: "agent", label: "Agent", icon: "bot" },
   { id: "ask", label: "Ask", icon: "chat" },
@@ -166,17 +167,18 @@ function CreditMeter({ usagePercent, credit }) {
       ? Math.min(100, Math.round((credit.used / credit.allowance) * 100))
       : 100
     : Math.min(100, usagePercent);
-  const label = metered ? (credit.allowance > 0 ? percent + "%" : "0") : usagePercent + "%";
-  const title = metered
-    ? `${Number(credit.remaining || 0).toLocaleString()} GLM tokens left. ${credit.held} $PALM held, ${credit.staked} staked. 1 $PALM is ${credit.tokensPerPalm} tokens. Resets ${String(credit.resetsAt || "").slice(0, 10)}.`
-    : "Context window";
+  const label = metered
+    ? formatCredits(credit.remaining)
+    : usagePercent + "%";
+  const title = metered ? creditTitle(credit) : "Context window";
   return (
     <span title={title} className="flex items-center gap-1.5 text-[11px] text-[var(--faint)]">
       <span
         className="h-[18px] w-[18px] rounded-full border border-[var(--stroke)]"
         style={{ background: `conic-gradient(var(--accent) ${percent}%, transparent 0)` }}
       />
-      {label}
+      <span className="tabular-nums">{label}</span>
+      {metered ? <span>cr</span> : null}
     </span>
   );
 }

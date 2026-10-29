@@ -421,7 +421,7 @@ export default function App() {
     if (sending) return;
     if (credit && credit.remaining <= 0) {
       notice(credit.allowance <= 0
-        ? "GLM credits come from $PALM held or staked. This wallet has none for this 14-day window."
+        ? "GLM credits come from $PALM held or staked (1,000 $PALM = 1 credit). This wallet has none for this 14-day window."
         : "GLM credits for this 14-day window are used up. They reset on " + String(credit.resetsAt || "").slice(0, 10) + ".");
       return;
     }
@@ -709,6 +709,7 @@ export default function App() {
               sessionTitle={sessionTitle}
               project={activeProject}
               filesOpen={filesOpen}
+              credit={credit}
               onMenu={() => {
                 setFilesOpen(false);
                 setNavOpen((open) => !open);

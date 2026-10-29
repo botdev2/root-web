@@ -19,6 +19,17 @@ function shortWhen(value) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function stamp(value) {
+  if (!value) return 0;
+  const text = String(value);
+  const parsed = Date.parse(text.length === 10 ? `${text}T00:00:00` : text);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function byRecent(left, right) {
+  return stamp(right.updatedAt) - stamp(left.updatedAt);
+}
+
 const FOOTER = [
   { id: "updates", label: "Updates" },
   { id: "account", label: "Account" },
@@ -47,10 +58,18 @@ export default function Sidebar({
   onCreateProject,
   avatarOn = false,
   onAvatar,
+  busy = null,
 }) {
   const state = useAppState();
   const { onboarding, doneCount, dismissOnboarding } = state;
-  const projects = listedProjects ?? [];
+  const source = listedProjects ?? [];
+  const sessionsFor = (id) => (walletReady ? cloudSessions.filter((item) => item.projectId === id).sort(byRecent) : []);
+  const projects = [...source].sort((left, right) => {
+    const leftAt = Math.max(stamp(left.activityAt), ...sessionsFor(left.id).map((item) => stamp(item.updatedAt)), 0);
+    const rightAt = Math.max(stamp(right.activityAt), ...sessionsFor(right.id).map((item) => stamp(item.updatedAt)), 0);
+    if (rightAt !== leftAt) return rightAt - leftAt;
+    return String(left.label || "").localeCompare(String(right.label || ""));
+  });
   const projectId = listedProjectId || "";
   const [addOpen, setAddOpen] = useState(false);
   const pickProject = (id) => {
@@ -137,7 +156,8 @@ export default function Sidebar({
         {projects.map((project) => {
           const open = expanded[project.id];
           const active = project.id === projectId;
-          const sessions = walletReady ? cloudSessions.filter((item) => item.projectId === project.id) : [];
+          const sessions = sessionsFor(project.id);
+          const pending = busy?.projectId === project.id;
           return (
             <div key={project.id} className="mb-0.5">
               <div className={`flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
@@ -152,6 +172,7 @@ export default function Sidebar({
                   <span className="mr-1.5 text-[11px] text-[var(--faint)]">{open ? "▾" : "▸"}</span>
                   <Icon name="folder" size={15} className="text-[var(--muted)]" />
                   <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
+                  {pending && <LiveDot />}
                   <span className="ml-2 text-[11px] text-[var(--faint)]">{sessions.length}</span>
                 </button>
                 {project.href && (
@@ -182,6 +203,7 @@ export default function Sidebar({
                   >
                     <Icon name="chat" size={13} className="text-[var(--muted)]" />
                     <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{session.title}</span>
+                    {busy?.sessionId === session.id && <LiveDot />}
                     <span className="ml-2 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
                   </button>
                 ))}
@@ -191,6 +213,7 @@ export default function Sidebar({
         {walletReady &&
           cloudSessions
             .filter((session) => session.projectId !== "__avatar__" && !projects.some((item) => item.id === session.projectId))
+            .sort(byRecent)
             .map((session) => (
               <button
                 key={session.id}
@@ -202,6 +225,7 @@ export default function Sidebar({
               >
                 <Icon name="chat" size={13} className="text-[var(--muted)]" />
                 <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{session.title}</span>
+                {busy?.sessionId === session.id && <LiveDot />}
                 <span className="ml-2 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
               </button>
             ))}
@@ -254,6 +278,15 @@ export default function Sidebar({
         </div>
       </div>
     </aside>
+  );
+}
+
+function LiveDot() {
+  return (
+    <span className="relative ml-2 inline-flex h-2 w-2 shrink-0" aria-label="Working">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--amber)] opacity-70" />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--amber)]" />
+    </span>
   );
 }
 

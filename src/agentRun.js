@@ -240,6 +240,7 @@ async function makeRepo(token, call) {
       href: `https://ops.palmaierc.com/hub?repo=${encodeURIComponent(`${owner}/${repoName}`)}`,
       owner,
       branch: created.branch || "main",
+      activityAt: new Date().toISOString(),
       sessions: [],
     },
     files: { "README.md": readme },

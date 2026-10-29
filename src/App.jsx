@@ -69,6 +69,7 @@ export default function App() {
   const [attachments, setAttachments] = useState([]);
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [busy, setBusy] = useState(null);
   const [cloudSessions, setCloudSessions] = useState([]);
   const [convoMax, setConvoMax] = useState(10);
   const [opsToken, setOpsToken] = useState("");
@@ -205,17 +206,26 @@ export default function App() {
       .then((data) => {
         if (cancelled) return;
         const yours = reposForWallet(data.repos, address).filter((item) => item.space === "yours");
-        setOpsProjects(
-          yours.map((repo) => ({
-            id: `${repo.owner}/${repo.name}`,
-            label: repo.name,
-            remote: hubCloneUrl(repo.owner, repo.name),
-            href: hubRepoUrl(repo.owner, repo.name),
-            owner: repo.owner,
-            branch: repo.branch || "main",
-            sessions: [],
-          })),
-        );
+        setOpsProjects((prev) => {
+          const held = new Map((prev || []).map((item) => [item.id, item.activityAt || ""]));
+          return yours.map((repo) => {
+            const id = `${repo.owner}/${repo.name}`;
+            const incoming = repo.commits?.[0]?.date || "";
+            const previous = held.get(id) || "";
+            const previousTime = Date.parse(String(previous).length === 10 ? `${previous}T00:00:00` : previous);
+            const incomingTime = Date.parse(String(incoming).length === 10 ? `${incoming}T00:00:00` : incoming);
+            return {
+              id,
+              label: repo.name,
+              remote: hubCloneUrl(repo.owner, repo.name),
+              href: hubRepoUrl(repo.owner, repo.name),
+              owner: repo.owner,
+              branch: repo.branch || "main",
+              activityAt: (previousTime || 0) > (incomingTime || 0) ? previous : incoming,
+              sessions: [],
+            };
+          });
+        });
       })
       .catch((error) => {
         if (cancelled) return;
@@ -276,6 +286,7 @@ export default function App() {
       href: hubRepoUrl(created.owner, repoName),
       owner: created.owner,
       branch: created.branch || "main",
+      activityAt: new Date().toISOString(),
       sessions: [],
     };
     setOpsProjects((prev) => [row, ...(prev || []).filter((item) => item.id !== row.id)]);
@@ -333,6 +344,7 @@ export default function App() {
     const title = sessionTitle === "New Agent" && value ? value.slice(0, 42) : sessionTitle;
     const replyId = "glm-" + Date.now();
     setSending(true);
+    setBusy({ sessionId: id, projectId: activeProject?.id || "" });
     setLocal((prev) => ({
       ...prev,
       [id]: [
@@ -374,6 +386,8 @@ export default function App() {
         onWrote: (projectRow, payload, message) => {
           seedFiles?.(projectRow.id, payload);
           recordCommit?.(projectRow.id, String(message || "Update from /root").slice(0, 72));
+          const at = new Date().toISOString();
+          setOpsProjects((prev) => (prev || []).map((item) => (item.id === projectRow.id ? { ...item, activityAt: at } : item)));
         },
       });
       const result = outcome.result;
@@ -413,6 +427,7 @@ export default function App() {
       }));
     } finally {
       setSending(false);
+      setBusy(null);
     }
   };
 
@@ -433,6 +448,7 @@ export default function App() {
     if (runLock.current.has(item.id)) return null;
     runLock.current.add(item.id);
     const repo = listedProjects.find((row) => row.id === item.project) || activeProject;
+    setBusy({ sessionId: item.conversationId || item.id, projectId: repo?.id || "" });
     const title = item.title || "Automation";
     try {
       const outcome = await runAgentTurn({
@@ -454,6 +470,8 @@ export default function App() {
         onWrote: (projectRow, payload, message) => {
           seedFiles?.(projectRow.id, payload);
           recordCommit?.(projectRow.id, String(message || title).slice(0, 72));
+          const at = new Date().toISOString();
+          setOpsProjects((prev) => (prev || []).map((item) => (item.id === projectRow.id ? { ...item, activityAt: at } : item)));
         },
       });
       const wrote = outcome.actions || [];
@@ -493,6 +511,7 @@ export default function App() {
       throw error;
     } finally {
       runLock.current.delete(item.id);
+      setBusy(null);
     }
   };
 
@@ -557,6 +576,7 @@ export default function App() {
               onOpsToken={setOpsToken}
               onCreateProject={createOpsProject}
               avatarOn={avatarOn}
+              busy={busy}
               onAvatar={() => {
                 setAvatarOn((value) => {
                   const next = !value;

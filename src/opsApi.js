@@ -31,22 +31,119 @@ export const OPS_PANELS = [
 ];
 
 const SESSION_KEY = "root-web-ops-session";
+export const MAX_REPOS = 3;
 
-export function readOpsSession() {
+export function walletKey(address) {
+  return String(address || "").toLowerCase().replace(/^0x/, "");
+}
+
+function sameWallet(left, right) {
+  const a = walletKey(left);
+  const b = walletKey(right);
+  return a.length === 40 && a === b;
+}
+
+function readRawSession() {
   try {
-    return sessionStorage.getItem(SESSION_KEY) || "";
+    const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY) || "";
+    if (!raw) return null;
+    if (raw.startsWith("{")) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.token && parsed?.address && sameWallet(parsed.address, parsed.address)) return parsed;
+      return null;
+    }
+    return { token: raw, address: "" };
   } catch {
-    return "";
+    return null;
   }
 }
 
-export function writeOpsSession(token) {
+export function readOpsSession(address) {
+  const row = readRawSession();
+  if (!row?.token || !sameWallet(row.address, address)) return "";
+  return row.token;
+}
+
+export function writeOpsSession(token, address) {
   try {
-    if (token) sessionStorage.setItem(SESSION_KEY, token);
-    else sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    if (!token || !sameWallet(address, address)) {
+      localStorage.removeItem(SESSION_KEY);
+      return;
+    }
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ token, address }));
   } catch {
     /* private mode */
   }
+}
+
+export function reposForWallet(repos, address) {
+  const key = walletKey(address);
+  const list = Array.isArray(repos) ? repos : [];
+  if (list.some((item) => item?.space === "yours" && item.owner !== key)) {
+    const error = new Error("Ops returned repositories for a different wallet.");
+    error.status = 401;
+    throw error;
+  }
+  return list.filter((item) => item?.space !== "yours" || item.owner === key);
+}
+
+export async function claimOpsSession(address) {
+  if (!sameWallet(address, address)) {
+    writeOpsSession("", "");
+    return "";
+  }
+  const row = readRawSession();
+  if (!row?.token) return "";
+  if (row.address && !sameWallet(row.address, address)) {
+    writeOpsSession("", "");
+    return "";
+  }
+  let me;
+  try {
+    me = await opsFetch("/api/auth/me", { token: row.token });
+  } catch (error) {
+    if (error.status === 401) {
+      writeOpsSession("", "");
+      return "";
+    }
+    throw error;
+  }
+  if (me?.guest || !sameWallet(me?.address, address)) {
+    writeOpsSession("", "");
+    return "";
+  }
+  writeOpsSession(row.token, me.address);
+  return row.token;
+}
+
+export async function acceptOpsSession(address, session) {
+  const token = session?.token || "";
+  if (!token) throw new Error("Ops did not sign this wallet in.");
+  const me = await opsFetch("/api/auth/me", { token });
+  if (me?.guest || !sameWallet(me?.address, address)) {
+    writeOpsSession("", "");
+    throw new Error("That session belongs to a different wallet.");
+  }
+  writeOpsSession(token, me.address);
+  return token;
+}
+
+export async function signOpsSession(address, signMessageAsync) {
+  if (!sameWallet(address, address) || typeof signMessageAsync !== "function") {
+    throw new Error("Connect the wallet this account should use.");
+  }
+  const nonce = await opsFetch("/api/auth/nonce", { method: "POST", body: { address, client: "ops" } });
+  const message = String(nonce?.message || "");
+  if (!message.toLowerCase().includes("address: " + String(address).toLowerCase())) {
+    throw new Error("Ops asked for a different wallet.");
+  }
+  const signature = await signMessageAsync({ message });
+  const next = await opsFetch("/api/auth/verify", { method: "POST", body: { address, signature } });
+  if (next?.challenge) return next;
+  if (!sameWallet(next?.address, address)) throw new Error("Ops did not sign this wallet in.");
+  const token = await acceptOpsSession(address, next);
+  return { token, address: next.address };
 }
 
 export function hubRepoUrl(owner, name) {

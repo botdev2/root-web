@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
-import { useAccount } from "wagmi";
+import { useAccount, useSignMessage } from "wagmi";
 import { listConversations, loadConversation, removeConversation, sendTurn } from "./glmChat.js";
-import { createHubProject, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, writeOpsSession } from "./opsApi.js";
+import { MAX_REPOS, claimOpsSession, createHubProject, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn } from "./agentRun.js";
 import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
@@ -71,12 +71,16 @@ export default function App() {
   const [sending, setSending] = useState(false);
   const [cloudSessions, setCloudSessions] = useState([]);
   const [convoMax, setConvoMax] = useState(10);
-  const [opsToken, setOpsToken] = useState(() => readOpsSession());
+  const [opsToken, setOpsToken] = useState("");
   const [opsProjects, setOpsProjects] = useState(null);
   const [opsProjectId, setOpsProjectId] = useState("");
   const [usagePercent, setUsagePercent] = useState(0);
   const { address, isConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const { open } = useAppKit();
+  const opsSignAttempt = useRef("");
+  const signOpsRef = useRef(signMessageAsync);
+  signOpsRef.current = signMessageAsync;
   const [dayTasksIdle, setDayTasksIdle] = useState(false);
   const [editorFile, setEditorFile] = useState("README.md");
   const theme = useMemo(() => findTheme(themeId), [themeId]);
@@ -159,20 +163,48 @@ export default function App() {
   }, [isConnected, address]);
 
   useEffect(() => {
-    const current = readOpsSession();
-    setOpsToken((prev) => (prev === current ? prev : current));
-  }, [view]);
+    if (!isConnected || !address) {
+      setOpsToken("");
+      setOpsProjects(null);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const held = await claimOpsSession(address);
+        if (cancelled) return;
+        if (held) {
+          setOpsToken(held);
+          return;
+        }
+      } catch (error) {
+        if (!cancelled) notice?.(error.message || "Ops did not confirm this wallet.");
+        return;
+      }
+      if (cancelled || opsSignAttempt.current === address.toLowerCase()) return;
+      opsSignAttempt.current = address.toLowerCase();
+      try {
+        const session = await signOpsSession(address, (args) => signOpsRef.current(args));
+        if (!cancelled && session?.token) setOpsToken(session.token);
+      } catch (error) {
+        if (!cancelled) notice?.(error.message || "Wallet sign-in was declined.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isConnected, address]);
 
   useEffect(() => {
-    if (!opsToken) {
+    if (!opsToken || !address) {
       setOpsProjects(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     opsFetch("/api/hub/repos", { token: opsToken })
       .then((data) => {
         if (cancelled) return;
-        const yours = (data.repos || []).filter((item) => item.space === "yours");
+        const yours = reposForWallet(data.repos, address).filter((item) => item.space === "yours");
         setOpsProjects(
           yours.map((repo) => ({
             id: `${repo.owner}/${repo.name}`,
@@ -196,7 +228,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [opsToken]);
+  }, [opsToken, address]);
 
   const listedProjects = opsProjects || [];
   const listedProjectId = opsProjectId || opsProjects?.[0]?.id || "";
@@ -206,7 +238,7 @@ export default function App() {
     const owner = activeProject?.owner;
     const name = activeProject?.label;
     const id = activeProject?.id;
-    if (!opsToken || !owner || !name || !id) return undefined;
+    if (!opsToken || !owner || !name || !id || owner !== walletKey(address)) return undefined;
     let cancelled = false;
     opsFetch(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, { token: opsToken })
       .then((detail) => {
@@ -224,12 +256,14 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [opsToken, activeProject?.id, activeProject?.owner, activeProject?.label]);
+  }, [opsToken, address, activeProject?.id, activeProject?.owner, activeProject?.label]);
 
   const createOpsProject = async ({ name, about, files: tree }) => {
-    const token = opsToken || readOpsSession();
-    if (!token) throw new Error("Sign in to Ops first.");
+    const token = readOpsSession(address);
+    if (!token || token !== opsToken) throw new Error("Sign in with the connected wallet.");
+    if ((opsProjects || []).length >= MAX_REPOS) throw new Error("A wallet can keep 3 repositories.");
     const created = await createHubProject({ token, name, about, files: tree });
+    if (created.owner !== walletKey(address)) throw new Error("Ops created that repository for a different wallet.");
     const repoName = created.name || name;
     const row = {
       id: `${created.owner}/${repoName}`,
@@ -312,7 +346,7 @@ export default function App() {
         address,
         conversationId: known ? sessionId : "",
         project: activeProject,
-        token: opsToken || readOpsSession(),
+        token: readOpsSession(address),
         mode,
         allowTools: mode === "agent",
         text: value || "Attached files",
@@ -381,6 +415,7 @@ export default function App() {
   const scheduleRef = useRef(() => {});
 
   const rememberRepo = (projectRow, tree) => {
+    if (!projectRow?.owner || projectRow.owner !== walletKey(address)) return;
     setOpsProjects((prev) => [projectRow, ...(prev || []).filter((item) => item.id !== projectRow.id)]);
     setOpsProjectId(projectRow.id);
     if (tree) seedFiles?.(projectRow.id, tree);
@@ -388,8 +423,8 @@ export default function App() {
 
   const runSavedAutomation = async (item, { openChat = false } = {}) => {
     if (!isConnected || !address) throw new Error("Connect a wallet to use GLM 5.2 cloud.");
-    const token = opsToken || readOpsSession();
-    if (!token) throw new Error("Sign in to Ops from Projects + so the changes can be committed.");
+    const token = readOpsSession(address);
+    if (!token) throw new Error("Sign in with the connected wallet so the changes can be committed.");
     if (runLock.current.has(item.id)) return null;
     runLock.current.add(item.id);
     const repo = listedProjects.find((row) => row.id === item.project) || activeProject;
@@ -603,9 +638,9 @@ export default function App() {
                   <AutomationsView hubProjects={listedProjects} activeProjectId={activeProject?.id || ""} onRun={runSavedAutomation} />
                 )}
                 {view === "reasoning" && <ReasoningView />}
-                {view === "ops" && <OpsView />}
+                {view === "ops" && <OpsView token={opsToken} onToken={setOpsToken} />}
                 {view === "notes" && <NotesView />}
-                {view === "plugins" && <PluginsView onToken={setOpsToken} />}
+                {view === "plugins" && <PluginsView token={opsToken} onToken={setOpsToken} />}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}
@@ -618,8 +653,8 @@ export default function App() {
                         notice(checked.error);
                         return;
                       }
-                      if (!opsToken && !readOpsSession()) {
-                        notice("Sign in to Ops from Projects +. The folder is created on the Hub.");
+                      if (!readOpsSession(address)) {
+                        notice("Sign in with the connected wallet. The folder is created on the Hub.");
                         return;
                       }
                       try {

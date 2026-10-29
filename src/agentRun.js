@@ -1,5 +1,5 @@
 import { sendTurn } from "./glmChat.js";
-import { createHubProject, opsFetch, writeHubFiles } from "./opsApi.js";
+import { MAX_REPOS, createHubProject, opsFetch, writeHubFiles } from "./opsApi.js";
 
 const FENCE = /```(?:ops|json)\s*([\s\S]*?)```/g;
 const MAX_STEPS = 5;
@@ -11,7 +11,7 @@ const GUIDE = [
   "```ops",
   '{"tool":"write_file","path":"src/App.jsx","content":"full file"}',
   "```",
-  "Tools: list_repos. list_files. read_file with path. write_file with path and the full content, which commits on the Hub. edit_file with path, find, and replace, which commits the first exact replacement. create_repo with name and about, which creates a Hub repository.",
+  "Tools: list_repos. list_files. read_file with path. write_file with path and the full content, which commits on the Hub. edit_file with path, find, and replace, which commits the first exact replacement. create_repo with name and about, which creates a Hub repository. A wallet can keep 3 repositories.",
   "Paths are relative. No leading slash, no .., no dot folders. Repository names are lowercase letters, numbers, and hyphens.",
   "Use the open repository when there is one. Commit real changes instead of only describing them. If nothing should change, answer in prose and do not emit a fence.",
 ].join("\n");
@@ -222,7 +222,9 @@ async function listRepos(token) {
 }
 
 async function makeRepo(token, call) {
-  if (!token) throw new Error("Sign in to Ops from Projects + before creating a repository.");
+  if (!token) throw new Error("Sign in with the connected wallet before creating a repository.");
+  const owned = await listRepos(token);
+  if (owned.length >= MAX_REPOS) throw new Error("A wallet can keep 3 repositories.");
   const name = safeRepoName(call.name);
   const about = String(call.about || "A /root project.").slice(0, 280);
   const readme = `# ${name}\n\n${about}\n`;

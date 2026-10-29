@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
 import { desktopSeedFiles, projectFolderName } from "../projectSeed.js";
-import { opsFetch, readOpsSession, writeOpsSession } from "../opsApi.js";
+import { acceptOpsSession, opsFetch, readOpsSession, signOpsSession } from "../opsApi.js";
 
 export default function AddProjectMenu({ open, token, onToken, onCreate, onTemplates, onClose }) {
   const { address, isConnected } = useAccount();
@@ -35,12 +35,16 @@ export default function AddProjectMenu({ open, token, onToken, onCreate, onTempl
     setBusy(true);
     setStatus("");
     try {
-      const nonce = await opsFetch("/api/auth/nonce", { method: "POST", body: { address, client: "ops" } });
-      const signature = await signMessageAsync({ message: nonce.message });
-      const next = await opsFetch("/api/auth/verify", { method: "POST", body: { address, signature } });
-      setStep(next);
-      setCode("");
-      setStatus(next.step === "enroll" ? "Add the Ops authenticator, then enter the code." : "Enter the Ops authenticator code.");
+      const next = await signOpsSession(address, signMessageAsync);
+      if (next?.challenge) {
+        setStep(next);
+        setCode("");
+        setStatus(next.step === "enroll" ? "Add the Ops authenticator, then enter the code." : "Enter the Ops authenticator code.");
+        return;
+      }
+      onToken?.(next.token);
+      setStep(null);
+      setStatus("Signed in to Ops.");
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -57,8 +61,8 @@ export default function AddProjectMenu({ open, token, onToken, onCreate, onTempl
         method: "POST",
         body: { challenge: step.challenge, code: code.trim() },
       });
-      writeOpsSession(session.token);
-      onToken?.(session.token);
+      const bound = await acceptOpsSession(address, session);
+      onToken?.(bound);
       setStep(null);
       setCode("");
       setStatus("Signed in to Ops.");
@@ -75,9 +79,9 @@ export default function AddProjectMenu({ open, token, onToken, onCreate, onTempl
       setStatus(checked.error);
       return;
     }
-    const session = token || readOpsSession();
-    if (!session) {
-      setStatus("Sign in to Ops. The repository is created on the Hub for this wallet.");
+    const session = readOpsSession(address);
+    if (!session || (token && token !== session)) {
+      setStatus("Sign in with the connected wallet. The repository is created on the Hub for this wallet.");
       return;
     }
     setBusy(true);
@@ -105,7 +109,7 @@ export default function AddProjectMenu({ open, token, onToken, onCreate, onTempl
         className="w-full max-w-[440px] rounded-[18px] border border-[var(--stroke)] bg-[var(--panel)] p-5 shadow-lg"
       >
         <div className="text-[18px]">New repository</div>
-        <p className="mt-1 text-[13px] text-[var(--muted)]">Creates a git repository on the Ops Hub for this wallet.</p>
+        <p className="mt-1 text-[13px] text-[var(--muted)]">Creates a git repository on the Ops Hub for this wallet. A wallet can keep 3.</p>
         {created ? (
           <div className="mt-4 space-y-3">
             <div className="text-[14px]">{created.label} is on the Ops Hub.</div>

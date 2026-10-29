@@ -4,10 +4,12 @@ import { useAccount, useSignMessage } from "wagmi";
 import { useAppState } from "../../AppState.jsx";
 import {
   OPS_LINKS,
+  acceptOpsSession,
   hubCloneUrl,
   hubRepoUrl,
   opsFetch,
-  readOpsSession,
+  reposForWallet,
+  signOpsSession,
   writeOpsSession,
 } from "../../opsApi.js";
 import { shortenAddress } from "../../web3/config.js";
@@ -20,12 +22,12 @@ const PACKS = [
   { id: "dist", label: "Dist folder" },
 ];
 
-export default function OpsView() {
+export default function OpsView({ token: boundToken = "", onToken }) {
   const { notice } = useAppState();
   const { open } = useAppKit();
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
-  const [token, setToken] = useState(() => readOpsSession());
+  const [token, setToken] = useState(boundToken);
   const [health, setHealth] = useState(null);
   const [apps, setApps] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -71,19 +73,25 @@ export default function OpsView() {
       ]);
       setApps(appData.apps || []);
       setOrders(orderData.orders || []);
-      setRepos(repoData.repos || []);
+      if (!address) return;
+      setRepos(reposForWallet(repoData.repos, address));
       setBilling(billData);
       setAccountError("");
     } catch (error) {
       if (error.status === 401) {
-        writeOpsSession("");
+        writeOpsSession("", "");
         setToken("");
+        onToken?.("");
         setAccountError("The Ops session expired. Sign in again.");
         return;
       }
       setAccountError(error.message);
     }
-  }, []);
+  }, [address, onToken]);
+
+  useEffect(() => {
+    setToken(boundToken || "");
+  }, [boundToken]);
 
   useEffect(() => {
     loadPublic();
@@ -106,12 +114,17 @@ export default function OpsView() {
     setSigning(true);
     setAccountError("");
     try {
-      const nonce = await opsFetch("/api/auth/nonce", { method: "POST", body: { address, client: "ops" } });
-      const signature = await signMessageAsync({ message: nonce.message });
-      const next = await opsFetch("/api/auth/verify", { method: "POST", body: { address, signature } });
-      setStep(next);
-      setCode("");
-      notice(next.step === "enroll" ? "Add the Ops authenticator, then enter the code." : "Enter the Ops authenticator code.");
+      const next = await signOpsSession(address, signMessageAsync);
+      if (next?.challenge) {
+        setStep(next);
+        setCode("");
+        notice(next.step === "enroll" ? "Add the Ops authenticator, then enter the code." : "Enter the Ops authenticator code.");
+        return;
+      }
+      setToken(next.token);
+      onToken?.(next.token);
+      setStep(null);
+      notice("Signed in to Ops.");
     } catch (error) {
       setAccountError(error.message);
     } finally {
@@ -128,8 +141,9 @@ export default function OpsView() {
         method: "POST",
         body: { challenge: step.challenge, code: code.trim() },
       });
-      writeOpsSession(session.token);
-      setToken(session.token);
+      const bound = await acceptOpsSession(address, session);
+      setToken(bound);
+      onToken?.(bound);
       setStep(null);
       setCode("");
       notice("Signed in to Ops.");
@@ -141,8 +155,9 @@ export default function OpsView() {
   };
 
   const signOut = () => {
-    writeOpsSession("");
+    writeOpsSession("", "");
     setToken("");
+    onToken?.("");
     setStep(null);
     setGithubToken("");
     setGithubRepos([]);

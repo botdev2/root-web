@@ -4,21 +4,23 @@ import { useAccount, useSignMessage } from "wagmi";
 import { useAppState } from "../../AppState.jsx";
 import {
   OPS_PANELS,
+  acceptOpsSession,
   hubCloneUrl,
   hubRepoUrl,
   opsFetch,
-  readOpsSession,
+  reposForWallet,
+  signOpsSession,
   writeOpsSession,
 } from "../../opsApi.js";
 import { shortenAddress } from "../../web3/config.js";
 import { Card, Field, Ghost, Page, Primary, Section } from "../ui.jsx";
 
-export default function PluginsView({ onToken }) {
+export default function PluginsView({ token: boundToken = "", onToken }) {
   const { notice } = useAppState();
   const { open } = useAppKit();
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
-  const [token, setToken] = useState(() => readOpsSession());
+  const [token, setToken] = useState(boundToken);
   const [apps, setApps] = useState([]);
   const [orders, setOrders] = useState([]);
   const [repos, setRepos] = useState([]);
@@ -30,10 +32,14 @@ export default function PluginsView({ onToken }) {
   const [search, setSearch] = useState(null);
   const [searching, setSearching] = useState(false);
 
+  useEffect(() => {
+    setToken(boundToken || "");
+  }, [boundToken]);
+
   const remember = (next) => {
-    writeOpsSession(next);
-    setToken(next);
-    onToken?.(next);
+    if (!next) writeOpsSession("", "");
+    setToken(next || "");
+    onToken?.(next || "");
   };
 
   const load = useCallback(async (session) => {
@@ -51,11 +57,12 @@ export default function PluginsView({ onToken }) {
       ]);
       setApps(appData.apps || []);
       setOrders(orderData.orders || []);
-      setRepos((repoData.repos || []).filter((item) => item.space === "yours"));
+      if (!address) return;
+      setRepos(reposForWallet(repoData.repos, address).filter((item) => item.space === "yours"));
       setError("");
     } catch (err) {
       if (err.status === 401) {
-        writeOpsSession("");
+        writeOpsSession("", "");
         setToken("");
         onToken?.("");
         setError("The Ops session expired. Sign in again.");
@@ -63,7 +70,7 @@ export default function PluginsView({ onToken }) {
       }
       setError(err.message);
     }
-  }, [onToken]);
+  }, [onToken, address]);
 
   useEffect(() => {
     load(token);
@@ -77,12 +84,16 @@ export default function PluginsView({ onToken }) {
     setSigning(true);
     setError("");
     try {
-      const nonce = await opsFetch("/api/auth/nonce", { method: "POST", body: { address, client: "ops" } });
-      const signature = await signMessageAsync({ message: nonce.message });
-      const next = await opsFetch("/api/auth/verify", { method: "POST", body: { address, signature } });
-      setStep(next);
-      setCode("");
-      notice(next.step === "enroll" ? "Add the Ops authenticator, then enter the code." : "Enter the Ops authenticator code.");
+      const next = await signOpsSession(address, signMessageAsync);
+      if (next?.challenge) {
+        setStep(next);
+        setCode("");
+        notice(next.step === "enroll" ? "Add the Ops authenticator, then enter the code." : "Enter the Ops authenticator code.");
+        return;
+      }
+      remember(next.token);
+      setStep(null);
+      notice("Signed in to Ops.");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -99,7 +110,7 @@ export default function PluginsView({ onToken }) {
         method: "POST",
         body: { challenge: step.challenge, code: code.trim() },
       });
-      remember(session.token);
+      remember(await acceptOpsSession(address, session));
       setStep(null);
       setCode("");
       notice("Signed in to Ops.");

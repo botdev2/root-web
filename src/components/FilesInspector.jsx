@@ -3,9 +3,9 @@ import { Tabs, Ghost, Field } from "./ui.jsx";
 import { useAppState } from "../AppState.jsx";
 
 const STATUS = {
-  added: { letter: "A", label: "added", className: "text-[var(--green)]" },
-  modified: { letter: "M", label: "edited", className: "text-[var(--amber)]" },
-  deleted: { letter: "D", label: "removed", className: "text-[var(--rose)]" },
+  added: { letter: "A", className: "text-[var(--green)]" },
+  modified: { letter: "M", className: "text-[var(--amber)]" },
+  deleted: { letter: "D", className: "text-[var(--rose)]" },
 };
 
 function editedAge(value) {
@@ -77,13 +77,6 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
               placeholder="Search files"
               className="mb-3 h-10 rounded-[10px] border border-[var(--stroke)] bg-[var(--input)] px-3 text-[12px] outline-none"
             />
-            <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
-              {Object.values(STATUS).map((item) => (
-                <span key={item.letter} className={item.className}>
-                  {item.letter} {item.label}
-                </span>
-              ))}
-            </div>
             <ul className="space-y-0.5 text-[12.5px]">
               {names.map((name) => {
                 const info = meta[name] || {};

@@ -245,7 +245,8 @@ export default function App() {
   const listedProjectId = opsProjectId || opsProjects?.[0]?.id || "";
   const activeProject = listedProjects.find((item) => item.id === listedProjectId) || null;
 
-  useEffect(() => {
+  const loadRepoRef = useRef(() => {});
+  loadRepoRef.current = () => {
     const owner = activeProject?.owner;
     const name = activeProject?.label;
     const id = activeProject?.id;
@@ -304,7 +305,14 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [opsToken, address, activeProject?.id, activeProject?.owner, activeProject?.label]);
+  };
+
+  useEffect(() => loadRepoRef.current(), [opsToken, address, activeProject?.id, activeProject?.owner, activeProject?.label]);
+
+  useEffect(() => {
+    if (!filesOpen) return undefined;
+    return loadRepoRef.current();
+  }, [filesOpen, activeProject?.id]);
 
   const markWritten = (projectRow, payload, message) => {
     const at = new Date().toISOString();

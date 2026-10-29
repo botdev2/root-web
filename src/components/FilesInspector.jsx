@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, Ghost, Field } from "./ui.jsx";
 import { useAppState } from "../AppState.jsx";
 
 const STATUS = {
-  added: { letter: "A", className: "text-[var(--green)]" },
-  modified: { letter: "M", className: "text-[var(--amber)]" },
-  deleted: { letter: "D", className: "text-[var(--rose)]" },
+  added: "text-[var(--green)]",
+  modified: "text-[var(--amber)]",
+  deleted: "text-[var(--rose)]",
 };
 
 function editedAge(value) {
@@ -36,6 +36,11 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
   const [query, setQuery] = useState("");
   const [chartId, setChartId] = useState(null);
   const [node, setNode] = useState("");
+  const [, setClock] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock((value) => value + 1), 5000);
+    return () => window.clearInterval(timer);
+  }, []);
   const tree = project ? files[project.id] || {} : {};
   const meta = project ? fileInfo?.[project.id] || {} : {};
   const names = Array.from(new Set([...Object.keys(tree), ...Object.keys(meta)]))
@@ -80,7 +85,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
             <ul className="space-y-0.5 text-[12.5px]">
               {names.map((name) => {
                 const info = meta[name] || {};
-                const tone = STATUS[info.status];
+                const tone = STATUS[info.status] || "";
                 const slash = name.lastIndexOf("/");
                 const dir = slash >= 0 ? name.slice(0, slash + 1) : "";
                 const base = slash >= 0 ? name.slice(slash + 1) : name;
@@ -100,9 +105,8 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
                     >
                       <span className={`min-w-0 flex-1 truncate ${removed ? "line-through" : ""}`}>
                         {dir && <span className="text-[var(--faint)]">{dir}</span>}
-                        <span className={tone ? `${tone.className} font-medium` : ""}>{base}</span>
+                        <span className={tone ? `${tone} font-medium` : ""}>{base}</span>
                       </span>
-                      {tone && <span className={`shrink-0 text-[10px] font-semibold ${tone.className}`}>{tone.letter}</span>}
                       {when && <span className="w-9 shrink-0 text-right text-[11px] text-[var(--faint)]">{when}</span>}
                     </button>
                   </li>

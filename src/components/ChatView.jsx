@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { markdownHtml } from "../markdown.js";
 import { presentTurn } from "../agentRun.js";
 import { useAppState } from "../AppState.jsx";
@@ -5,10 +6,35 @@ import { PlanCard, ReasonTrail, planSteps } from "./ReasonTrail.jsx";
 
 export default function ChatView({ sessionId, extras = [] }) {
   const messages = extras.map(presentTurn).filter(Boolean);
+  const scroller = useRef(null);
+  const wasPending = useRef(false);
+  const opened = useRef("");
+
+  useEffect(() => {
+    const node = scroller.current;
+    const last = messages[messages.length - 1];
+    const pending = !!last?.pending;
+    const finished = wasPending.current && !pending && messages.length > 0;
+    wasPending.current = pending;
+    if (!node) return;
+    if (finished) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
+        });
+      });
+      opened.current = sessionId || "";
+      return;
+    }
+    if (sessionId && sessionId !== opened.current && messages.length && !pending) {
+      opened.current = sessionId;
+      node.scrollTop = node.scrollHeight;
+    }
+  }, [messages, sessionId]);
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div className="scroll-thin h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
+      <div ref={scroller} className="scroll-thin h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
         <div className="mx-auto flex max-w-[820px] flex-col gap-3">
           {messages.map((message, index) => (
             <Bubble key={`${sessionId}-${index}`} message={message} />

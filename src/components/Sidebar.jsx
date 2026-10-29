@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
 import AddProjectMenu from "./AddProjectMenu.jsx";
@@ -16,6 +16,10 @@ function shortWhen(value) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
+  const delta = Date.now() - date.getTime();
+  if (delta < 60_000) return "now";
+  if (delta < 3_600_000) return Math.floor(delta / 60_000) + "m";
+  if (delta < 86_400_000) return Math.floor(delta / 3_600_000) + "h";
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
@@ -72,10 +76,25 @@ export default function Sidebar({
   });
   const projectId = listedProjectId || "";
   const [addOpen, setAddOpen] = useState(false);
+  const listRef = useRef(null);
   const pickProject = (id) => {
     if (onPickProject) onPickProject(id);
   };
-  const [expanded, setExpanded] = useState({ [projectId]: true });
+  const chats = walletReady
+    ? cloudSessions.filter((item) => item.projectId !== "__avatar__").sort(byRecent)
+    : [];
+  const projectName = (id) => projects.find((item) => item.id === id)?.label || "Chat";
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!sessionId || !list) return;
+    const row = list.querySelector(`[data-chat="${sessionId}"]`);
+    if (!row) return;
+    const listBox = list.getBoundingClientRect();
+    const rowBox = row.getBoundingClientRect();
+    if (rowBox.top < listBox.top) list.scrollTop -= listBox.top - rowBox.top;
+    else if (rowBox.bottom > listBox.bottom) list.scrollTop += rowBox.bottom - listBox.bottom;
+  }, [sessionId, chats.length]);
 
   const go = (fn) => {
     fn();
@@ -116,7 +135,6 @@ export default function Sidebar({
             const next = projects[(projects.findIndex((item) => item.id === projectId) + 1) % projects.length];
             if (!next) return;
             pickProject(next.id);
-            setExpanded((prev) => ({ ...prev, [next.id]: true }));
           }}
           className="mt-2 flex w-full items-center gap-2.5 rounded-xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left"
         >
@@ -128,12 +146,45 @@ export default function Sidebar({
         </button>
       </div>
 
-      <div className="scroll-thin mt-1 min-h-0 flex-1 overflow-y-auto px-3.5">
-        <div className="relative mb-1 flex items-center justify-between px-2 pt-3">
-          <span className="flex items-center gap-2 text-[12px] text-[var(--faint)]">
-            Projects
-            {walletReady && <span className="text-[11px]">{Math.min(cloudSessions.length, convoMax)}/{convoMax} chats</span>}
-          </span>
+      <div ref={listRef} className="scroll-thin mt-1 min-h-0 flex-1 overflow-y-auto px-3.5">
+        <div className="mb-1 flex items-center justify-between px-2 pt-3">
+          <span className="text-[12px] text-[var(--faint)]">Chats</span>
+          {walletReady && <span className="text-[11px] text-[var(--faint)]">{Math.min(chats.length, convoMax)}/{convoMax}</span>}
+        </div>
+        {chats.length === 0 && (
+          <div className="px-2 py-1.5 text-[12.5px] text-[var(--muted)]">{walletReady ? "No chats yet." : "Sign in to see chats."}</div>
+        )}
+        {chats.map((session) => {
+          const active = view === "chat" && sessionId === session.id;
+          return (
+            <button
+              key={session.id}
+              type="button"
+              data-chat={session.id}
+              onClick={() =>
+                go(() => {
+                  if (session.projectId) pickProject(session.projectId);
+                  onSession(session.id, session.title, session.projectId);
+                })
+              }
+              className={`mb-0.5 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-2 text-left ${
+                active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
+              }`}
+            >
+              <Icon name="chat" size={14} className="shrink-0 text-[var(--muted)]" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="title-fade min-w-0 flex-1 truncate text-[13px]">{session.title}</span>
+                  {busy?.sessionId === session.id && <LiveDot />}
+                  <span className="shrink-0 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
+                </span>
+                <span className="block truncate text-[11px] text-[var(--faint)]">{projectName(session.projectId)}</span>
+              </span>
+            </button>
+          );
+        })}
+        <div className="relative mb-1 mt-3 flex items-center justify-between px-2 pt-1">
+          <span className="text-[12px] text-[var(--faint)]">Projects</span>
           <button
             type="button"
             onClick={() => setAddOpen(true)}
@@ -154,81 +205,34 @@ export default function Sidebar({
           <div className="px-2 py-2 text-[12.5px] text-[var(--muted)]">No repositories yet.</div>
         )}
         {projects.map((project) => {
-          const open = expanded[project.id];
           const active = project.id === projectId;
-          const sessions = sessionsFor(project.id);
+          const count = sessionsFor(project.id).length;
           const pending = busy?.projectId === project.id;
           return (
-            <div key={project.id} className="mb-0.5">
-              <div className={`flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    pickProject(project.id);
-                    setExpanded((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
-                  }}
-                  className="flex h-10 min-w-0 flex-1 items-center rounded-[10px] px-2 text-left hover:bg-[var(--hover)]"
+            <div key={project.id} className={`mb-0.5 flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
+              <button
+                type="button"
+                onClick={() => pickProject(project.id)}
+                className="flex h-10 min-w-0 flex-1 items-center rounded-[10px] px-2 text-left hover:bg-[var(--hover)]"
+              >
+                <Icon name="folder" size={15} className="text-[var(--muted)]" />
+                <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
+                {pending && <LiveDot />}
+                <span className="ml-2 text-[11px] text-[var(--faint)]">{count}</span>
+              </button>
+              {project.href && (
+                <a
+                  href={project.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 px-1.5 text-[11px] text-[var(--muted)] underline"
                 >
-                  <span className="mr-1.5 text-[11px] text-[var(--faint)]">{open ? "▾" : "▸"}</span>
-                  <Icon name="folder" size={15} className="text-[var(--muted)]" />
-                  <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
-                  {pending && <LiveDot />}
-                  <span className="ml-2 text-[11px] text-[var(--faint)]">{sessions.length}</span>
-                </button>
-                {project.href && (
-                  <a
-                    href={project.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="shrink-0 px-1.5 text-[11px] text-[var(--muted)] underline"
-                  >
-                    Hub
-                  </a>
-                )}
-              </div>
-              {open &&
-                sessions.map((session) => (
-                  <button
-                    key={session.id}
-                    type="button"
-                    onClick={() =>
-                      go(() => {
-                        pickProject(project.id);
-                        onSession(session.id, session.title, project.id);
-                      })
-                    }
-                    className={`ml-[18px] mb-0.5 flex h-10 w-[calc(100%-18px)] items-center rounded-[10px] px-2.5 text-left ${
-                      view === "chat" && sessionId === session.id ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
-                    }`}
-                  >
-                    <Icon name="chat" size={13} className="text-[var(--muted)]" />
-                    <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{session.title}</span>
-                    {busy?.sessionId === session.id && <LiveDot />}
-                    <span className="ml-2 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
-                  </button>
-                ))}
+                  Hub
+                </a>
+              )}
             </div>
           );
         })}
-        {walletReady &&
-          cloudSessions
-            .filter((session) => session.projectId !== "__avatar__" && !projects.some((item) => item.id === session.projectId))
-            .sort(byRecent)
-            .map((session) => (
-              <button
-                key={session.id}
-                type="button"
-                onClick={() => go(() => onSession(session.id, session.title))}
-                className={`mb-0.5 flex h-10 w-full items-center rounded-[10px] px-2.5 text-left ${
-                  view === "chat" && sessionId === session.id ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
-                }`}
-              >
-                <Icon name="chat" size={13} className="text-[var(--muted)]" />
-                <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{session.title}</span>
-                {busy?.sessionId === session.id && <LiveDot />}
-                <span className="ml-2 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
-              </button>
-            ))}
       </div>
 
       <div className="px-3.5 pb-[max(14px,env(safe-area-inset-bottom))] pt-1.5">

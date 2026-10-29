@@ -1,6 +1,7 @@
 import { markdownHtml } from "../markdown.js";
 import { presentTurn } from "../agentRun.js";
 import { useAppState } from "../AppState.jsx";
+import { PlanCard, ReasonTrail, planSteps } from "./ReasonTrail.jsx";
 
 export default function ChatView({ sessionId, extras = [] }) {
   const messages = extras.map(presentTurn).filter(Boolean);
@@ -43,13 +44,17 @@ function Bubble({ message }) {
         </button>
       </div>
       <div>
-        {message.think && (
+        {message.trace?.length > 0 && (
+          <ReasonTrail steps={message.trace} startedAt={message.startedAt} elapsedMs={message.elapsedMs} pending={!!message.pending} />
+        )}
+        {!message.trace?.length && message.think && (
           <details className="mb-2 text-[12px] text-[var(--muted)]">
             <summary className="cursor-pointer">Thinking</summary>
             <div className="mt-1 whitespace-pre-wrap">{message.think}</div>
           </details>
         )}
-        {message.pending ? message.text : <div className="chat-md" dangerouslySetInnerHTML={{ __html: markdownHtml(message.text) }} />}
+        {!message.pending && message.text && <div className="chat-md" dangerouslySetInnerHTML={{ __html: markdownHtml(message.text) }} />}
+        {!message.pending && message.mode === "plan" && <PlanCard steps={planSteps(message.text)} />}
       </div>
       {message.files?.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">

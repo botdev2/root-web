@@ -8,17 +8,37 @@ const STATUS = {
   deleted: "text-[var(--rose)]",
 };
 
-function editedAge(value) {
-  if (!value) return "";
+function editedInstant(value, now) {
+  if (!value || value === "just now") return null;
   const text = String(value);
-  if (text === "just now") return "now";
-  const time = Date.parse(text.length === 10 ? `${text}T12:00:00` : text);
-  if (Number.isNaN(time)) return text;
-  const elapsed = Date.now() - time;
-  if (elapsed < 60000) return Math.max(0, Math.floor(elapsed / 1000)) + "s";
-  if (elapsed < 3600000) return Math.floor(elapsed / 60000) + "m";
-  if (elapsed < 86400000) return Math.floor(elapsed / 3600000) + "h";
-  if (elapsed < 14 * 86400000) return Math.floor(elapsed / 86400000) + "d";
+  if (text.length === 10) {
+    const day = Date.parse(`${text}T00:00:00`);
+    return Number.isNaN(day) ? null : day;
+  }
+  const time = Date.parse(text);
+  if (Number.isNaN(time)) return null;
+  if (time > now + 2000) {
+    const day = Date.parse(`${text.slice(0, 10)}T00:00:00`);
+    if (!Number.isNaN(day) && day <= now) return day;
+  }
+  return time;
+}
+
+function formatElapsed(elapsed) {
+  const seconds = Math.max(0, Math.floor(elapsed / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  if (elapsed < 3600000) return `${Math.floor(elapsed / 60000)}m`;
+  if (elapsed < 86400000) return `${Math.floor(elapsed / 3600000)}h`;
+  if (elapsed < 14 * 86400000) return `${Math.floor(elapsed / 86400000)}d`;
+  return "";
+}
+
+function editedAge(value, now) {
+  if (!value) return "";
+  const time = editedInstant(value, now);
+  if (time == null) return value === "just now" ? "0s" : String(value);
+  const label = formatElapsed(now - time);
+  if (label) return label;
   return new Date(time).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
@@ -36,9 +56,9 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
   const [query, setQuery] = useState("");
   const [chartId, setChartId] = useState(null);
   const [node, setNode] = useState("");
-  const [, setClock] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const timer = window.setInterval(() => setClock((value) => value + 1), 5000);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
   const tree = project ? files[project.id] || {} : {};
@@ -90,7 +110,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
                 const dir = slash >= 0 ? name.slice(0, slash + 1) : "";
                 const base = slash >= 0 ? name.slice(slash + 1) : name;
                 const removed = info.status === "deleted";
-                const when = editedAge(info.edited);
+                const when = editedAge(info.edited, now);
                 const title = [info.message, editedTitle(info.edited)].filter(Boolean).join(" · ");
                 return (
                   <li key={name}>
@@ -107,7 +127,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
                         {dir && <span className="text-[var(--faint)]">{dir}</span>}
                         <span className={tone ? `${tone} font-medium` : ""}>{base}</span>
                       </span>
-                      {when && <span className="w-9 shrink-0 text-right text-[11px] text-[var(--faint)]">{when}</span>}
+                      {when && <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-[var(--faint)]">{when}</span>}
                     </button>
                   </li>
                 );
@@ -127,7 +147,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
               <li key={commit.hash + commit.msg} className="rounded-lg border border-[var(--stroke-soft)] px-3 py-2">
                 <div>{commit.msg}</div>
                 <div className="mt-0.5 text-[11px] text-[var(--faint)]">
-                  {commit.hash} · {editedAge(commit.when) || commit.when}
+                  {commit.hash} · {editedAge(commit.when, now) || commit.when}
                   {commit.files?.length ? ` · ${commit.files.length} file${commit.files.length === 1 ? "" : "s"}` : ""}
                 </div>
               </li>

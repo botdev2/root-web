@@ -3,7 +3,16 @@ import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
 import { listConversations, loadConversation, removeConversation, sendTurn } from "./glmChat.js";
 import { MAX_REPOS, claimOpsSession, createHubProject, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
-import { automationDue, runAgentTurn } from "./agentRun.js";
+import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
+
+function liveEdited(hub, held) {
+  const now = Date.now();
+  const hubTime = Date.parse(String(hub || ""));
+  const heldTime = Date.parse(String(held || ""));
+  const hubFuture = Number.isNaN(hubTime) || hubTime > now + 2000;
+  if (!Number.isNaN(heldTime) && heldTime <= now + 2000 && hubFuture) return held;
+  return hub || held || "";
+}
 import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
 import { useAppState } from "./AppState.jsx";
@@ -38,7 +47,7 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, automations } = state || {};
+  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -271,7 +280,7 @@ export default function App() {
           if (newest.has(file.path) && !older.has(file.path)) status = "added";
           else if (newest.has(file.path)) status = "modified";
           info[file.path] = {
-            edited: touched?.iso || touched?.date || "",
+            edited: liveEdited(touched?.iso || touched?.date || "", fileInfo?.[id]?.[file.path]?.edited || ""),
             status,
             message: file.message || touched?.message || "",
           };
@@ -405,7 +414,15 @@ export default function App() {
       [id]: [
         ...(prev[id] || []),
         { role: "user", text: value || "Attached files", files: attachments.map((file) => file.name) },
-        { id: replyId, role: "assistant", text: "GLM 5.2 cloud is writing…", pending: true },
+        {
+          id: replyId,
+          role: "assistant",
+          text: "",
+          pending: true,
+          mode,
+          startedAt: Date.now(),
+          trace: [{ title: thinkingTitle(mode, 0), state: "active", kind: "spark", detail: "" }],
+        },
       ],
     }));
     setSessionId(id);
@@ -427,10 +444,10 @@ export default function App() {
         fileTree: files?.[activeProject?.id] || {},
         autoprompt: autoPrompt,
         title,
-        onStatus: (status) => {
+        onTrace: ({ steps, startedAt, elapsedMs }) => {
           setLocal((prev) => ({
             ...prev,
-            [id]: (prev[id] || []).map((item) => (item.id === replyId ? { ...item, text: status } : item)),
+            [id]: (prev[id] || []).map((item) => (item.id === replyId ? { ...item, pending: true, text: "", trace: steps, startedAt, elapsedMs: elapsedMs || 0 } : item)),
           }));
         },
         onProject: (projectRow, tree) => {
@@ -454,6 +471,16 @@ export default function App() {
         text: turn.text,
         think: turn.think || "",
       }));
+      const lastAssistant = turns.reduce((found, turn, index) => (turn.role === "assistant" ? index : found), -1);
+      if (lastAssistant >= 0) {
+        turns[lastAssistant] = {
+          ...turns[lastAssistant],
+          mode,
+          trace: outcome.trace || [],
+          startedAt: outcome.startedAt,
+          elapsedMs: outcome.elapsedMs,
+        };
+      }
       setSessionId(cloudId);
       setLocal((prev) => {
         const next = { ...prev };

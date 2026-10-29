@@ -311,7 +311,7 @@ export function AppStateProvider({ children }) {
       },
       recordCommit: (projectKey, msg) => {
         const hash = Math.random().toString(16).slice(2, 8);
-        setCommits((prev) => ({ ...prev, [projectKey]: [{ hash, msg, when: "just now" }, ...(prev[projectKey] || [])] }));
+        setCommits((prev) => ({ ...prev, [projectKey]: [{ hash, msg, when: new Date().toISOString() }, ...(prev[projectKey] || [])] }));
       },
       upsertChart: (chart) =>
         setCharts((prev) => {

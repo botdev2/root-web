@@ -189,6 +189,24 @@ export async function writeHubFiles({ token, owner, name, branch, message, files
   return opsUpload(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/files`, { token, form });
 }
 
+export async function runHubCommand({ token, owner, name, branch, command, cwd }) {
+  if (!token || !owner || !name) throw new Error("Open a repository before running a command.");
+  return opsFetch(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/run`, {
+    token,
+    method: "POST",
+    body: { branch: branch || "", command, cwd: cwd || "" },
+  });
+}
+
+export async function deleteHubFile({ token, owner, name, branch, path }) {
+  if (!token || !owner || !name) throw new Error("Open a repository before deleting a file.");
+  return opsFetch(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/delete`, {
+    token,
+    method: "POST",
+    body: { branch: branch || "", path },
+  });
+}
+
 export async function opsUpload(path, { token, form }) {
   let response;
   try {

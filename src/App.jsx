@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
 import { listConversations, loadConversation, readCredits, removeConversation, sendTurn } from "./glmChat.js";
-import { MAX_REPOS, claimOpsSession, createHubProject, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
+import { MAX_REPOS, claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
 
 function liveEdited(hub, held) {
@@ -640,6 +640,53 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [isConnected, address, opsToken]);
 
+  const forgetChat = (id) => {
+    setCloudSessions((prev) => prev.filter((item) => item.id !== id));
+    setLocal((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (sessionId === id) {
+      setView("home");
+      setSessionId(null);
+      setSessionTitle("New Agent");
+      setDraft("");
+      setUsagePercent(0);
+    }
+  };
+
+  const removeChat = async (session) => {
+    if (!address || !session?.id) return;
+    if (!window.confirm(`Delete “${session.title || "this chat"}”?`)) return;
+    try {
+      await removeConversation(address, session.id);
+    } catch (error) {
+      notice(error.message || "That chat could not be deleted.");
+      return;
+    }
+    forgetChat(session.id);
+    notice("Chat deleted.");
+  };
+
+  const removeProject = async (project) => {
+    if (!opsToken || !project?.owner || !project?.label) return;
+    const related = cloudSessions.filter((item) => item.projectId === project.id);
+    const extra = related.length ? ` Its ${related.length} chat${related.length === 1 ? "" : "s"} go with it.` : "";
+    if (!window.confirm(`Delete ${project.label} from the Hub?${extra}`)) return;
+    try {
+      await deleteHubRepo({ token: opsToken, owner: project.owner, name: project.label });
+    } catch (error) {
+      notice(error.message || "That project could not be deleted.");
+      return;
+    }
+    await Promise.all(related.map((item) => removeConversation(address, item.id).catch(() => {})));
+    setOpsProjects((prev) => (prev || []).filter((item) => item.id !== project.id));
+    if (opsProjectId === project.id) setOpsProjectId("");
+    for (const item of related) forgetChat(item.id);
+    notice(project.label + " deleted.");
+  };
+
   const showComposer = CHAT_VIEWS.has(view);
   if (!state) return null;
 
@@ -701,6 +748,8 @@ export default function App() {
                 setSessionTitle("New Agent");
               }}
               onSession={(id, title) => openSession(id, title)}
+              onDeleteChat={removeChat}
+              onDeleteProject={removeProject}
             />
           </div>
           <main className="flex min-w-0 flex-1 flex-col">

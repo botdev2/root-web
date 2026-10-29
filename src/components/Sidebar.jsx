@@ -63,6 +63,8 @@ export default function Sidebar({
   avatarOn = false,
   onAvatar,
   busy = null,
+  onDeleteChat,
+  onDeleteProject,
 }) {
   const state = useAppState();
   const { onboarding, doneCount, dismissOnboarding } = state;
@@ -157,30 +159,43 @@ export default function Sidebar({
         {chats.map((session) => {
           const active = view === "chat" && sessionId === session.id;
           return (
-            <button
+            <div
               key={session.id}
-              type="button"
               data-chat={session.id}
-              onClick={() =>
-                go(() => {
-                  if (session.projectId) pickProject(session.projectId);
-                  onSession(session.id, session.title, session.projectId);
-                })
-              }
-              className={`mb-0.5 flex w-full items-center gap-2 rounded-[10px] px-2.5 py-2 text-left ${
+              className={`mb-0.5 flex w-full items-center rounded-[10px] pr-1 ${
                 active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
               }`}
             >
-              <Icon name="chat" size={14} className="shrink-0 text-[var(--muted)]" />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2">
-                  <span className="title-fade min-w-0 flex-1 truncate text-[13px]">{session.title}</span>
-                  {busy?.sessionId === session.id && <LiveDot />}
-                  <span className="shrink-0 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
+              <button
+                type="button"
+                onClick={() =>
+                  go(() => {
+                    if (session.projectId) pickProject(session.projectId);
+                    onSession(session.id, session.title, session.projectId);
+                  })
+                }
+                className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left"
+              >
+                <Icon name="chat" size={14} className="shrink-0 text-[var(--muted)]" />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span className="title-fade min-w-0 flex-1 truncate text-[13px]">{session.title}</span>
+                    {busy?.sessionId === session.id && <LiveDot />}
+                    <span className="shrink-0 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
+                  </span>
+                  <span className="block truncate text-[11px] text-[var(--faint)]">{projectName(session.projectId)}</span>
                 </span>
-                <span className="block truncate text-[11px] text-[var(--faint)]">{projectName(session.projectId)}</span>
-              </span>
-            </button>
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete ${session.title || "chat"}`}
+                title="Delete chat"
+                onClick={() => onDeleteChat?.(session)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
+              >
+                <Icon name="x" size={12} />
+              </button>
+            </div>
           );
         })}
         <div className="relative mb-1 mt-3 flex items-center justify-between px-2 pt-1">
@@ -219,6 +234,15 @@ export default function Sidebar({
                 <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
                 {pending && <LiveDot />}
                 <span className="ml-2 text-[11px] text-[var(--faint)]">{count}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete ${project.label}`}
+                title="Delete project"
+                onClick={() => onDeleteProject?.(project)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
+              >
+                <Icon name="x" size={12} />
               </button>
               {project.href && (
                 <a

@@ -198,6 +198,14 @@ export async function runHubCommand({ token, owner, name, branch, command, cwd }
   });
 }
 
+export async function deleteHubRepo({ token, owner, name }) {
+  if (!token || !owner || !name) throw new Error("Sign in before deleting a repository.");
+  return opsFetch(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, {
+    token,
+    method: "DELETE",
+  });
+}
+
 export async function deleteHubFile({ token, owner, name, branch, path }) {
   if (!token || !owner || !name) throw new Error("Open a repository before deleting a file.");
   return opsFetch(`/api/hub/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/delete`, {

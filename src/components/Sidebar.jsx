@@ -45,6 +45,8 @@ export default function Sidebar({
   opsToken = "",
   onOpsToken,
   onCreateProject,
+  avatarOn = false,
+  onAvatar,
 }) {
   const state = useAppState();
   const { onboarding, doneCount, dismissOnboarding } = state;
@@ -245,6 +247,11 @@ export default function Sidebar({
             {item.label}
           </NavButton>
         ))}
+        <div className="sm:hidden">
+          <NavButton active={avatarOn} onClick={() => go(() => onAvatar?.())}>
+            Avatar
+          </NavButton>
+        </div>
       </div>
     </aside>
   );

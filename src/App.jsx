@@ -551,6 +551,18 @@ export default function App() {
               opsToken={opsToken}
               onOpsToken={setOpsToken}
               onCreateProject={createOpsProject}
+              avatarOn={avatarOn}
+              onAvatar={() => {
+                setAvatarOn((value) => {
+                  const next = !value;
+                  try {
+                    localStorage.setItem("root-web-avatar-on", next ? "1" : "0");
+                  } catch {
+                    /* ignore */
+                  }
+                  return next;
+                });
+              }}
               onNewChat={() => {
                 setView("home");
                 setSessionId(null);

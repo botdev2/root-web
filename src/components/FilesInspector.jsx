@@ -2,16 +2,50 @@ import { useState } from "react";
 import { Tabs, Ghost, Field } from "./ui.jsx";
 import { useAppState } from "../AppState.jsx";
 
+const STATUS = {
+  added: { letter: "A", label: "added", className: "text-[var(--green)]" },
+  modified: { letter: "M", label: "edited", className: "text-[var(--amber)]" },
+  deleted: { letter: "D", label: "removed", className: "text-[var(--rose)]" },
+};
+
+function editedAge(value) {
+  if (!value) return "";
+  const text = String(value);
+  if (text === "just now") return "now";
+  const time = Date.parse(text.length === 10 ? `${text}T12:00:00` : text);
+  if (Number.isNaN(time)) return text;
+  const elapsed = Date.now() - time;
+  if (elapsed < 60000) return Math.max(0, Math.floor(elapsed / 1000)) + "s";
+  if (elapsed < 3600000) return Math.floor(elapsed / 60000) + "m";
+  if (elapsed < 86400000) return Math.floor(elapsed / 3600000) + "h";
+  if (elapsed < 14 * 86400000) return Math.floor(elapsed / 86400000) + "d";
+  return new Date(time).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function editedTitle(value) {
+  if (!value) return "";
+  const text = String(value);
+  const time = Date.parse(text.length === 10 ? `${text}T12:00:00` : text);
+  if (Number.isNaN(time)) return text;
+  return new Date(time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 export default function FilesInspector({ onClose, onOpenFile, project }) {
-  const { files, commits, charts, upsertChart, deleteChart, notice } = useAppState();
+  const { files, fileInfo, commits, charts, upsertChart, deleteChart, notice } = useAppState();
   const [tab, setTab] = useState("files");
   const [query, setQuery] = useState("");
   const [chartId, setChartId] = useState(null);
   const [node, setNode] = useState("");
   const tree = project ? files[project.id] || {} : {};
-  const names = Object.keys(tree)
+  const meta = project ? fileInfo?.[project.id] || {} : {};
+  const names = Array.from(new Set([...Object.keys(tree), ...Object.keys(meta)]))
     .filter((name) => name.toLowerCase().includes(query.toLowerCase()))
-    .sort();
+    .sort((left, right) => {
+      const leftAt = Date.parse(meta[left]?.edited || "") || 0;
+      const rightAt = Date.parse(meta[right]?.edited || "") || 0;
+      if (rightAt !== leftAt) return rightAt - leftAt;
+      return left.localeCompare(right);
+    });
   const history = project ? commits[project.id] || [] : [];
   const projectCharts = project ? charts.filter((item) => item.project === project.id) : [];
   const chart = charts.find((item) => item.id === chartId);
@@ -43,14 +77,44 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
               placeholder="Search files"
               className="mb-3 h-10 rounded-[10px] border border-[var(--stroke)] bg-[var(--input)] px-3 text-[12px] outline-none"
             />
-            <ul className="space-y-0.5 text-[12.5px]">
-              {names.map((name) => (
-                <li key={name}>
-                  <button type="button" onClick={() => onOpenFile?.(name)} className="w-full rounded-lg px-2 py-2.5 text-left hover:bg-[var(--hover)]">
-                    {name}
-                  </button>
-                </li>
+            <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+              {Object.values(STATUS).map((item) => (
+                <span key={item.letter} className={item.className}>
+                  {item.letter} {item.label}
+                </span>
               ))}
+            </div>
+            <ul className="space-y-0.5 text-[12.5px]">
+              {names.map((name) => {
+                const info = meta[name] || {};
+                const tone = STATUS[info.status];
+                const slash = name.lastIndexOf("/");
+                const dir = slash >= 0 ? name.slice(0, slash + 1) : "";
+                const base = slash >= 0 ? name.slice(slash + 1) : name;
+                const removed = info.status === "deleted";
+                const when = editedAge(info.edited);
+                const title = [info.message, editedTitle(info.edited)].filter(Boolean).join(" · ");
+                return (
+                  <li key={name}>
+                    <button
+                      type="button"
+                      title={title}
+                      disabled={removed}
+                      onClick={() => {
+                        if (!removed) onOpenFile?.(name);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-[var(--hover)] disabled:hover:bg-transparent"
+                    >
+                      <span className={`min-w-0 flex-1 truncate ${removed ? "line-through" : ""}`}>
+                        {dir && <span className="text-[var(--faint)]">{dir}</span>}
+                        <span className={tone ? `${tone.className} font-medium` : ""}>{base}</span>
+                      </span>
+                      {tone && <span className={`shrink-0 text-[10px] font-semibold ${tone.className}`}>{tone.letter}</span>}
+                      {when && <span className="w-9 shrink-0 text-right text-[11px] text-[var(--faint)]">{when}</span>}
+                    </button>
+                  </li>
+                );
+              })}
               {names.length === 0 && (
                 <li className="px-2 py-2 text-[12px] text-[var(--faint)]">
                   {project ? "No files in this repository yet." : "Open a repository to list its files."}
@@ -66,7 +130,8 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
               <li key={commit.hash + commit.msg} className="rounded-lg border border-[var(--stroke-soft)] px-3 py-2">
                 <div>{commit.msg}</div>
                 <div className="mt-0.5 text-[11px] text-[var(--faint)]">
-                  {commit.hash} · {commit.when}
+                  {commit.hash} · {editedAge(commit.when) || commit.when}
+                  {commit.files?.length ? ` · ${commit.files.length} file${commit.files.length === 1 ? "" : "s"}` : ""}
                 </div>
               </li>
             ))}

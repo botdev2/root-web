@@ -89,6 +89,7 @@ export function AppStateProvider({ children }) {
   const [sites, setSites] = useState(() => withoutIds(readStored("root-web-ops-sites", []), SAMPLE_SITES));
   const [deploys, setDeploys] = useState(() => readStored("root-web-ops-deploys", []));
   const [files, setFiles] = useState(() => withoutSampleFiles(readStored("root-web-files", {})));
+  const [fileInfo, setFileInfo] = useState({});
   const [commits, setCommits] = useState(() => withoutSampleFiles(readStored("root-web-commits", {})));
   const [charts, setCharts] = useState(() => withoutIds(readStored("root-web-charts", []), SAMPLE_CHARTS));
   const [videos, setVideos] = useState(() => withoutIds(readStored("root-web-videos", []), SAMPLE_VIDEOS));
@@ -203,6 +204,7 @@ export function AppStateProvider({ children }) {
       sites,
       deploys,
       files,
+      fileInfo,
       commits,
       charts,
       videos,
@@ -294,6 +296,19 @@ export function AppStateProvider({ children }) {
       replaceFiles: (projectKey, tree) => {
         setFiles((prev) => ({ ...prev, [projectKey]: tree && typeof tree === "object" ? tree : {} }));
       },
+      replaceFileInfo: (projectKey, info) => {
+        setFileInfo((prev) => ({ ...prev, [projectKey]: info && typeof info === "object" ? info : {} }));
+      },
+      noteFile: (projectKey, path, info) => {
+        if (!projectKey || !path) return;
+        setFileInfo((prev) => ({
+          ...prev,
+          [projectKey]: { ...(prev[projectKey] || {}), [path]: info },
+        }));
+      },
+      replaceCommits: (projectKey, rows) => {
+        setCommits((prev) => ({ ...prev, [projectKey]: Array.isArray(rows) ? rows : [] }));
+      },
       recordCommit: (projectKey, msg) => {
         const hash = Math.random().toString(16).slice(2, 8);
         setCommits((prev) => ({ ...prev, [projectKey]: [{ hash, msg, when: "just now" }, ...(prev[projectKey] || [])] }));
@@ -381,7 +396,7 @@ export function AppStateProvider({ children }) {
         return record;
       },
     }),
-    [projects, project, projectId, toast, model, mode, fontId, onboarding, doneCount, automations, runs, session, dayTasksEnabled, dayGoals, pluginState, brainEnabled, flows, sites, deploys, files, commits, charts, videos, prefs],
+    [projects, project, projectId, toast, model, mode, fontId, onboarding, doneCount, automations, runs, session, dayTasksEnabled, dayGoals, pluginState, brainEnabled, flows, sites, deploys, files, fileInfo, commits, charts, videos, prefs],
   );
 
   return <AppState.Provider value={api}>{children}</AppState.Provider>;

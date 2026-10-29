@@ -38,7 +38,7 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { seedFiles, replaceFiles, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, automations } = state || {};
+  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, automations } = state || {};
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -255,11 +255,45 @@ export default function App() {
       .then((detail) => {
         if (cancelled) return;
         const tree = {};
+        const info = {};
+        const history = detail.commits || [];
+        const newest = new Set(history[0]?.files || []);
+        const older = new Set();
+        for (const commit of history.slice(1)) {
+          for (const path of commit.files || []) older.add(path);
+        }
         for (const file of detail.files || []) {
           if (!file?.path) continue;
           tree[file.path] = typeof file.content === "string" ? file.content : "";
+          const touched = history.find((commit) => (commit.files || []).includes(file.path));
+          let status = "";
+          if (newest.has(file.path) && !older.has(file.path)) status = "added";
+          else if (newest.has(file.path)) status = "modified";
+          info[file.path] = {
+            edited: touched?.iso || touched?.date || "",
+            status,
+            message: file.message || touched?.message || "",
+          };
+        }
+        for (const path of newest) {
+          if (tree[path]) continue;
+          info[path] = {
+            edited: history[0]?.iso || history[0]?.date || "",
+            status: "deleted",
+            message: history[0]?.message || "",
+          };
         }
         replaceFiles?.(id, tree);
+        replaceFileInfo?.(id, info);
+        replaceCommits?.(
+          id,
+          history.map((commit) => ({
+            hash: commit.sha || "",
+            msg: commit.message || "Commit",
+            when: commit.iso || commit.date || "",
+            files: commit.files || [],
+          })),
+        );
         if (detail.branch) {
           setOpsProjects((prev) => (prev || []).map((item) => (item.id === id ? { ...item, branch: detail.branch } : item)));
         }
@@ -271,6 +305,19 @@ export default function App() {
       cancelled = true;
     };
   }, [opsToken, address, activeProject?.id, activeProject?.owner, activeProject?.label]);
+
+  const markWritten = (projectRow, payload, message) => {
+    const at = new Date().toISOString();
+    const current = files?.[projectRow?.id] || {};
+    const note = String(message || "Update from /root").slice(0, 72);
+    for (const path of Object.keys(payload || {})) {
+      noteFile?.(projectRow.id, path, {
+        edited: at,
+        status: Object.prototype.hasOwnProperty.call(current, path) ? "modified" : "added",
+        message: note,
+      });
+    }
+  };
 
   const createOpsProject = async ({ name, about, files: tree }) => {
     const token = readOpsSession(address);
@@ -384,6 +431,7 @@ export default function App() {
           seedFiles?.(projectRow.id, tree);
         },
         onWrote: (projectRow, payload, message) => {
+          markWritten(projectRow, payload, message);
           seedFiles?.(projectRow.id, payload);
           recordCommit?.(projectRow.id, String(message || "Update from /root").slice(0, 72));
           const at = new Date().toISOString();
@@ -468,6 +516,7 @@ export default function App() {
         autoprompt: false,
         onProject: (projectRow, tree) => rememberRepo(projectRow, tree),
         onWrote: (projectRow, payload, message) => {
+          markWritten(projectRow, payload, message);
           seedFiles?.(projectRow.id, payload);
           recordCommit?.(projectRow.id, String(message || title).slice(0, 72));
           const at = new Date().toISOString();

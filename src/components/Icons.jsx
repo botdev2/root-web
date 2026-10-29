@@ -136,6 +136,12 @@ export function Icon({ name, size = 16, className = "" }) {
           <path d="M4 12h16M12 4a14 14 0 0 1 0 16M12 4a14 14 0 0 0 0 16" />
         </svg>
       );
+    case "download":
+      return (
+        <svg {...props}>
+          <path d="M12 4v11M8 11l4 4 4-4M5 19h14" />
+        </svg>
+      );
     default:
       return <svg {...props} />;
   }

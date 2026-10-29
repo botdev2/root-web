@@ -23,6 +23,9 @@ export default function Composer({
   sending,
   usagePercent = 0,
   credit = null,
+  turns = [],
+  sessionTitle = "New Agent",
+  projectLabel = "",
 }) {
   const { mode, setMode } = useAppState();
   const { isConnected } = useAccount();
@@ -120,7 +123,17 @@ export default function Composer({
             />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <CreditMeter usagePercent={usagePercent} credit={credit} />
+            <ContextMeter percent={usagePercent} />
+            <CreditMeter credit={credit} />
+            <button
+              type="button"
+              title="Download this chat as JSON"
+              onClick={() => downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercent, credit })}
+              className="flex h-8 items-center gap-1 rounded-[9px] border border-[var(--stroke)] px-2 text-[11px] text-[var(--ink)] hover:bg-[var(--hover)] md:h-[30px]"
+            >
+              <Icon name="download" size={13} />
+              JSON
+            </button>
             <button
               type="button"
               onClick={submit}
@@ -160,25 +173,85 @@ function Pill({ children, onClick, active, className = "", tone, title }) {
   );
 }
 
-function CreditMeter({ usagePercent, credit }) {
-  const metered = credit && Number.isFinite(credit.allowance);
-  const percent = metered
-    ? credit.allowance > 0
-      ? Math.min(100, Math.round((credit.used / credit.allowance) * 100))
-      : 100
-    : Math.min(100, usagePercent);
-  const label = metered
-    ? formatCredits(credit.remaining)
-    : usagePercent + "%";
-  const title = metered ? creditTitle(credit) : "Context window";
+const CONTEXT_WINDOW = 8192;
+
+function Ring({ percent, title, label }) {
+  const used = Math.min(100, Math.max(0, Math.round(percent) || 0));
   return (
     <span title={title} className="flex items-center gap-1.5 text-[11px] text-[var(--faint)]">
       <span
         className="h-[18px] w-[18px] rounded-full border border-[var(--stroke)]"
-        style={{ background: `conic-gradient(var(--accent) ${percent}%, transparent 0)` }}
+        style={{ background: `conic-gradient(var(--accent) ${used}%, transparent 0)` }}
       />
       <span className="tabular-nums">{label}</span>
-      {metered ? <span>cr</span> : null}
     </span>
   );
+}
+
+function ContextMeter({ percent }) {
+  const used = Math.min(100, Math.max(0, Math.round(percent) || 0));
+  const tokens = Math.round((used / 100) * CONTEXT_WINDOW);
+  return (
+    <Ring
+      percent={used}
+      label={used + "%"}
+      title={`Context window · about ${tokens.toLocaleString()} of ${CONTEXT_WINDOW.toLocaleString()} tokens`}
+    />
+  );
+}
+
+function CreditMeter({ credit }) {
+  const metered = credit && Number.isFinite(credit.allowance);
+  if (!metered) return null;
+  const percent = credit.allowance > 0 ? Math.min(100, Math.round((credit.used / credit.allowance) * 100)) : 100;
+  return <Ring percent={percent} label={formatCredits(credit.remaining) + " cr"} title={creditTitle(credit)} />;
+}
+
+function downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercent, credit }) {
+  const messages = (turns || [])
+    .filter((turn) => turn && (turn.text || turn.think || turn.pending))
+    .map((turn) => ({
+      role: turn.role || "assistant",
+      text: turn.text || "",
+      think: turn.think || "",
+      pending: !!turn.pending,
+      files: turn.files || [],
+    }));
+  const used = Math.min(100, Math.max(0, Math.round(usagePercent) || 0));
+  const payload = {
+    title: sessionTitle || "New Agent",
+    project: projectLabel || "",
+    model: "glm-5.2",
+    mode: mode || "agent",
+    exportedAt: new Date().toISOString(),
+    context: {
+      window: CONTEXT_WINDOW,
+      percent: used,
+      tokens: Math.round((used / 100) * CONTEXT_WINDOW),
+    },
+    credit: credit
+      ? {
+          remaining: credit.remaining,
+          allowance: credit.allowance,
+          used: credit.used,
+          held: credit.held,
+          staked: credit.staked,
+          palmPerCredit: credit.palmPerCredit,
+          resetsAt: credit.resetsAt,
+        }
+      : null,
+    messages,
+  };
+  const slug = String(payload.title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48) || "chat";
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = slug + ".json";
+  link.click();
+  URL.revokeObjectURL(url);
 }

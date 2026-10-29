@@ -846,6 +846,9 @@ export default function App() {
                     sending={sending}
                     usagePercent={usagePercent}
                     credit={credit}
+                    turns={local[sessionId] || []}
+                    sessionTitle={sessionTitle}
+                    projectLabel={activeProject?.label || ""}
                     onSend={() => send()}
                     autoPrompt={autoPrompt}
                     onAutoPrompt={() => setAutoPrompt((value) => !value)}

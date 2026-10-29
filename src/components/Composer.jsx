@@ -21,6 +21,7 @@ export default function Composer({
   onFiles,
   sending,
   usagePercent = 0,
+  credit = null,
 }) {
   const { mode, setMode } = useAppState();
   const { isConnected } = useAccount();
@@ -118,13 +119,7 @@ export default function Composer({
             />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden items-center gap-1.5 text-[11px] text-[var(--faint)] sm:flex">
-              <span
-                className="h-[18px] w-[18px] rounded-full border border-[var(--stroke)]"
-                style={{ background: `conic-gradient(var(--accent) ${Math.min(100, usagePercent)}%, transparent 0)` }}
-              />
-              {usagePercent}%
-            </span>
+            <CreditMeter usagePercent={usagePercent} credit={credit} />
             <button
               type="button"
               onClick={submit}
@@ -161,5 +156,27 @@ function Pill({ children, onClick, active, className = "", tone, title }) {
     >
       {children}
     </button>
+  );
+}
+
+function CreditMeter({ usagePercent, credit }) {
+  const metered = credit && Number.isFinite(credit.allowance);
+  const percent = metered
+    ? credit.allowance > 0
+      ? Math.min(100, Math.round((credit.used / credit.allowance) * 100))
+      : 100
+    : Math.min(100, usagePercent);
+  const label = metered ? (credit.allowance > 0 ? percent + "%" : "0") : usagePercent + "%";
+  const title = metered
+    ? `${Number(credit.remaining || 0).toLocaleString()} GLM tokens left. ${credit.held} $PALM held, ${credit.staked} staked. 1 $PALM is ${credit.tokensPerPalm} tokens. Resets ${String(credit.resetsAt || "").slice(0, 10)}.`
+    : "Context window";
+  return (
+    <span title={title} className="flex items-center gap-1.5 text-[11px] text-[var(--faint)]">
+      <span
+        className="h-[18px] w-[18px] rounded-full border border-[var(--stroke)]"
+        style={{ background: `conic-gradient(var(--accent) ${percent}%, transparent 0)` }}
+      />
+      {label}
+    </span>
   );
 }

@@ -18,6 +18,7 @@ import {
   writeShowWalletTab,
   writeSkills,
 } from "../../account.js";
+import { readCredits } from "../../glmChat.js";
 import { Page, Card, Tabs, Row, Field, Ghost, Primary, Toggle, Section } from "../ui.jsx";
 
 export default function AccountView() {
@@ -69,11 +70,35 @@ export default function AccountView() {
 }
 
 function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnect, onWallet, onDisconnect }) {
+  const [credit, setCredit] = useState(null);
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setCredit(null);
+      return undefined;
+    }
+    let cancelled = false;
+    readCredits(address)
+      .then((data) => {
+        if (!cancelled) setCredit(data.credit || null);
+      })
+      .catch(() => {
+        if (!cancelled) setCredit(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address, isConnected]);
+  const creditLine = !isConnected
+    ? "Connect a wallet"
+    : credit
+      ? `${Number(credit.remaining || 0).toLocaleString()} of ${Number(credit.allowance || 0).toLocaleString()} tokens · resets ${String(credit.resetsAt || "").slice(0, 10)}`
+      : "Sign in to read this window";
   return (
     <Card>
       <Row label="Status" value={isConnected ? "Wallet connected" : "Guest — browsing"} />
       <Row label="Web version" value="This harness. Lifetime unlock lives on the same wallet." />
       <Row label="Address" value={address ? shortenAddress(address) : "Not connected"} />
+      <Row label="GLM credits" value={creditLine} />
       <Row label="Show Wallet tab" value="Hidden until you turn it on. Balances and staking only.">
         <Toggle on={showWallet} onClick={() => onShowWallet(!showWallet)} />
       </Row>
@@ -89,7 +114,7 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
         <Ghost onClick={() => window.open(ACCOUNT_URL, "_blank", "noopener,noreferrer")}>useroot.sh/account</Ghost>
       </div>
       <div className="px-4 pb-4 text-[12px] leading-5 text-[var(--faint)]">
-        Unlock at useroot.sh/account. Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM. The same address opens Ops.
+        Unlock at useroot.sh/account. Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM. GLM 5.2 spends 2,000 tokens per $PALM held or staked, and that window resets every 14 days.
       </div>
     </Card>
   );

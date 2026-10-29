@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
-import { listConversations, loadConversation, removeConversation, sendTurn } from "./glmChat.js";
+import { listConversations, loadConversation, readCredits, removeConversation, sendTurn } from "./glmChat.js";
 import { MAX_REPOS, claimOpsSession, createHubProject, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
 
@@ -85,6 +85,7 @@ export default function App() {
   const [opsProjects, setOpsProjects] = useState(null);
   const [opsProjectId, setOpsProjectId] = useState("");
   const [usagePercent, setUsagePercent] = useState(0);
+  const [credit, setCredit] = useState(null);
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { open } = useAppKit();
@@ -154,8 +155,10 @@ export default function App() {
       setSessionId(null);
       setSessionTitle("New Agent");
       setUsagePercent(0);
+      setCredit(null);
       return;
     }
+    if (!opsToken) return undefined;
     let cancelled = false;
     listConversations(address)
       .then((data) => {
@@ -170,7 +173,20 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [isConnected, address]);
+  }, [isConnected, address, opsToken]);
+
+  useEffect(() => {
+    if (!opsToken || !address) return undefined;
+    let cancelled = false;
+    readCredits(address)
+      .then((data) => {
+        if (!cancelled) setCredit(data.credit || null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [opsToken, address]);
 
   useEffect(() => {
     if (!isConnected || !address) {
@@ -403,6 +419,12 @@ export default function App() {
       return;
     }
     if (sending) return;
+    if (credit && credit.remaining <= 0) {
+      notice(credit.allowance <= 0
+        ? "GLM credits come from $PALM held or staked. This wallet has none for this 14-day window."
+        : "GLM credits for this 14-day window are used up. They reset on " + String(credit.resetsAt || "").slice(0, 10) + ".");
+      return;
+    }
     const known = /^[a-f0-9]{24}$/.test(sessionId || "");
     const id = known ? sessionId : "pending-" + Date.now();
     const title = sessionTitle === "New Agent" && value ? value.slice(0, 42) : sessionTitle;
@@ -490,6 +512,7 @@ export default function App() {
         return next;
       });
       setUsagePercent(result.usage?.percent || 0);
+      if (result.credit) setCredit(result.credit);
       setCloudSessions((prev) => {
         const dropped = new Set(result.dropped || []);
         const row = {
@@ -821,6 +844,7 @@ export default function App() {
                     setDraft={setDraft}
                     sending={sending}
                     usagePercent={usagePercent}
+                    credit={credit}
                     onSend={() => send()}
                     autoPrompt={autoPrompt}
                     onAutoPrompt={() => setAutoPrompt((value) => !value)}

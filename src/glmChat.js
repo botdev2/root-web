@@ -1,14 +1,28 @@
 const ORIGIN = "https://ollama1.57.129.151.80.sslip.io";
 
+function opsBearer(address) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("root-web-ops-session") || "null");
+    if (!parsed?.token || !parsed?.address) return "";
+    if (address && String(parsed.address).toLowerCase() !== String(address).toLowerCase()) return "";
+    return parsed.token;
+  } catch {
+    return "";
+  }
+}
+
 async function call(path, { address, method = "GET", body } = {}) {
+  const headers = {
+    "content-type": "application/json",
+    "x-wallet": address,
+  };
+  const token = opsBearer(address);
+  if (token) headers.authorization = "Bearer " + token;
   let response;
   try {
     response = await fetch(ORIGIN + path, {
       method,
-      headers: {
-        "content-type": "application/json",
-        "x-wallet": address,
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
@@ -33,4 +47,8 @@ export function removeConversation(address, id) {
 
 export function sendTurn(address, body) {
   return call("/v1/chat/turn", { address, method: "POST", body });
+}
+
+export function readCredits(address) {
+  return call("/v1/credits", { address });
 }

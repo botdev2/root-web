@@ -212,6 +212,7 @@ export default function App() {
             remote: hubCloneUrl(repo.owner, repo.name),
             href: hubRepoUrl(repo.owner, repo.name),
             owner: repo.owner,
+            branch: repo.branch || "main",
             sessions: [],
           })),
         );
@@ -249,6 +250,9 @@ export default function App() {
           tree[file.path] = typeof file.content === "string" ? file.content : "";
         }
         replaceFiles?.(id, tree);
+        if (detail.branch) {
+          setOpsProjects((prev) => (prev || []).map((item) => (item.id === id ? { ...item, branch: detail.branch } : item)));
+        }
       })
       .catch((error) => {
         if (!cancelled && error.status !== 401) notice?.(error.message || "Repository files did not load.");
@@ -271,6 +275,7 @@ export default function App() {
       remote: hubCloneUrl(created.owner, repoName),
       href: hubRepoUrl(created.owner, repoName),
       owner: created.owner,
+      branch: created.branch || "main",
       sessions: [],
     };
     setOpsProjects((prev) => [row, ...(prev || []).filter((item) => item.id !== row.id)]);

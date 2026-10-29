@@ -156,6 +156,7 @@ async function executeTools({ tools, token, project, tree, message, onProject, o
       token,
       owner: current.owner,
       name: current.label,
+      branch: current.branch || "",
       message: message || "Update from /root",
       files: payload,
     });
@@ -238,6 +239,7 @@ async function makeRepo(token, call) {
       remote: `https://ops.palmaierc.com/hub/${owner}/${repoName}.git`,
       href: `https://ops.palmaierc.com/hub?repo=${encodeURIComponent(`${owner}/${repoName}`)}`,
       owner,
+      branch: created.branch || "main",
       sessions: [],
     },
     files: { "README.md": readme },

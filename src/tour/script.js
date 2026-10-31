@@ -29,9 +29,9 @@ export function buildScript() {
     {
       id: "hello",
       chapter: "Welcome",
-      title: "I'm your guide.",
+      title: "Welcome to PALM Ops and Root.",
       body:
-        "I'll walk you through /root, then we'll build something real together: a repository of your own, a prompt, and your first committed file. Nothing here is a mock-up.",
+        "Here you build with a wallet instead of an account: no email, no password, no name. I'll walk you through it, then we'll make a repository on the PALM Ops Hub, send a first prompt, and commit a first file. Nothing here is a mock-up.",
       target: null,
       cta: "Show me",
     },
@@ -63,7 +63,7 @@ export function buildScript() {
       id: "projects",
       chapter: "The workspace",
       title: "Projects are real git repositories.",
-      body: "Each one lives on the Ops Hub, signed to your wallet. You can keep three, and the + is how you make one. We'll use it in a minute.",
+      body: "Each one lives on the PALM Ops Hub, keyed to your wallet and nothing else. You can keep three, and the + is how you make one. We'll use it in a minute.",
       target: '[data-tour="projects-head"]',
     },
     {

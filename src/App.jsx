@@ -107,6 +107,22 @@ export default function App() {
   });
   const [lastCommit, setLastCommit] = useState(null);
   const theme = useMemo(() => findTheme(themeId), [themeId]);
+  const tourLook = useRef(null);
+  const touring = !!tour;
+
+  // The tour plays in Sakura (Serenity). Your own look comes back when it ends.
+  useEffect(() => {
+    if (touring && !tourLook.current) {
+      tourLook.current = { themeId, wallpaperId };
+      setThemeId("serenity");
+      setWallpaperId("serenity");
+    } else if (!touring && tourLook.current) {
+      const back = tourLook.current;
+      tourLook.current = null;
+      setThemeId(back.themeId);
+      setWallpaperId(back.wallpaperId);
+    }
+  }, [touring]);
 
   useEffect(() => {
     applyTheme(theme, wallpaperId);

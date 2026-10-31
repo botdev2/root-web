@@ -356,7 +356,7 @@ textarea {
 .tour-dim {
   position: fixed;
   pointer-events: none;
-  box-shadow: 0 0 0 200vmax rgb(6 5 4 / 0.72);
+  box-shadow: 0 0 0 200vmax rgb(30 16 24 / 0.6);
   transition:
     left 0.8s var(--tour-ease),
     top 0.8s var(--tour-ease),
@@ -560,14 +560,14 @@ textarea {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  color: #f5f2ec;
-  background: radial-gradient(ellipse 70% 60% at 50% 42%, rgb(34 27 20 / 0.9), rgb(2 2 2 / 0.98) 72%);
+  color: #fcf0f3;
+  background: radial-gradient(ellipse 70% 60% at 50% 42%, rgb(58 34 46 / 0.92), rgb(14 8 12 / 0.98) 72%);
   backdrop-filter: blur(16px) saturate(1.1);
   animation: tourFade 1.1s ease both;
 }
 
 .tour-cinema--outro {
-  background: radial-gradient(ellipse 70% 60% at 50% 46%, rgb(30 24 18 / 0.78), rgb(2 2 2 / 0.94) 74%);
+  background: radial-gradient(ellipse 70% 60% at 50% 46%, rgb(54 32 44 / 0.8), rgb(14 8 12 / 0.95) 74%);
 }
 
 .tour-cinema.is-leaving {
@@ -599,7 +599,7 @@ textarea {
   right: 0;
   z-index: 91;
   height: 11vh;
-  background: #000;
+  background: #0e080c;
   pointer-events: none;
 }
 
@@ -655,7 +655,7 @@ textarea {
   position: absolute;
   inset: -20%;
   pointer-events: none;
-  background: linear-gradient(105deg, transparent 42%, rgb(255 244 224 / 0.07) 50%, transparent 58%);
+  background: linear-gradient(105deg, transparent 42%, rgb(255 226 234 / 0.07) 50%, transparent 58%);
   transform: translateX(-120%);
   animation: tourSweep 3.4s 1.4s ease-in-out both;
 }
@@ -675,7 +675,7 @@ textarea {
   transform: translate(-50%, -50%);
   pointer-events: none;
   border-radius: 999px;
-  background: radial-gradient(circle, color-mix(in srgb, #f0c27a 20%, transparent), transparent 62%);
+  background: radial-gradient(circle, color-mix(in srgb, #e0a8b2 20%, transparent), transparent 62%);
   filter: blur(30px);
   animation: tourGlow 5.5s ease-in-out infinite;
 }
@@ -706,7 +706,7 @@ textarea {
   width: 84px;
   height: 84px;
   object-fit: contain;
-  filter: drop-shadow(0 0 30px rgb(240 194 122 / 0.5));
+  filter: drop-shadow(0 0 30px rgb(224 168 178 / 0.5));
   animation: tourLogo 1.7s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -719,7 +719,7 @@ textarea {
   to {
     opacity: 1;
     transform: none;
-    filter: blur(0) drop-shadow(0 0 30px rgb(240 194 122 / 0.5));
+    filter: blur(0) drop-shadow(0 0 30px rgb(224 168 178 / 0.5));
   }
 }
 
@@ -727,8 +727,8 @@ textarea {
   margin-top: 18px;
   font-size: clamp(46px, 9vw, 104px);
   line-height: 1;
-  color: #fff7ea;
-  text-shadow: 0 10px 60px rgb(240 194 122 / 0.28);
+  color: #fff1f3;
+  text-shadow: 0 10px 60px rgb(224 168 178 / 0.28);
   animation: tourWord 2.2s 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -749,7 +749,7 @@ textarea {
   font-size: 12px;
   letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: rgb(240 194 122 / 0.85);
+  color: rgb(224 168 178 / 0.85);
   animation: tourRise 1.2s 0.6s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
 }
 
@@ -757,8 +757,8 @@ textarea {
   margin-top: 14px;
   font-size: clamp(44px, 9vw, 108px);
   line-height: 1.02;
-  color: #fff7ea;
-  text-shadow: 0 10px 60px rgb(240 194 122 / 0.3);
+  color: #fff1f3;
+  text-shadow: 0 10px 60px rgb(224 168 178 / 0.3);
   animation: tourWord 2.2s 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
@@ -766,7 +766,7 @@ textarea {
   margin-top: 16px;
   font-size: clamp(14px, 2vw, 19px);
   line-height: 1.55;
-  color: rgb(245 242 236 / 0.78);
+  color: rgb(252 240 243 / 0.78);
   animation: tourRise 1.4s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
 }
 
@@ -774,19 +774,19 @@ textarea {
   margin-top: 30px;
   height: 46px;
   border-radius: 999px;
-  border: 1px solid rgb(240 194 122 / 0.55);
-  background: rgb(240 194 122 / 0.14);
+  border: 1px solid rgb(224 168 178 / 0.55);
+  background: rgb(224 168 178 / 0.14);
   padding: 0 30px;
   font-size: 14px;
   letter-spacing: 0.08em;
-  color: #fff7ea;
-  box-shadow: 0 0 40px rgb(240 194 122 / 0.18);
+  color: #fff1f3;
+  box-shadow: 0 0 40px rgb(224 168 178 / 0.18);
   animation: tourRise 1.2s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .tour-begin:hover {
-  background: rgb(240 194 122 / 0.26);
+  background: rgb(224 168 178 / 0.26);
   transform: translateY(-1px);
 }
 
@@ -797,7 +797,7 @@ textarea {
   z-index: 92;
   font-size: 12px;
   letter-spacing: 0.06em;
-  color: rgb(245 242 236 / 0.55);
+  color: rgb(252 240 243 / 0.55);
   animation: tourRise 1s 1.2s ease both;
 }
 
@@ -823,6 +823,54 @@ textarea {
   }
 }
 
+
+/* Falling sakura petals */
+
+.tour-petals {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tour-petal {
+  position: absolute;
+  top: -8vh;
+  width: var(--s, 12px);
+  height: calc(var(--s, 12px) * 0.78);
+  border-radius: 150% 0 150% 0;
+  background: linear-gradient(135deg, #fbe3e8, #e0a8b2 70%, #c9808e);
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgb(224 168 178 / 0.35));
+  animation: tourPetal var(--d, 14s) var(--w, 0s) linear infinite;
+}
+
+@keyframes tourPetal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  8% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate3d(var(--x, 60px), 55vh, 0) rotate(200deg) rotateY(160deg);
+  }
+  92% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--x, 60px) * -0.6), 112vh, 0) rotate(420deg) rotateY(320deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-petal {
+    animation: none;
+    opacity: 0;
+  }
+}
 @keyframes ucLabel {
   from {
     opacity: 0;

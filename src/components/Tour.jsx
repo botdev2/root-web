@@ -342,7 +342,7 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
 
   useEffect(() => {
     if (phase !== "intro" || !auto) return undefined;
-    const timer = window.setTimeout(() => begin(), 8200);
+    const timer = window.setTimeout(() => begin(), 9600);
     return () => window.clearTimeout(timer);
   }, [phase, auto]);
 
@@ -456,17 +456,24 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
           <Bars leaving={leaving} />
           <div className={`tour-cinema ${leaving ? "is-leaving" : ""}`} role="dialog" aria-label="Welcome to /root">
             <div className="tour-glow" />
+            <Petals />
             <div className="tour-sweep" />
             <div className="tour-stage">
               <img src="/palm.png" alt="" className="tour-logo" />
               <div className="tour-word">/root</div>
-              <p className="tour-line" style={{ animationDelay: "2.9s" }}>
-                An agent that builds in your repositories.
+              <div className="tour-kicker" style={{ marginTop: 20, animationDelay: "2.7s" }}>
+                PALM Ops × Root
+              </div>
+              <p className="tour-line" style={{ animationDelay: "3.2s", marginTop: 12 }}>
+                Build in a decentralized, anonymous way.
               </p>
-              <p className="tour-line" style={{ animationDelay: "4s", marginTop: 6 }}>
-                Signed with your wallet. Thinking on GLM 5.2.
+              <p className="tour-line" style={{ animationDelay: "4.3s", marginTop: 6 }}>
+                No account, no email, no name. Your wallet is the only key.
               </p>
-              <button type="button" className="tour-begin" style={{ animationDelay: "5.2s" }} onClick={begin}>
+              <p className="tour-line" style={{ animationDelay: "5.4s", marginTop: 6 }}>
+                Your repositories live on the PALM Ops Hub. Thinking on GLM 5.2.
+              </p>
+              <button type="button" className="tour-begin" style={{ animationDelay: "6.6s" }} onClick={begin}>
                 Begin
               </button>
             </div>
@@ -482,14 +489,15 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
           <Bars leaving={leaving} />
           <div className={`tour-cinema tour-cinema--outro ${leaving ? "is-leaving" : ""}`} role="dialog" aria-label="Good luck">
             <div className="tour-glow" />
+            <Petals />
             <div className="tour-sweep" />
             <div className="tour-stage">
               <div className="tour-kicker">{committed ? "First commit" : "That's the tour"}</div>
               <div className="tour-big">Good luck.</div>
               <p className="tour-line" style={{ animationDelay: "2.2s" }}>
                 {committed
-                  ? "Your repository is live on the Ops Hub, and your first file is in it. From here, it's yours."
-                  : "You know the rail, the composer, and the modes. Make a repository, write a prompt, and ship something."}
+                  ? "Your first file is committed to the PALM Ops Hub, signed by a wallet and nobody else. Nobody asked who you are. Keep it that way."
+                  : "A wallet, a repository, a prompt. That's all it takes. No account, no name. Go build something."}
               </p>
               <button
                 type="button"
@@ -603,6 +611,30 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
       )}
     </>,
     document.body,
+  );
+}
+
+function Petals() {
+  const petals = useMemo(
+    () =>
+      Array.from({ length: 26 }, (_, i) => ({
+        key: i,
+        style: {
+          left: `${Math.round(Math.random() * 100)}%`,
+          "--s": `${14 + Math.round(Math.random() * 14)}px`,
+          "--d": `${11 + Math.random() * 9}s`,
+          "--w": `-${(Math.random() * 16).toFixed(1)}s`,
+          "--x": `${Math.round(40 + Math.random() * 110)}px`,
+        },
+      })),
+    [],
+  );
+  return (
+    <div className="tour-petals" aria-hidden="true">
+      {petals.map((petal) => (
+        <span key={petal.key} className="tour-petal" style={petal.style} />
+      ))}
+    </div>
   );
 }
 

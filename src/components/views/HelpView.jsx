@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { HELP } from "../../mock.js";
 import { Page, Card } from "../ui.jsx";
 
-export default function HelpView({ onOpen }) {
+export default function HelpView({ onOpen, onTour }) {
   const [id, setId] = useState("welcome");
   const [query, setQuery] = useState("");
   const page = HELP.find((item) => item.id === id) || HELP[0];
@@ -17,6 +17,15 @@ export default function HelpView({ onOpen }) {
     <Page wide>
       <div className="grid gap-4 md:grid-cols-[240px_1fr]">
         <Card className="h-fit p-2">
+          {onTour && (
+            <button
+              type="button"
+              onClick={onTour}
+              className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] text-[13px] text-[var(--bg)]"
+            >
+              Take the tour
+            </button>
+          )}
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}

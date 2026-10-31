@@ -33,7 +33,7 @@ export default function ChatView({ sessionId, extras = [] }) {
   }, [messages, sessionId]);
 
   return (
-    <div className="relative min-h-0 flex-1">
+    <div data-tour="thread" className="relative min-h-0 flex-1">
       <div ref={scroller} className="scroll-thin h-full overflow-y-auto px-4 py-5 md:px-8 md:py-6">
         <div className="mx-auto flex max-w-[820px] flex-col gap-3">
           {messages.map((message, index) => (

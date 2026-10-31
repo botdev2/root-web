@@ -343,6 +343,486 @@ textarea {
 .chat-md blockquote { margin: 0.4em 0; padding-left: 0.7em; border-left: 2px solid var(--stroke); color: var(--muted); }
 .chat-md a { text-decoration: underline; }
 
+/* ---- Guided tour ---------------------------------------------------- */
+
+.tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  --tour-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tour-dim {
+  position: fixed;
+  pointer-events: none;
+  box-shadow: 0 0 0 200vmax rgb(6 5 4 / 0.72);
+  transition:
+    left 0.8s var(--tour-ease),
+    top 0.8s var(--tour-ease),
+    width 0.8s var(--tour-ease),
+    height 0.8s var(--tour-ease),
+    border-radius 0.8s var(--tour-ease);
+}
+
+.tour-ring {
+  position: fixed;
+  pointer-events: none;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 78%, transparent);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 0 46px color-mix(in srgb, var(--accent) 34%, transparent),
+    inset 0 0 22px color-mix(in srgb, var(--accent) 10%, transparent);
+  transition:
+    left 0.8s var(--tour-ease),
+    top 0.8s var(--tour-ease),
+    width 0.8s var(--tour-ease),
+    height 0.8s var(--tour-ease),
+    border-radius 0.8s var(--tour-ease),
+    opacity 0.4s ease;
+  animation: tourBreath 3s ease-in-out infinite;
+}
+
+@keyframes tourBreath {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 5px color-mix(in srgb, var(--accent) 8%, transparent),
+      0 0 34px color-mix(in srgb, var(--accent) 26%, transparent),
+      inset 0 0 18px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9px color-mix(in srgb, var(--accent) 14%, transparent),
+      0 0 64px color-mix(in srgb, var(--accent) 44%, transparent),
+      inset 0 0 28px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+}
+
+.tour-block {
+  position: fixed;
+  pointer-events: auto;
+  cursor: default;
+}
+
+.tour-card {
+  position: fixed;
+  pointer-events: auto;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--stroke));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 94%, transparent), color-mix(in srgb, var(--bg) 92%, transparent));
+  backdrop-filter: blur(26px) saturate(1.3);
+  box-shadow:
+    0 30px 80px rgb(0 0 0 / 0.5),
+    0 0 0 1px rgb(255 255 255 / 0.03),
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+  transition:
+    left 0.8s var(--tour-ease),
+    top 0.8s var(--tour-ease),
+    width 0.8s var(--tour-ease);
+  animation: tourCardIn 0.7s var(--tour-ease) both;
+}
+
+@keyframes tourCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tour-progress {
+  height: 2px;
+  background: color-mix(in srgb, var(--stroke) 70%, transparent);
+}
+
+.tour-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 40%, transparent), var(--accent));
+  transition: width 0.9s var(--tour-ease);
+}
+
+.tour-face {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 59px;
+  border-radius: 16px;
+  overflow: visible;
+}
+
+.tour-face img {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.4);
+}
+
+.tour-face::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: tourHalo 2.6s ease-out infinite;
+}
+
+@keyframes tourHalo {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+.tour-rise {
+  animation: tourRise 0.7s var(--tour-ease) both;
+}
+
+@keyframes tourRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.tour-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.14em;
+  background: var(--accent);
+  animation: tourCaret 0.9s steps(1) infinite;
+}
+
+@keyframes tourCaret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.tour-cursor {
+  position: fixed;
+  z-index: 3;
+  pointer-events: none;
+  transition:
+    left 0.85s var(--tour-ease),
+    top 0.85s var(--tour-ease),
+    opacity 0.3s ease;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.55));
+}
+
+.tour-tap {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid var(--accent);
+  animation: tourTap 0.6s ease-out both;
+}
+
+@keyframes tourTap {
+  from {
+    opacity: 0.95;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+/* Cinematic title cards */
+
+.tour-cinema {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #f5f2ec;
+  background: radial-gradient(ellipse 70% 60% at 50% 42%, rgb(34 27 20 / 0.9), rgb(2 2 2 / 0.98) 72%);
+  backdrop-filter: blur(16px) saturate(1.1);
+  animation: tourFade 1.1s ease both;
+}
+
+.tour-cinema--outro {
+  background: radial-gradient(ellipse 70% 60% at 50% 46%, rgb(30 24 18 / 0.78), rgb(2 2 2 / 0.94) 74%);
+}
+
+.tour-cinema.is-leaving {
+  pointer-events: none;
+  animation: tourFadeOut 0.95s ease both;
+}
+
+@keyframes tourFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tourFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.tour-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 91;
+  height: 11vh;
+  background: #000;
+  pointer-events: none;
+}
+
+.tour-bar--top {
+  top: 0;
+  animation: tourBarTop 1.2s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+.tour-bar--bottom {
+  bottom: 0;
+  animation: tourBarBottom 1.2s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+.tour-bar.is-leaving.tour-bar--top {
+  animation: tourBarTopOut 0.95s ease both;
+}
+
+.tour-bar.is-leaving.tour-bar--bottom {
+  animation: tourBarBottomOut 0.95s ease both;
+}
+
+@keyframes tourBarTop {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes tourBarBottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes tourBarTopOut {
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes tourBarBottomOut {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.tour-sweep {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgb(255 244 224 / 0.07) 50%, transparent 58%);
+  transform: translateX(-120%);
+  animation: tourSweep 3.4s 1.4s ease-in-out both;
+}
+
+@keyframes tourSweep {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+.tour-glow {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: min(70vw, 760px);
+  height: min(70vw, 760px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, #f0c27a 20%, transparent), transparent 62%);
+  filter: blur(30px);
+  animation: tourGlow 5.5s ease-in-out infinite;
+}
+
+@keyframes tourGlow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+.tour-stage {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  max-width: min(760px, 88vw);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.tour-logo {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 30px rgb(240 194 122 / 0.5));
+  animation: tourLogo 1.7s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes tourLogo {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+    filter: blur(14px) drop-shadow(0 0 0 transparent);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0) drop-shadow(0 0 30px rgb(240 194 122 / 0.5));
+  }
+}
+
+.tour-word {
+  margin-top: 18px;
+  font-size: clamp(46px, 9vw, 104px);
+  line-height: 1;
+  color: #fff7ea;
+  text-shadow: 0 10px 60px rgb(240 194 122 / 0.28);
+  animation: tourWord 2.2s 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes tourWord {
+  from {
+    opacity: 0;
+    letter-spacing: 0.5em;
+    filter: blur(14px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.03em;
+    filter: blur(0);
+  }
+}
+
+.tour-kicker {
+  font-size: 12px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgb(240 194 122 / 0.85);
+  animation: tourRise 1.2s 0.6s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+.tour-big {
+  margin-top: 14px;
+  font-size: clamp(44px, 9vw, 108px);
+  line-height: 1.02;
+  color: #fff7ea;
+  text-shadow: 0 10px 60px rgb(240 194 122 / 0.3);
+  animation: tourWord 2.2s 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.tour-line {
+  margin-top: 16px;
+  font-size: clamp(14px, 2vw, 19px);
+  line-height: 1.55;
+  color: rgb(245 242 236 / 0.78);
+  animation: tourRise 1.4s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+.tour-begin {
+  margin-top: 30px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgb(240 194 122 / 0.55);
+  background: rgb(240 194 122 / 0.14);
+  padding: 0 30px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: #fff7ea;
+  box-shadow: 0 0 40px rgb(240 194 122 / 0.18);
+  animation: tourRise 1.2s var(--tour-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.tour-begin:hover {
+  background: rgb(240 194 122 / 0.26);
+  transform: translateY(-1px);
+}
+
+.tour-skip {
+  position: fixed;
+  right: 22px;
+  top: calc(11vh + 14px);
+  z-index: 92;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: rgb(245 242 236 / 0.55);
+  animation: tourRise 1s 1.2s ease both;
+}
+
+.tour-skip:hover {
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .tour-bar {
+    height: 7vh;
+  }
+  .tour-skip {
+    top: calc(7vh + 10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-sweep,
+  .tour-glow,
+  .tour-ring,
+  .tour-face::before {
+    animation: none;
+  }
+}
+
 @keyframes ucLabel {
   from {
     opacity: 0;

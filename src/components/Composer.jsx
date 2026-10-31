@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { Icon } from "./Icons.jsx";
@@ -31,6 +31,13 @@ export default function Composer({
   const { isConnected } = useAccount();
   const { open } = useAppKit();
   const fileRef = useRef(null);
+  const boxRef = useRef(null);
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    box.style.height = "auto";
+    box.style.height = `${Math.min(box.scrollHeight, 180)}px`;
+  }, [draft]);
   const submit = () => {
     if (!isConnected) {
       open({ view: "Connect" });
@@ -41,7 +48,7 @@ export default function Composer({
 
   return (
     <div className="px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-1.5 md:px-8 md:pb-3">
-      <div className="frost-input composer-shadow mx-auto max-w-[820px] rounded-[16px] border border-[var(--stroke)] px-3 pb-2 pt-3 md:px-4 md:pb-2.5 md:pt-3.5">
+      <div data-tour="composer" className="frost-input composer-shadow mx-auto max-w-[820px] rounded-[16px] border border-[var(--stroke)] px-3 pb-2 pt-3 md:px-4 md:pb-2.5 md:pt-3.5">
         {attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">
             {attachments.map((file) => (
@@ -57,6 +64,8 @@ export default function Composer({
           </div>
         )}
         <textarea
+          ref={boxRef}
+          data-tour="prompt"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
@@ -71,7 +80,7 @@ export default function Composer({
         />
         <div className="mt-2 flex items-center gap-2">
           <div className="scroll-thin flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:gap-2">
-            <div className="flex shrink-0 overflow-hidden rounded-[9px] border border-[var(--stroke)]">
+            <div data-tour="modes" className="flex shrink-0 overflow-hidden rounded-[9px] border border-[var(--stroke)]">
               {MODES.map((item) => (
                 <button
                   key={item.id}
@@ -93,21 +102,21 @@ export default function Composer({
                 </button>
               ))}
             </div>
-            <Pill onClick={onAutoPrompt} active={autoPrompt} title="Auto-Prompt">
+            <Pill tour="autoprompt" onClick={onAutoPrompt} active={autoPrompt} title="Auto-Prompt">
               <Icon name="spark" size={14} />
               <span className="hidden sm:inline">Auto-Prompt{autoPrompt ? " · on" : ""}</span>
             </Pill>
             {isConnected && (
-              <Pill title="GLM 5.2 cloud">
+              <Pill tour="model" title="GLM 5.2 cloud">
                 <Icon name="cloud" size={14} />
                 <span className="hidden sm:inline">GLM 5.2 cloud</span>
               </Pill>
             )}
-            <Pill title="Attach" onClick={() => fileRef.current?.click()}>
+            <Pill tour="attach" title="Attach" onClick={() => fileRef.current?.click()}>
               <Icon name="paperclip" size={14} />
               <span className="hidden sm:inline">Attach</span>
             </Pill>
-            <Pill onClick={onFiles} title="Files">
+            <Pill tour="files" onClick={onFiles} title="Files">
               <Icon name="folder" size={14} />
               <span className="hidden md:inline">Files</span>
             </Pill>
@@ -123,10 +132,13 @@ export default function Composer({
             />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <ContextMeter percent={usagePercent} />
-            <CreditMeter credit={credit} />
+            <span data-tour="meters" className="flex items-center gap-2">
+              <ContextMeter percent={usagePercent} />
+              <CreditMeter credit={credit} />
+            </span>
             <button
               type="button"
+              data-tour="json"
               title="Download this chat as JSON"
               onClick={() => downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercent, credit })}
               className="flex h-8 items-center gap-1 rounded-[9px] border border-[var(--stroke)] px-2 text-[11px] text-[var(--ink)] hover:bg-[var(--hover)] md:h-[30px]"
@@ -136,6 +148,7 @@ export default function Composer({
             </button>
             <button
               type="button"
+              data-tour="send"
               onClick={submit}
               disabled={sending}
               aria-label="Send"
@@ -150,7 +163,7 @@ export default function Composer({
   );
 }
 
-function Pill({ children, onClick, active, className = "", tone, title }) {
+function Pill({ children, onClick, active, className = "", tone, title, tour }) {
   const toneClass =
     active && tone === "ask"
       ? "border-[#7ea4d9] bg-[color-mix(in_srgb,#7ea4d9_18%,transparent)] text-[#9ec0ea]"
@@ -161,6 +174,7 @@ function Pill({ children, onClick, active, className = "", tone, title }) {
     <button
       type="button"
       title={title}
+      data-tour={tour}
       onClick={onClick}
       className={`flex h-8 shrink-0 items-center gap-1.5 rounded-[9px] border px-2 text-[12px] md:h-[30px] md:px-2.5 ${
         active

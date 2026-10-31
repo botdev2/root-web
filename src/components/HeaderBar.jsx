@@ -43,7 +43,7 @@ export default function HeaderBar({
   const rate = Number(credit?.palmPerCredit) || PALM_PER_CREDIT;
 
   return (
-    <header className="frost-header flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[var(--stroke-soft)] px-3 pt-[env(safe-area-inset-top)] md:px-7">
+    <header data-tour="header" className="frost-header flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[var(--stroke-soft)] px-3 pt-[env(safe-area-inset-top)] md:px-7">
       <button
         type="button"
         onClick={onMenu}
@@ -69,6 +69,7 @@ export default function HeaderBar({
       </div>
       {credit && Number.isFinite(credit.allowance) ? (
         <div
+          data-tour="credits"
           title={creditTitle(credit)}
           className="flex shrink-0 flex-col items-end leading-tight rounded-lg border border-[var(--stroke)] bg-[var(--panel)] px-2.5 py-1"
         >
@@ -81,7 +82,9 @@ export default function HeaderBar({
           </div>
         </div>
       ) : null}
-      <WalletButton className="shrink-0" />
+      <span data-tour="wallet" className="inline-flex shrink-0">
+        <WalletButton className="shrink-0" />
+      </span>
       {!signedIn && (
         <Ghost onClick={onUnlock}>Unlock</Ghost>
       )}

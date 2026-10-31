@@ -42,6 +42,7 @@ import PluginsView from "./components/views/PluginsView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
+import Tour from "./components/Tour.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
@@ -94,6 +95,17 @@ export default function App() {
   signOpsRef.current = signMessageAsync;
   const [dayTasksIdle, setDayTasksIdle] = useState(false);
   const [editorFile, setEditorFile] = useState("README.md");
+  const [tour, setTour] = useState(() => {
+    try {
+      const flag = new URLSearchParams(window.location.search).get("tour");
+      if (flag === "auto") return { auto: true };
+      if (flag === "1" || flag === "true") return { auto: false };
+    } catch {
+      /* ignore */
+    }
+    return null;
+  });
+  const [lastCommit, setLastCommit] = useState(null);
   const theme = useMemo(() => findTheme(themeId), [themeId]);
 
   useEffect(() => {
@@ -483,6 +495,12 @@ export default function App() {
           recordCommit?.(projectRow.id, String(message || "Update from /root").slice(0, 72));
           const at = new Date().toISOString();
           setOpsProjects((prev) => (prev || []).map((item) => (item.id === projectRow.id ? { ...item, activityAt: at } : item)));
+          setLastCommit((prev) => {
+            const now = Date.now();
+            const names = Object.keys(payload || {});
+            const same = prev && prev.project === projectRow.label && now - prev.at < 120000;
+            return { at: now, project: projectRow.label, files: same ? [...new Set([...prev.files, ...names])] : names, message };
+          });
         },
       });
       const result = outcome.result;
@@ -688,6 +706,17 @@ export default function App() {
   };
 
   const showComposer = CHAT_VIEWS.has(view);
+  const startTour = () => {
+    setPaletteOpen(false);
+    setConnectOpen(false);
+    setUnlockOpen(false);
+    setFilesOpen(false);
+    setNavOpen(false);
+    setView("home");
+    setSessionId(null);
+    setSessionTitle("New Agent");
+    setTour({ auto: false });
+  };
   if (!state) return null;
 
   return (
@@ -838,7 +867,7 @@ export default function App() {
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}
-                {view === "help" && <HelpView onOpen={openView} />}
+                {view === "help" && <HelpView onOpen={openView} onTour={startTour} />}
                 {view === "templates" && (
                   <TemplatesView
                     onCreate={async (item) => {
@@ -928,19 +957,67 @@ export default function App() {
           </main>
         </div>
       </div>
-      <AvatarOverlay open={avatarOn} onClose={() => {
-        setAvatarOn(false);
-        try {
-          localStorage.setItem("root-web-avatar-on", "0");
-        } catch {
-          /* ignore */
-        }
-      }} view={view} projectLabel={activeProject?.label || ""} />
+      <AvatarOverlay
+        open={avatarOn}
+        hidden={!!tour}
+        onTour={startTour}
+        onClose={() => {
+          setAvatarOn(false);
+          try {
+            localStorage.setItem("root-web-avatar-on", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
+        view={view}
+        projectLabel={activeProject?.label || ""}
+      />
+      {tour && (
+        <Tour
+          autoplay={tour.auto}
+          live={{
+            isConnected: !!(isConnected && address),
+            opsToken,
+            projects: listedProjects.map((item) => item.label),
+            activeProject: activeProject?.label || "",
+            credit,
+            sending,
+            lastCommit,
+          }}
+          controls={{
+            setNavOpen,
+            setFilesOpen,
+            newChat: () => {
+              setView("home");
+              setSessionId(null);
+              setSessionTitle("New Agent");
+              setDraft("");
+            },
+          }}
+          onClose={() => {
+            setTour(null);
+            setNavOpen(false);
+            try {
+              const url = new URL(window.location.href);
+              if (url.searchParams.has("tour")) {
+                url.searchParams.delete("tour");
+                window.history.replaceState({}, "", url.toString());
+              }
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+      )}
       {paletteOpen && (
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
           onPick={(id) => {
             setPaletteOpen(false);
+            if (id === "tour") {
+              startTour();
+              return;
+            }
             openView(id);
             if (id === "home") {
               setSessionId(null);

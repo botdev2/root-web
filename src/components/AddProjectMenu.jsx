@@ -125,13 +125,14 @@ export default function AddProjectMenu({ open, token, onToken, onCreate, onTempl
                 </a>
               )}
             </div>
-            <button type="button" onClick={onClose} className="h-9 rounded-[10px] bg-[var(--accent)] px-3 text-[13px] text-[var(--bg)]">
+            <button type="button" data-tour="repo-done" onClick={onClose} className="h-9 rounded-[10px] bg-[var(--accent)] px-3 text-[13px] text-[var(--bg)]">
               Done
             </button>
           </div>
         ) : (
           <div className="mt-4">
             <input
+              data-tour="repo-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
               onKeyDown={(event) => {
@@ -166,6 +167,7 @@ export default function AddProjectMenu({ open, token, onToken, onCreate, onTempl
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
+                data-tour="repo-create"
                 onClick={createFolder}
                 disabled={busy}
                 className="h-9 rounded-[10px] bg-[var(--accent)] px-3 text-[13px] text-[var(--bg)] disabled:opacity-50"

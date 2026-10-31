@@ -106,7 +106,7 @@ export default function Sidebar({
   const nextLabel = !onboarding.skills ? "Bridge Skills" : !onboarding.repos ? "Connect a project" : "Connect GitHub";
 
   return (
-    <aside className="frost flex h-full w-[min(248px,86vw)] shrink-0 flex-col border-r border-[var(--stroke)]">
+    <aside data-tour="sidebar" className="frost flex h-full w-[min(248px,86vw)] shrink-0 flex-col border-r border-[var(--stroke)]">
       <div className="flex items-center justify-between px-3.5 pb-1 pt-3.5">
         <button
           type="button"
@@ -120,18 +120,22 @@ export default function Sidebar({
       </div>
 
       <div className="px-3.5">
-        {NAV.map((item) => (
-          <NavButton
-            key={item.id}
-            active={item.id === "home" ? view === "home" : view === item.id}
-            onClick={() => go(() => (item.id === "home" ? onNewChat() : onView(item.id)))}
-          >
-            {item.label}
-          </NavButton>
-        ))}
+        <div data-tour="nav">
+          {NAV.map((item) => (
+            <NavButton
+              key={item.id}
+              tour={item.id === "home" ? "nav-home" : undefined}
+              active={item.id === "home" ? view === "home" : view === item.id}
+              onClick={() => go(() => (item.id === "home" ? onNewChat() : onView(item.id)))}
+            >
+              {item.label}
+            </NavButton>
+          ))}
+        </div>
 
         <button
           type="button"
+          data-tour="project-switch"
           onClick={() => {
             if (!projects.length) return;
             const next = projects[(projects.findIndex((item) => item.id === projectId) + 1) % projects.length];
@@ -149,7 +153,7 @@ export default function Sidebar({
       </div>
 
       <div ref={listRef} className="scroll-thin mt-1 min-h-0 flex-1 overflow-y-auto px-3.5">
-        <div className="mb-1 flex items-center justify-between px-2 pt-3">
+        <div data-tour="chats-head" className="mb-1 flex items-center justify-between px-2 pt-3">
           <span className="text-[12px] text-[var(--faint)]">Chats</span>
           {walletReady && <span className="text-[11px] text-[var(--faint)]">{Math.min(chats.length, convoMax)}/{convoMax}</span>}
         </div>
@@ -198,10 +202,11 @@ export default function Sidebar({
             </div>
           );
         })}
-        <div className="relative mb-1 mt-3 flex items-center justify-between px-2 pt-1">
+        <div data-tour="projects-head" className="relative mb-1 mt-3 flex items-center justify-between px-2 pt-1">
           <span className="text-[12px] text-[var(--faint)]">Projects</span>
           <button
             type="button"
+            data-tour="add-project"
             onClick={() => setAddOpen(true)}
             className="flex h-7 w-7 items-center justify-center text-[16px] text-[var(--muted)] hover:text-[var(--ink)]"
           >
@@ -224,7 +229,7 @@ export default function Sidebar({
           const count = sessionsFor(project.id).length;
           const pending = busy?.projectId === project.id;
           return (
-            <div key={project.id} className={`mb-0.5 flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
+            <div key={project.id} data-project={project.label} className={`mb-0.5 flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
               <button
                 type="button"
                 onClick={() => pickProject(project.id)}
@@ -318,10 +323,11 @@ function LiveDot() {
   );
 }
 
-function NavButton({ active, onClick, children }) {
+function NavButton({ active, onClick, children, tour }) {
   return (
     <button
       type="button"
+      data-tour={tour}
       onClick={onClick}
       className={`mb-1 flex h-10 w-full items-center rounded-[14px] px-2 text-left text-[13px] ${
         active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"

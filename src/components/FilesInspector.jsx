@@ -76,7 +76,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
   const chart = charts.find((item) => item.id === chartId);
 
   return (
-    <aside className="absolute inset-0 z-20 flex flex-col bg-[color-mix(in_srgb,var(--bg)_40%,transparent)] md:static md:inset-auto md:z-auto md:mb-3 md:mr-3 md:mt-2 md:w-[320px] md:shrink-0 md:bg-transparent">
+    <aside data-tour="inspector" className="absolute inset-0 z-20 flex flex-col bg-[color-mix(in_srgb,var(--bg)_40%,transparent)] md:static md:inset-auto md:z-auto md:mb-3 md:mr-3 md:mt-2 md:w-[320px] md:shrink-0 md:bg-transparent">
       <div className="frost-panel ml-auto flex h-full w-[min(100%,360px)] flex-col overflow-y-auto border-l border-[var(--stroke)] p-3.5 md:ml-0 md:w-full md:rounded-2xl md:border">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-[13px]">Inspector</div>
@@ -116,6 +116,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
                   <li key={name}>
                     <button
                       type="button"
+                      data-tour-file={name}
                       title={title}
                       disabled={removed}
                       onClick={() => {

@@ -30,7 +30,7 @@ function initialPos() {
   return clampPos(window.innerWidth - PORTRAIT_W - 24, window.innerHeight - PORTRAIT_H - bottom);
 }
 
-export default function AvatarOverlay({ open, view, projectLabel }) {
+export default function AvatarOverlay({ open, view, projectLabel, onTour, hidden = false }) {
   const { open: openWallet } = useAppKit();
   const { address, isConnected } = useAccount();
   const [talking, setTalking] = useState(false);
@@ -123,7 +123,7 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
     }
   };
 
-  if (!open) return null;
+  if (!open || hidden) return null;
 
   const bubbleAbove = pos.y > 96;
 
@@ -137,6 +137,21 @@ export default function AvatarOverlay({ open, view, projectLabel }) {
         {line && (
           <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
             {line}
+          </div>
+        )}
+        {talking && !line && onTour && (
+          <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2.5 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
+            <div>Want a guided tour? I'll show you around and help you ship your first commit.</div>
+            <button
+              type="button"
+              onClick={() => {
+                setTalking(false);
+                onTour();
+              }}
+              className="mt-2 h-9 w-full rounded-lg bg-[var(--accent)] text-[12.5px] text-[var(--bg)]"
+            >
+              Start the tour
+            </button>
           </div>
         )}
         {(talking || line) && (

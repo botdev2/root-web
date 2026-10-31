@@ -12,6 +12,7 @@ const HITS = [
   { id: "account", label: "Account", hint: "Wallet and profile" },
   { id: "telemetry", label: "Telemetry", hint: "Session privacy" },
   { id: "updates", label: "Updates", hint: "Channel and version" },
+  { id: "tour", label: "Take the tour", hint: "A guided first repository and prompt" },
   { id: "help", label: "Help", hint: "How /root works" },
 ];
 

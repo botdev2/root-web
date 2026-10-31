@@ -342,7 +342,7 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
 
   useEffect(() => {
     if (phase !== "intro" || !auto) return undefined;
-    const timer = window.setTimeout(() => begin(), 9600);
+    const timer = window.setTimeout(() => begin(), 8400);
     return () => window.clearTimeout(timer);
   }, [phase, auto]);
 
@@ -470,11 +470,8 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
               <p className="tour-line" style={{ animationDelay: "4.3s", marginTop: 6 }}>
                 No account, no email, no name. Your wallet is the only key.
               </p>
-              <p className="tour-line" style={{ animationDelay: "5.4s", marginTop: 6 }}>
-                Your repositories live on the PALM Ops Hub. Thinking on GLM 5.2.
-              </p>
-              <button type="button" className="tour-begin" style={{ animationDelay: "6.6s" }} onClick={begin}>
-                Begin
+              <button type="button" className="tour-begin" style={{ animationDelay: "5.6s" }} onClick={begin}>
+                Take the guided tour
               </button>
             </div>
             <button type="button" className="tour-skip" onClick={() => exit(false)}>

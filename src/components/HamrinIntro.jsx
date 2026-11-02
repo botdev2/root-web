@@ -65,7 +65,7 @@ export default function HamrinIntro({ open, onClose, onTour }) {
     <div className="hamrin-backdrop" role="dialog" aria-modal="true" aria-label="Hamrin 1.0 is here" onClick={() => close()}>
       <div className="hamrin-card" onClick={(event) => event.stopPropagation()}>
         <div className="hamrin-halo" aria-hidden="true" />
-        <img src={hamrin} alt="Hamrin, the PALM mascot" width={300} height={297} className="hamrin-mascot" draggable={false} />
+        <img src={hamrin} alt="Hamrin, the PALM mascot" width={549} height={510} className="hamrin-mascot" draggable={false} />
 
         <div className="hamrin-body">
           <div className="text-[10.5px] uppercase tracking-[0.22em] text-[var(--accent)]">Meet the model</div>

@@ -8,6 +8,7 @@ const HITS = [
   { id: "ops", label: "Ops", hint: "PALM Ops console" },
   { id: "plugins", label: "Plugins", hint: "Hosting, domains, and Ops Hub" },
   { id: "notes", label: "Notes", hint: "Daily goals" },
+  { id: "billing", label: "Billing", hint: "Credits and when they reset" },
   { id: "settings", label: "Settings · Appearance", hint: "Themes, PALM, wallpaper" },
   { id: "account", label: "Account", hint: "Wallet and profile" },
   { id: "telemetry", label: "Telemetry", hint: "Session privacy" },

@@ -10,6 +10,7 @@ const NAV = [
   { id: "ops", label: "Ops" },
   { id: "plugins", label: "Plugins" },
   { id: "notes", label: "Notes" },
+  { id: "billing", label: "Billing" },
 ];
 
 function shortWhen(value) {
@@ -168,7 +169,7 @@ export default function Sidebar({
               data-chat={session.id}
               className={`mb-0.5 flex w-full items-center rounded-[10px] pr-1 ${
                 active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
-              }`}
+              } ${session.archived ? "opacity-70" : ""}`}
             >
               <button
                 type="button"
@@ -187,7 +188,10 @@ export default function Sidebar({
                     {busy?.sessionId === session.id && <LiveDot />}
                     <span className="shrink-0 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
                   </span>
-                  <span className="block truncate text-[11px] text-[var(--faint)]">{projectName(session.projectId)}</span>
+                  <span className="block truncate text-[11px] text-[var(--faint)]">
+                    {session.archived && <span className="mr-1.5 rounded border border-[var(--stroke)] px-1 text-[9.5px] uppercase tracking-wide">Archived</span>}
+                    {projectName(session.projectId)}
+                  </span>
                 </span>
               </button>
               <button

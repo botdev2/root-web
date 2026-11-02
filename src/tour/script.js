@@ -70,7 +70,7 @@ export function buildScript() {
       id: "tools",
       chapter: "The workspace",
       title: "And a few tools around the edge.",
-      body: "Automations run scheduled helpers. Reasoning shows how the agent thinks, one stage at a time. Ops handles hosting and domains. Notes keeps your daily goals.",
+      body: "Automations run scheduled helpers. Reasoning shows how the agent thinks, one stage at a time. Ops handles hosting and domains. Notes keeps your daily goals. Billing shows your credits and counts down to the reset.",
       target: '[data-tour="nav"]',
     },
     {

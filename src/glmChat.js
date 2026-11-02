@@ -29,8 +29,17 @@ async function call(path, { address, method = "GET", body } = {}) {
     throw new Error("The conversation store did not answer.");
   }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "The conversation store did not answer.");
+  if (!response.ok) {
+    const failure = new Error(data.error || "The conversation store did not answer.");
+    failure.status = response.status;
+    failure.archived = data.archived === true;
+    throw failure;
+  }
   return data;
+}
+
+export function archiveConversation(address, id) {
+  return call("/v1/conversations/" + encodeURIComponent(id) + "/archive", { address, method: "POST" });
 }
 
 export function listConversations(address) {

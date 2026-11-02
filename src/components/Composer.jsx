@@ -26,6 +26,8 @@ export default function Composer({
   turns = [],
   sessionTitle = "New Agent",
   projectLabel = "",
+  archived = false,
+  onNewChat,
 }) {
   const { mode, setMode } = useAppState();
   const { isConnected } = useAccount();
@@ -45,6 +47,44 @@ export default function Composer({
     }
     if (!sending) onSend();
   };
+
+  if (archived) {
+    return (
+      <div className="px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-1.5 md:px-8 md:pb-3">
+        <div
+          data-tour="composer"
+          className="frost-input composer-shadow mx-auto flex max-w-[820px] flex-col gap-3 rounded-[16px] border border-[var(--stroke)] px-4 py-3.5 sm:flex-row sm:items-center"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 text-[13.5px] text-[var(--ink)]">
+              <span className="rounded border border-[var(--stroke)] px-1.5 py-px text-[10px] uppercase tracking-wide text-[var(--muted)]">Archived</span>
+              This chat is full.
+            </div>
+            <p className="mt-1 text-[12px] leading-5 text-[var(--muted)]">
+              Its context window is used up, so it no longer accepts messages. You can still read it and download it. Start a new chat to keep going.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercent, credit })}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-[var(--stroke)] px-3 text-[12.5px] text-[var(--ink)] hover:bg-[var(--hover)]"
+            >
+              <Icon name="download" size={13} />
+              JSON
+            </button>
+            <button
+              type="button"
+              onClick={onNewChat}
+              className="h-9 rounded-lg bg-[var(--accent)] px-4 text-[13px] text-[var(--bg)]"
+            >
+              Start a new chat
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-1.5 md:px-8 md:pb-3">

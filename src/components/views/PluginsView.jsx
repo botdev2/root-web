@@ -13,6 +13,7 @@ import {
   writeOpsSession,
 } from "../../opsApi.js";
 import { shortenAddress } from "../../web3/config.js";
+import { readCache, sameData, writeCache } from "../../opsCache.js";
 import { Card, Field, Ghost, Page, Primary, Section } from "../ui.jsx";
 
 export default function PluginsView({ token: boundToken = "", onToken }) {
@@ -21,9 +22,9 @@ export default function PluginsView({ token: boundToken = "", onToken }) {
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const [token, setToken] = useState(boundToken);
-  const [apps, setApps] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [repos, setRepos] = useState([]);
+  const [apps, setApps] = useState(() => readCache(address, "apps") || []);
+  const [orders, setOrders] = useState(() => readCache(address, "orders") || []);
+  const [repos, setRepos] = useState(() => readCache(address, "repos-yours") || []);
   const [error, setError] = useState("");
   const [step, setStep] = useState(null);
   const [code, setCode] = useState("");
@@ -49,27 +50,36 @@ export default function PluginsView({ token: boundToken = "", onToken }) {
       setRepos([]);
       return;
     }
-    try {
-      const [appData, orderData, repoData] = await Promise.all([
-        opsFetch("/api/apps", { token: session }),
-        opsFetch("/api/domains/orders", { token: session }),
-        opsFetch("/api/hub/repos", { token: session }),
-      ]);
-      setApps(appData.apps || []);
-      setOrders(orderData.orders || []);
-      if (!address) return;
-      setRepos(reposForWallet(repoData.repos, address).filter((item) => item.space === "yours"));
-      setError("");
-    } catch (err) {
-      if (err.status === 401) {
-        writeOpsSession("", "");
-        setToken("");
-        onToken?.("");
-        setError("The Ops session expired. Sign in again.");
-        return;
+    // Each list lands on its own and only repaints when it actually changed.
+    const pull = async (name, path, take, set) => {
+      try {
+        const data = await opsFetch(path, { token: session });
+        const next = take(data);
+        if (next === undefined) return;
+        set((prev) => (sameData(prev, next) ? prev : next));
+        writeCache(address, name, next);
+        setError("");
+      } catch (err) {
+        if (err.status === 401) {
+          writeOpsSession("", "");
+          setToken("");
+          onToken?.("");
+          setError("The Ops session expired. Sign in again.");
+          return;
+        }
+        setError(err.message);
       }
-      setError(err.message);
-    }
+    };
+    await Promise.all([
+      pull("apps", "/api/apps", (data) => data.apps || [], setApps),
+      pull("orders", "/api/domains/orders", (data) => data.orders || [], setOrders),
+      pull(
+        "repos-yours",
+        "/api/hub/repos",
+        (data) => (address ? reposForWallet(data.repos, address).filter((item) => item.space === "yours") : undefined),
+        setRepos,
+      ),
+    ]);
   }, [onToken, address]);
 
   useEffect(() => {

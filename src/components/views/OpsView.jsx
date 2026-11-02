@@ -13,7 +13,10 @@ import {
   writeOpsSession,
 } from "../../opsApi.js";
 import { shortenAddress } from "../../web3/config.js";
-import { Card, Field, Ghost, Page, Primary, Row, Section } from "../ui.jsx";
+import { clearCache, readCache, sameData, writeCache } from "../../opsCache.js";
+import { Card, Field, Ghost, Page, Primary, Row, Section, Skeleton } from "../ui.jsx";
+
+const POLL_MS = 15000;
 
 const PACKS = [
   { id: "nixpacks", label: "Nixpacks" },
@@ -28,11 +31,18 @@ export default function OpsView({ token: boundToken = "", onToken }) {
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const [token, setToken] = useState(boundToken);
-  const [health, setHealth] = useState(null);
-  const [apps, setApps] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [repos, setRepos] = useState([]);
-  const [billing, setBilling] = useState(null);
+  const [health, setHealth] = useState(() => readCache("public", "health"));
+  const [apps, setApps] = useState(() => readCache(address, "apps") || []);
+  const [orders, setOrders] = useState(() => readCache(address, "orders") || []);
+  const [repos, setRepos] = useState(() => readCache(address, "repos") || []);
+  const [billing, setBilling] = useState(() => readCache(address, "billing"));
+  // A list counts as loaded once it has been read from the cache or from Ops.
+  const [loaded, setLoaded] = useState(() => ({
+    apps: !!readCache(address, "apps"),
+    orders: !!readCache(address, "orders"),
+    repos: !!readCache(address, "repos"),
+    billing: !!readCache(address, "billing"),
+  }));
   const [accountError, setAccountError] = useState("");
   const [step, setStep] = useState(null);
   const [code, setCode] = useState("");
@@ -50,43 +60,46 @@ export default function OpsView({ token: boundToken = "", onToken }) {
 
   const loadPublic = useCallback(async () => {
     try {
-      setHealth(await opsFetch("/api/health"));
+      const next = await opsFetch("/api/health");
+      setHealth((prev) => (sameData(prev, next) ? prev : next));
+      writeCache("public", "health", next);
     } catch (error) {
-      setHealth({ ok: false, error: error.message });
+      setHealth((prev) => prev || { ok: false, error: error.message });
     }
   }, []);
 
   const loadAccount = useCallback(async (session) => {
     if (!session) {
-      setApps([]);
-      setOrders([]);
-      setRepos([]);
-      setBilling(null);
+      setLoaded({ apps: false, orders: false, repos: false, billing: false });
       return;
     }
-    try {
-      const [appData, orderData, repoData, billData] = await Promise.all([
-        opsFetch("/api/apps", { token: session }),
-        opsFetch("/api/domains/orders", { token: session }),
-        opsFetch("/api/hub/repos", { token: session }),
-        opsFetch("/api/billing", { token: session }),
-      ]);
-      setApps(appData.apps || []);
-      setOrders(orderData.orders || []);
-      if (!address) return;
-      setRepos(reposForWallet(repoData.repos, address));
-      setBilling(billData);
-      setAccountError("");
-    } catch (error) {
-      if (error.status === 401) {
-        writeOpsSession("", "");
-        setToken("");
-        onToken?.("");
-        setAccountError("The Ops session expired. Sign in again.");
-        return;
+    // Each list lands on its own, so a slow one never holds the others back.
+    const pull = async (name, path, take, set) => {
+      try {
+        const data = await opsFetch(path, { token: session });
+        const next = take(data);
+        if (next === undefined) return;
+        set((prev) => (sameData(prev, next) ? prev : next));
+        writeCache(address, name, next);
+        setLoaded((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
+        setAccountError("");
+      } catch (error) {
+        if (error.status === 401) {
+          writeOpsSession("", "");
+          setToken("");
+          onToken?.("");
+          setAccountError("The Ops session expired. Sign in again.");
+          return;
+        }
+        setAccountError(error.message);
       }
-      setAccountError(error.message);
-    }
+    };
+    await Promise.all([
+      pull("apps", "/api/apps", (data) => data.apps || [], setApps),
+      pull("orders", "/api/domains/orders", (data) => data.orders || [], setOrders),
+      pull("repos", "/api/hub/repos", (data) => (address ? reposForWallet(data.repos, address) : undefined), setRepos),
+      pull("billing", "/api/billing", (data) => data, setBilling),
+    ]);
   }, [address, onToken]);
 
   useEffect(() => {
@@ -95,15 +108,26 @@ export default function OpsView({ token: boundToken = "", onToken }) {
 
   useEffect(() => {
     loadPublic();
-    const timer = setInterval(loadPublic, 10000);
+    const timer = setInterval(() => {
+      if (!document.hidden) loadPublic();
+    }, POLL_MS);
     return () => clearInterval(timer);
   }, [loadPublic]);
 
   useEffect(() => {
     loadAccount(token);
     if (!token) return undefined;
-    const timer = setInterval(() => loadAccount(token), 10000);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => {
+      if (!document.hidden) loadAccount(token);
+    }, POLL_MS);
+    const wake = () => {
+      if (!document.hidden) loadAccount(token);
+    };
+    document.addEventListener("visibilitychange", wake);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", wake);
+    };
   }, [token, loadAccount]);
 
   const signIn = async () => {
@@ -155,6 +179,7 @@ export default function OpsView({ token: boundToken = "", onToken }) {
   };
 
   const signOut = () => {
+    clearCache(address);
     writeOpsSession("", "");
     setToken("");
     onToken?.("");
@@ -247,8 +272,12 @@ export default function OpsView({ token: boundToken = "", onToken }) {
     }
   };
 
-  const yours = repos.filter((item) => item.space === "yours");
-  const shared = repos.filter((item) => item.space !== "yours");
+  const siteList = token ? apps : [];
+  const orderList = token ? orders : [];
+  const repoList = token ? repos : [];
+  const yours = repoList.filter((item) => item.space === "yours");
+  const shared = repoList.filter((item) => item.space !== "yours");
+  const waiting = (name) => !!token && !loaded[name];
 
   return (
     <Page wide>
@@ -272,7 +301,7 @@ export default function OpsView({ token: boundToken = "", onToken }) {
           <div className={`mt-1 text-[18px] ${health?.ok ? "text-[var(--green)]" : "text-[var(--rose)]"}`}>
             {health == null ? "Checking" : health.ok ? "Online" : "Offline"}
           </div>
-          <p className="mt-1 text-[12px] text-[var(--muted)]">Live probe of /api/health every 10 seconds.</p>
+          <p className="mt-1 text-[12px] text-[var(--muted)]">Live probe of /api/health every 15 seconds.</p>
         </Card>
         <Card className="p-4">
           <div className="text-[11px] text-[var(--faint)]">Wallet</div>
@@ -281,7 +310,7 @@ export default function OpsView({ token: boundToken = "", onToken }) {
         </Card>
         <Card className="p-4">
           <div className="text-[11px] text-[var(--faint)]">Plan</div>
-          <div className="mt-1 text-[18px]">{planLine(billing)}</div>
+          <div className="mt-1 text-[18px]">{waiting("billing") ? <Skeleton className="mt-1 h-5 w-24" /> : planLine(token ? billing : null)}</div>
           <p className="mt-1 text-[12px] text-[var(--muted)]">48 hours free, then Plot, Grove, or Canopy. Paid on Ops.</p>
         </Card>
       </div>
@@ -326,13 +355,15 @@ export default function OpsView({ token: boundToken = "", onToken }) {
       </Section>
 
       <Section title="Your sites">
-        {apps.length === 0 ? (
+        {waiting("apps") ? (
+          <RowSkeleton rows={2} />
+        ) : siteList.length === 0 ? (
           <Card className="px-4 py-3 text-[13px] text-[var(--muted)]">
             {token ? "This address has no sites yet." : "Sign in to load the sites for this wallet."}
           </Card>
         ) : (
           <div className="space-y-2">
-            {apps.map((site) => (
+            {siteList.map((site) => (
               <Card key={site.id} className="px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -446,9 +477,9 @@ export default function OpsView({ token: boundToken = "", onToken }) {
             </div>
           )}
         </Card>
-        {orders.length > 0 && (
+        {orderList.length > 0 && (
           <div className="space-y-2">
-            {orders.map((order) => (
+            {orderList.map((order) => (
               <Card key={order.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div>
                   <div className="text-[13px]">{order.domain}</div>
@@ -464,7 +495,8 @@ export default function OpsView({ token: boundToken = "", onToken }) {
       </Section>
 
       <Section title="Ops Hub">
-        {token && repos.length === 0 && <Card className="px-4 py-3 text-[13px] text-[var(--muted)]">No repositories for this address yet.</Card>}
+        {waiting("repos") && <RowSkeleton rows={3} />}
+        {token && loaded.repos && repoList.length === 0 && <Card className="px-4 py-3 text-[13px] text-[var(--muted)]">No repositories for this address yet.</Card>}
         {!token && <Card className="mb-2 px-4 py-3 text-[13px] text-[var(--muted)]">Sign in to list the git owned by this address.</Card>}
         <RepoList title="Yours" items={yours} />
         <RepoList title="Shared" items={shared} />
@@ -481,10 +513,26 @@ function planLine(billing) {
   return "No plan";
 }
 
+function RowSkeleton({ rows = 2 }) {
+  return (
+    <div className="space-y-2" aria-busy="true" aria-label="Loading">
+      {Array.from({ length: rows }, (_, index) => (
+        <Card key={index} className="flex items-center justify-between gap-3 px-4 py-3.5">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-44 max-w-full" />
+            <Skeleton className="h-2.5 w-28 max-w-full" />
+          </div>
+          <Skeleton className="h-3 w-8" />
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 function RepoList({ title, items }) {
   if (!items.length) return null;
   return (
-    <div className="mb-2 space-y-2">
+    <div className="fade-up mb-2 space-y-2">
       <div className="text-[11px] text-[var(--faint)]">{title}</div>
       {items.map((repo) => (
         <Card key={`${repo.owner}/${repo.name}`} className="flex items-center justify-between gap-3 px-4 py-3">

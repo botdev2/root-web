@@ -6,6 +6,10 @@ export function Page({ children, wide }) {
   );
 }
 
+export function Skeleton({ className = "" }) {
+  return <div className={`skel rounded-md ${className}`} aria-hidden="true" />;
+}
+
 export function Card({ children, className = "" }) {
   return (
     <div className={`frost-panel rounded-2xl border border-[var(--stroke)] ${className}`}>{children}</div>

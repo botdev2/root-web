@@ -11,6 +11,7 @@ const HEADERS = {
   ops: { title: "PALM Ops", subtitle: "Hosting, domains, and Ops Hub" },
   plugins: { title: "Plugins", subtitle: "Hosting, domains, and Ops Hub" },
   notes: { title: "Notes", subtitle: "Daily goals and markdown" },
+  billing: { title: "Billing", subtitle: "Credits, $PALM, and when they reset" },
   settings: { title: "Settings", subtitle: "Appearance, models, privacy" },
   templates: { title: "Create from Template", subtitle: "Scaffold a project, then refine with Auto-Prompt" },
   account: { title: "Account", subtitle: "Access, skills, profile" },
@@ -34,6 +35,7 @@ export default function HeaderBar({
   onUnlock,
   project: liveProject,
   credit = null,
+  onBilling,
 }) {
   const { signedIn } = useAppState();
   const header = HEADERS[view] || HEADERS.home;
@@ -68,10 +70,12 @@ export default function HeaderBar({
         </div>
       </div>
       {credit && Number.isFinite(credit.allowance) ? (
-        <div
+        <button
+          type="button"
           data-tour="credits"
-          title={creditTitle(credit)}
-          className="flex shrink-0 flex-col items-end leading-tight rounded-lg border border-[var(--stroke)] bg-[var(--panel)] px-2.5 py-1"
+          onClick={onBilling}
+          title={creditTitle(credit) + " Click for billing."}
+          className="flex shrink-0 flex-col items-end rounded-lg border border-[var(--stroke)] bg-[var(--panel)] px-2.5 py-1 text-right leading-tight hover:bg-[var(--hover)]"
         >
           <div className="tabular-nums text-[13px] text-[var(--ink)]">
             {formatCredits(credit.remaining)}
@@ -80,7 +84,7 @@ export default function HeaderBar({
           <div className="text-[10px] text-[var(--faint)]">
             {rate.toLocaleString()} $PALM = 1 credit
           </div>
-        </div>
+        </button>
       ) : null}
       <span data-tour="wallet" className="inline-flex shrink-0">
         <WalletButton className="shrink-0" />

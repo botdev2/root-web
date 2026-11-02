@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
-import { listConversations, loadConversation, readCredits, removeConversation, sendTurn } from "./glmChat.js";
+import { archiveConversation, listConversations, loadConversation, readCredits, removeConversation, sendTurn } from "./glmChat.js";
+import { readCache, writeCache } from "./opsCache.js";
 import { MAX_REPOS, claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
 
@@ -37,6 +38,7 @@ import UpdatesView from "./components/views/UpdatesView.jsx";
 import TelemetryView from "./components/views/TelemetryView.jsx";
 import HelpView from "./components/views/HelpView.jsx";
 import TemplatesView from "./components/views/TemplatesView.jsx";
+import BillingView from "./components/views/BillingView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
 import PluginsView from "./components/views/PluginsView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
@@ -203,6 +205,16 @@ export default function App() {
     };
   }, [isConnected, address, opsToken]);
 
+  const refreshCredits = async () => {
+    if (!opsToken || !address) return;
+    try {
+      const data = await readCredits(address);
+      setCredit(data.credit || null);
+    } catch {
+      /* the last known balance stays on screen */
+    }
+  };
+
   useEffect(() => {
     if (!opsToken || !address) return undefined;
     let cancelled = false;
@@ -215,6 +227,13 @@ export default function App() {
       cancelled = true;
     };
   }, [opsToken, address]);
+
+  // The sidebar paints from the last answer while the Hub is asked again.
+  useEffect(() => {
+    if (!address) return;
+    const held = readCache(address, "projects");
+    if (held?.length) setOpsProjects((prev) => prev || held);
+  }, [address]);
 
   useEffect(() => {
     if (!isConnected || !address) {
@@ -250,10 +269,12 @@ export default function App() {
   }, [isConnected, address]);
 
   useEffect(() => {
-    if (!opsToken || !address) {
+    if (!address) {
       setOpsProjects(null);
       return undefined;
     }
+    // Until the wallet is signed in, whatever was cached stays on screen.
+    if (!opsToken) return undefined;
     let cancelled = false;
     opsFetch("/api/hub/repos", { token: opsToken })
       .then((data) => {
@@ -261,7 +282,7 @@ export default function App() {
         const yours = reposForWallet(data.repos, address).filter((item) => item.space === "yours");
         setOpsProjects((prev) => {
           const held = new Map((prev || []).map((item) => [item.id, item.activityAt || ""]));
-          return yours.map((repo) => {
+          const next = yours.map((repo) => {
             const id = `${repo.owner}/${repo.name}`;
             const incoming = repo.commits?.[0]?.date || "";
             const previous = held.get(id) || "";
@@ -278,6 +299,8 @@ export default function App() {
               sessions: [],
             };
           });
+          writeCache(address, "projects", next);
+          return next;
         });
       })
       .catch((error) => {
@@ -285,6 +308,7 @@ export default function App() {
         if (error.status === 401) {
           writeOpsSession("");
           setOpsToken("");
+          setOpsProjects(null);
           return;
         }
         notice?.(error.message || "Ops projects did not load.");
@@ -408,6 +432,36 @@ export default function App() {
     return row;
   };
 
+  const isArchived = (id) => !!id && cloudSessions.some((item) => item.id === id && item.archived);
+
+  const markArchived = (id) => {
+    setCloudSessions((prev) => prev.map((item) => (item.id === id ? { ...item, archived: true } : item)));
+  };
+
+  // A chat whose context is full is retired for good: the server stops taking messages for it.
+  const retireIfFull = async (cloudId, result) => {
+    const full = result?.contextFull === true || (result?.usage?.percent || 0) >= 90;
+    if (!full || !/^[a-f0-9]{24}$/.test(cloudId || "")) return false;
+    try {
+      await archiveConversation(address, cloudId);
+    } catch {
+      return false;
+    }
+    markArchived(cloudId);
+    notice("This chat's context is full, so it is archived. Start a new chat to keep going.");
+    return true;
+  };
+
+  const startNewChat = () => {
+    setView("home");
+    setSessionId(null);
+    setSessionTitle("New Agent");
+    setDraft("");
+    setAttachments([]);
+    setUsagePercent(0);
+    setNavOpen(false);
+  };
+
   const openSession = async (id, title, nextView = "chat") => {
     setSessionId(id);
     setSessionTitle(title);
@@ -422,6 +476,7 @@ export default function App() {
         think: turn.think || "",
       }));
       setLocal((prev) => ({ ...prev, [id]: turns }));
+      if (data.conversation?.archived) markArchived(id);
       const chars = turns.reduce((sum, turn) => sum + String(turn.text || "").length + String(turn.think || "").length, 0);
       setUsagePercent(Math.min(100, Math.round((Math.ceil(chars / 4) / 8192) * 100)));
     } catch (error) {
@@ -447,9 +502,13 @@ export default function App() {
       return;
     }
     if (sending) return;
+    if (isArchived(sessionId)) {
+      notice("This chat is archived and no longer accepts messages. Start a new chat.");
+      return;
+    }
     if (credit && credit.remaining <= 0) {
-      notice(credit.allowance <= 0
-        ? "GLM credits come from $PALM held or staked (1,000 $PALM = 1 credit). This wallet has none for this 14-day window."
+      notice(credit.windowAllowance <= 0
+        ? "The 0.5 welcome credits are used up. 1,000 $PALM held or staked = 1 credit per 14-day window."
         : "GLM credits for this 14-day window are used up. They reset on " + String(credit.resetsAt || "").slice(0, 10) + ".");
       return;
     }
@@ -560,7 +619,9 @@ export default function App() {
       });
       if (result.maxConversations) setConvoMax(result.maxConversations);
       if (result.dropped?.length) notice("The oldest cloud chat was removed. A wallet keeps " + (result.maxConversations || 10) + ".");
+      await retireIfFull(cloudId, result);
     } catch (error) {
+      if (error.archived && known) markArchived(sessionId);
       setLocal((prev) => ({
         ...prev,
         [id]: (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: error.message || "GLM 5.2 cloud did not answer." } : item)),
@@ -593,7 +654,7 @@ export default function App() {
     try {
       const outcome = await runAgentTurn({
         address,
-        conversationId: item.conversationId || "",
+        conversationId: isArchived(item.conversationId) ? "" : item.conversationId || "",
         project: repo,
         token,
         mode: "agent",
@@ -645,6 +706,7 @@ export default function App() {
           setSessionTitle(title);
           setView("chat");
         }
+        await retireIfFull(cloudId, result);
       }
       return outcome;
     } catch (error) {
@@ -804,6 +866,7 @@ export default function App() {
               project={activeProject}
               filesOpen={filesOpen}
               credit={credit}
+              onBilling={() => openView("billing")}
               onMenu={() => {
                 setFilesOpen(false);
                 setNavOpen((open) => !open);
@@ -879,6 +942,7 @@ export default function App() {
                 {view === "reasoning" && <ReasoningView />}
                 {view === "ops" && <OpsView token={opsToken} onToken={setOpsToken} />}
                 {view === "notes" && <NotesView />}
+                {view === "billing" && <BillingView credit={credit} token={opsToken} onRefresh={refreshCredits} />}
                 {view === "plugins" && <PluginsView token={opsToken} onToken={setOpsToken} />}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
@@ -943,6 +1007,8 @@ export default function App() {
                     turns={local[sessionId] || []}
                     sessionTitle={sessionTitle}
                     projectLabel={activeProject?.label || ""}
+                    archived={view === "chat" && isArchived(sessionId)}
+                    onNewChat={startNewChat}
                     onSend={() => send()}
                     autoPrompt={autoPrompt}
                     onAutoPrompt={() => setAutoPrompt((value) => !value)}

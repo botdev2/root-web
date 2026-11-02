@@ -1,4 +1,4 @@
-import { sendTurn } from "./glmChat.js";
+import { sendTurn, writeBrief } from "./glmChat.js";
 import { MAX_REPOS, createHubProject, deleteHubFile, opsFetch, runHubCommand, writeHubFiles } from "./opsApi.js";
 
 const FENCE = /```(?:ops|json)\s*([\s\S]*?)```/g;
@@ -101,6 +101,31 @@ export async function runAgentTurn({
   const publish = () => onTrace?.({ steps: steps.map((step) => ({ ...step })), startedAt });
   publish();
 
+  // Auto-Prompt: turn the loose ask into a short brief first, then answer from it.
+  let briefed = false;
+  if (autoprompt) {
+    steps[0] = { title: "Auto-Prompt: writing a brief", state: "active", kind: "spark", detail: "" };
+    publish();
+    onStatus?.(steps[0].title);
+    try {
+      const out = await writeBrief(address, { text, mode, projectLabel: current?.label || "" });
+      const brief = String(out?.brief || "").trim();
+      if (brief) {
+        const combined = `${text}\n\n[Auto-Prompt brief]\n${brief}`;
+        prompt = allowTools ? wrapGuide(current, combined) : combined;
+        briefed = true;
+        steps[0] = { title: "Auto-Prompt brief", state: "done", kind: "spark", detail: brief.replace(/\s+/g, " ").slice(0, 320) };
+      } else {
+        steps[0] = { title: "Auto-Prompt skipped", state: "done", kind: "spark", detail: "No brief came back, so your ask went through as written." };
+      }
+    } catch (error) {
+      if (error?.status === 401 || error?.status === 402) throw error;
+      steps[0] = { title: "Auto-Prompt skipped", state: "done", kind: "spark", detail: String(error?.message || "Could not write a brief.").slice(0, 200) };
+    }
+    steps.push({ title: thinkingTitle(mode, 0), state: "active", kind: "spark", detail: "" });
+    publish();
+  }
+
   for (let step = 0; step < (allowTools ? MAX_STEPS : 1); step += 1) {
     if (step > 0) {
       finishActive(steps);
@@ -116,7 +141,7 @@ export async function runAgentTurn({
       text: prompt,
       brain,
       files,
-      autoprompt: step === 0 && autoprompt,
+      autoprompt: step === 0 && autoprompt && !briefed,
     });
     convo = last.conversation?.id || convo;
     const thought = thoughtDetail(last);

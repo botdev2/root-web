@@ -51,7 +51,9 @@ const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
-  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations } = state || {};
+  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref } = state || {};
+  // One switch for the composer pill and Settings; the Brain flag also counts.
+  const autoPrompt = !!(prefs?.autoprompt || brainEnabled?.["autoprompt.rewrite"]);
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -75,7 +77,6 @@ export default function App() {
     }
   });
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [autoPrompt, setAutoPrompt] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("appearance");
@@ -1020,7 +1021,7 @@ export default function App() {
                     onNewChat={startNewChat}
                     onSend={() => send()}
                     autoPrompt={autoPrompt}
-                    onAutoPrompt={() => setAutoPrompt((value) => !value)}
+                    onAutoPrompt={() => togglePref?.("autoprompt")}
                     attachments={attachments}
                     onAttach={(files) => setAttachments((prev) => [...prev, ...files])}
                     onRemoveAttach={(name) => setAttachments((prev) => prev.filter((file) => file.name !== name))}

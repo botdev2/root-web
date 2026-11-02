@@ -58,6 +58,10 @@ export function sendTurn(address, body) {
   return call("/v1/chat/turn", { address, method: "POST", body });
 }
 
+export function writeBrief(address, body) {
+  return call("/v1/autoprompt", { address, method: "POST", body });
+}
+
 export function readCredits(address) {
   return call("/v1/credits", { address });
 }

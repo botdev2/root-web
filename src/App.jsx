@@ -45,6 +45,7 @@ import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
 import Tour from "./components/Tour.jsx";
+import HamrinIntro, { hamrinSeen } from "./components/HamrinIntro.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
@@ -108,6 +109,14 @@ export default function App() {
     return null;
   });
   const [lastCommit, setLastCommit] = useState(null);
+  const [hamrinOpen, setHamrinOpen] = useState(() => {
+    try {
+      if (new URLSearchParams(window.location.search).has("tour")) return false;
+    } catch {
+      /* ignore */
+    }
+    return !hamrinSeen();
+  });
   const theme = useMemo(() => findTheme(themeId), [themeId]);
   const tourLook = useRef(null);
   const touring = !!tour;
@@ -1054,6 +1063,7 @@ export default function App() {
         view={view}
         projectLabel={activeProject?.label || ""}
       />
+      <HamrinIntro open={hamrinOpen && !tour} onClose={() => setHamrinOpen(false)} onTour={startTour} />
       {tour && (
         <Tour
           autoplay={tour.auto}
@@ -1098,6 +1108,10 @@ export default function App() {
             setPaletteOpen(false);
             if (id === "tour") {
               startTour();
+              return;
+            }
+            if (id === "hamrin") {
+              setHamrinOpen(true);
               return;
             }
             openView(id);

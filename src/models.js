@@ -40,7 +40,7 @@ export const CATALOG_MODELS = [
   { id: "deepseek-v4-flash:0731-cloud", name: "DeepSeek V4 Flash cloud", billing: "Free", grade: "B" },
   { id: "ornith-1.5:9b", name: "Ornith 1.5 9B", billing: "Free", grade: "B" },
   { id: "ornith-1.5:35b", name: "Ornith 1.5 35B", billing: "Free", grade: "A" },
-  { id: "glm-5.2:cloud", name: "GLM 5.2 cloud", billing: "Ollama cloud", grade: "A" },
+  { id: "glm-5.2:cloud", name: "Hamrin 1.0", billing: "$PALM credits", grade: "A" },
   { id: "kimi-k3:cloud", name: "Kimi K3 cloud", billing: "Credits based", grade: "A" },
   { id: "richardyoung/llama-3.2-3b-instruct-abliterated", name: "Llama 3.2 3B abliterated", billing: "Free", grade: "D" },
   { id: "huihui-qwen3.6-abliterated:q2_k", name: "Qwen 3.6 35B Q2_K", billing: "Free", grade: "B" },

@@ -119,7 +119,7 @@ export default function BillingView({ credit, token = "", onRefresh }) {
                 <div className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-700" style={{ width: `${share}%` }} />
               </div>
               <p className="mt-3 text-[12px] leading-5 text-[var(--muted)]">
-                {rate.toLocaleString()} $PALM held or staked = 1 credit. One credit buys {Number(credit.tokensPerCredit || 2000000).toLocaleString()} GLM 5.2 tokens.
+                {rate.toLocaleString()} $PALM held or staked = 1 credit. One credit buys {Number(credit.tokensPerCredit || 2000000).toLocaleString()} Hamrin 1.0 tokens.
               </p>
             </>
           ) : (
@@ -179,7 +179,7 @@ export default function BillingView({ credit, token = "", onRefresh }) {
               <span className="tabular-nums text-[13px]">{formatCredits(welcome.remaining)} left</span>
             </Row>
           )}
-          <Row label="Used this window" value="Counted against GLM 5.2 as tokens">
+          <Row label="Used this window" value="Counted against Hamrin 1.0 as tokens">
             <span className="tabular-nums text-[13px]">{credit ? `${windowTokensUsed.toLocaleString()} tokens` : "…"}</span>
           </Row>
         </Card>

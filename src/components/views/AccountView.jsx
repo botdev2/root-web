@@ -99,7 +99,7 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
       <Row label="Status" value={isConnected ? "Wallet connected" : "Guest — browsing"} />
       <Row label="Web version" value="This harness. Lifetime unlock lives on the same wallet." />
       <Row label="Address" value={address ? shortenAddress(address) : "Not connected"} />
-      <Row label="GLM credits" value={creditLine} />
+      <Row label="Hamrin credits" value={creditLine} />
       <Row label="Show Wallet tab" value="Hidden until you turn it on. Balances and staking only.">
         <Toggle on={showWallet} onClick={() => onShowWallet(!showWallet)} />
       </Row>
@@ -115,7 +115,7 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
         <Ghost onClick={() => window.open(ACCOUNT_URL, "_blank", "noopener,noreferrer")}>useroot.sh/account</Ghost>
       </div>
       <div className="px-4 pb-4 text-[12px] leading-5 text-[var(--faint)]">
-        Unlock at useroot.sh/account. Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM. GLM 5.2 uses credits from $PALM held or staked — {rate.toLocaleString()} $PALM = 1 credit — and that window resets every 14 days.
+        Unlock at useroot.sh/account. Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM. Hamrin 1.0 uses credits from $PALM held or staked — {rate.toLocaleString()} $PALM = 1 credit — and that window resets every 14 days.
       </div>
     </Card>
   );

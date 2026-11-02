@@ -98,7 +98,7 @@ export function buildScript() {
     {
       id: "credits",
       chapter: "Your wallet",
-      title: "GLM 5.2 runs on credits.",
+      title: "Hamrin 1.0 runs on credits.",
       body: (live) => {
         const credit = live.credit;
         if (!credit) return "Your balance shows up here once you're signed in. 1,000 $PALM held or staked is 1 credit, and the window resets every two weeks.";
@@ -112,7 +112,7 @@ export function buildScript() {
       id: "composer",
       chapter: "The composer",
       title: "This is where you talk to the agent.",
-      body: "Describe what you want in plain language. GLM 5.2 cloud does the thinking, and the agent works inside your repository.",
+      body: "Describe what you want in plain language. Hamrin 1.0 does the thinking, and the agent works inside your repository.",
       target: '[data-tour="composer"]',
       place: "top",
       enter: async (c) => {
@@ -316,7 +316,7 @@ export function buildScript() {
       title: (live, flags) => (flags.blocked === "credits" ? "Credits come first." : "That prompt didn't send."),
       body: (live, flags) =>
         flags.blocked === "credits"
-          ? "This wallet has no GLM credits left in this window. Hold or stake $PALM, where 1,000 is 1 credit, or wait for the reset, then send your first prompt. Everything else in /root works as it is."
+          ? "This wallet has no Hamrin credits left in this window. Hold or stake $PALM, where 1,000 is 1 credit, or wait for the reset, then send your first prompt. Everything else in /root works as it is."
           : "Something stopped the message before it left. Check that your wallet is connected and a repository is open, then press send.",
       target: ['[data-tour="credits"]', '[data-tour="meters"]'],
       skipIf: (live, flags) => !flags.blocked,

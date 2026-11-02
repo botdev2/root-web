@@ -43,7 +43,7 @@ export default function AutomationsView({ hubProjects = [], activeProjectId = ""
 
   const run = async (item) => {
     if (!isConnected) {
-      notice("Connect a wallet to use GLM 5.2 cloud.");
+      notice("Connect a wallet to use Hamrin 1.0.");
       open({ view: "Connect" });
       return;
     }
@@ -154,7 +154,7 @@ export default function AutomationsView({ hubProjects = [], activeProjectId = ""
             </div>
             <div>
               <div className="mb-1.5 text-[11px] text-[var(--faint)]">Model</div>
-              <div className="text-[14px]">{isConnected ? "GLM 5.2 cloud" : "Connect a wallet"}</div>
+              <div className="text-[14px]">{isConnected ? "Hamrin 1.0" : "Connect a wallet"}</div>
             </div>
             <label className="block">
               <div className="mb-1.5 text-[11px] text-[var(--faint)]">Agent instructions</div>
@@ -166,7 +166,7 @@ export default function AutomationsView({ hubProjects = [], activeProjectId = ""
               />
             </label>
             <div className="text-[12px] leading-5 text-[var(--faint)]">
-              Schedule on runs this while the app is open, at the chosen time. Run now asks GLM 5.2 to commit the work on the Ops Hub repository and writes the result in chat.
+              Schedule on runs this while the app is open, at the chosen time. Run now asks Hamrin 1.0 to commit the work on the Ops Hub repository and writes the result in chat.
             </div>
             <div className="flex flex-wrap gap-2">
               <Primary onClick={save}>Save</Primary>
@@ -280,7 +280,7 @@ export default function AutomationsView({ hubProjects = [], activeProjectId = ""
               <div className="text-[14px]">{item.title}</div>
               <div className="mt-0.5 text-[11px] text-[var(--muted)]">
                 {item.project} · {item.schedule}
-                {item.hour ? " · " + item.hour : ""} · {isConnected ? "GLM 5.2 cloud" : "No wallet"} · {item.active ? "Schedule on" : "Halted"} · {item.lastRun}
+                {item.hour ? " · " + item.hour : ""} · {isConnected ? "Hamrin 1.0" : "No wallet"} · {item.active ? "Schedule on" : "Halted"} · {item.lastRun}
               </div>
             </button>
             <div className="flex flex-wrap gap-2">

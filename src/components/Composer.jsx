@@ -115,7 +115,7 @@ export default function Composer({
             }
           }}
           rows={1}
-          placeholder={isConnected ? (mode === "ask" ? "Ask about this project…" : mode === "plan" ? "Describe what to plan…" : "Type a message here...") : "Connect a wallet to use GLM 5.2 cloud"}
+          placeholder={isConnected ? (mode === "ask" ? "Ask about this project…" : mode === "plan" ? "Describe what to plan…" : "Type a message here...") : "Connect a wallet to use Hamrin 1.0"}
           className="min-h-[26px] w-full resize-none bg-transparent text-[16px] outline-none placeholder:text-[var(--faint)] md:text-[14px]"
         />
         <div className="mt-2 flex items-center gap-2">
@@ -147,9 +147,9 @@ export default function Composer({
               <span className="hidden sm:inline">Auto-Prompt{autoPrompt ? " · on" : ""}</span>
             </Pill>
             {isConnected && (
-              <Pill tour="model" title="GLM 5.2 cloud">
+              <Pill tour="model" title="Hamrin 1.0">
                 <Icon name="cloud" size={14} />
-                <span className="hidden sm:inline">GLM 5.2 cloud</span>
+                <span className="hidden sm:inline">Hamrin 1.0</span>
               </Pill>
             )}
             <Pill tour="attach" title="Attach" onClick={() => fileRef.current?.click()}>
@@ -275,7 +275,7 @@ function downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercen
   const payload = {
     title: sessionTitle || "New Agent",
     project: projectLabel || "",
-    model: "glm-5.2",
+    model: "hamrin-1.0",
     mode: mode || "agent",
     exportedAt: new Date().toISOString(),
     context: {

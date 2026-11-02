@@ -138,11 +138,11 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
       {tab === "models" && (
         <Card>
           {isConnected ? (
-            <Row label="GLM 5.2 cloud" value="The only model on this harness">
+            <Row label="Hamrin 1.0" value="An enhanced open-source model by $PALM (palmaierc.com). The only model on this harness.">
               <Ghost active>Active</Ghost>
             </Row>
           ) : (
-            <Row label="Models" value="Connect a wallet to use GLM 5.2 cloud">
+            <Row label="Models" value="Connect a wallet to use Hamrin 1.0">
               <Primary onClick={() => open({ view: "Connect" })}>Connect wallet</Primary>
             </Row>
           )}

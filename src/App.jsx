@@ -497,7 +497,7 @@ export default function App() {
     const value = text.trim();
     if (!value && attachments.length === 0) return;
     if (!isConnected || !address) {
-      notice("Connect a wallet to use GLM 5.2 cloud.");
+      notice("Connect a wallet to use Hamrin 1.0.");
       open({ view: "Connect" });
       return;
     }
@@ -509,7 +509,7 @@ export default function App() {
     if (credit && credit.remaining <= 0) {
       notice(credit.windowAllowance <= 0
         ? "The 0.5 welcome credits are used up. 1,000 $PALM held or staked = 1 credit per 14-day window."
-        : "GLM credits for this 14-day window are used up. They reset on " + String(credit.resetsAt || "").slice(0, 10) + ".");
+        : "Hamrin credits for this 14-day window are used up. They reset on " + String(credit.resetsAt || "").slice(0, 10) + ".");
       return;
     }
     const known = /^[a-f0-9]{24}$/.test(sessionId || "");
@@ -579,7 +579,7 @@ export default function App() {
         },
       });
       const result = outcome.result;
-      if (!result) throw new Error("GLM 5.2 cloud did not answer.");
+      if (!result) throw new Error("Hamrin 1.0 did not answer.");
       const cloudId = result.conversation?.id || id;
       const turns = (result.conversation?.turns || []).map((turn) => ({
         role: turn.role,
@@ -624,7 +624,7 @@ export default function App() {
       if (error.archived && known) markArchived(sessionId);
       setLocal((prev) => ({
         ...prev,
-        [id]: (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: error.message || "GLM 5.2 cloud did not answer." } : item)),
+        [id]: (prev[id] || []).map((item) => (item.id === replyId ? { role: "assistant", text: error.message || "Hamrin 1.0 did not answer." } : item)),
       }));
     } finally {
       setSending(false);
@@ -643,7 +643,7 @@ export default function App() {
   };
 
   const runSavedAutomation = async (item, { openChat = false } = {}) => {
-    if (!isConnected || !address) throw new Error("Connect a wallet to use GLM 5.2 cloud.");
+    if (!isConnected || !address) throw new Error("Connect a wallet to use Hamrin 1.0.");
     const token = readOpsSession(address);
     if (!token) throw new Error("Sign in with the connected wallet so the changes can be committed.");
     if (runLock.current.has(item.id)) return null;

@@ -156,10 +156,6 @@ export default function Composer({
               <Icon name="paperclip" size={14} />
               <span className="hidden sm:inline">Attach</span>
             </Pill>
-            <Pill tour="files" onClick={onFiles} title="Files">
-              <Icon name="folder" size={14} />
-              <span className="hidden md:inline">Files</span>
-            </Pill>
             <input
               ref={fileRef}
               type="file"

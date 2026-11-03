@@ -131,9 +131,9 @@ export function buildScript() {
     {
       id: "pills",
       chapter: "The composer",
-      title: "Sharpen it, attach to it, inspect it.",
-      body: "Auto-Prompt has the agent restate your ask as a short brief before it answers. Attach adds files to the message. Files opens the inspector on your repository.",
-      target: '[data-tour="autoprompt"], [data-tour="model"], [data-tour="attach"], [data-tour="files"]',
+      title: "Sharpen it and attach to it.",
+      body: "Auto-Prompt has the agent write a short brief from your ask before it answers. Attach adds files to the message. The Files button in the header opens the inspector on your repository.",
+      target: '[data-tour="autoprompt"], [data-tour="model"], [data-tour="attach"]',
       place: "top",
     },
     {

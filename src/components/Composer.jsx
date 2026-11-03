@@ -16,6 +16,8 @@ export default function Composer({
   onSend,
   autoPrompt,
   onAutoPrompt,
+  web = true,
+  onWeb,
   attachments = [],
   onAttach,
   onRemoveAttach,
@@ -145,6 +147,10 @@ export default function Composer({
             <Pill tour="autoprompt" onClick={onAutoPrompt} active={autoPrompt} title="Auto-Prompt">
               <Icon name="spark" size={14} />
               <span className="hidden sm:inline">Auto-Prompt{autoPrompt ? " · on" : ""}</span>
+            </Pill>
+            <Pill tour="web" onClick={onWeb} active={web} title={web ? "Web access is on: Hamrin can search and read pages" : "Web access is off"}>
+              <Icon name="globe" size={14} />
+              <span className="hidden sm:inline">Web{web ? " · on" : ""}</span>
             </Pill>
             {isConnected && (
               <Pill tour="model" title="Hamrin 1.0">

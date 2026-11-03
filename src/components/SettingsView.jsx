@@ -66,6 +66,9 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
           <Row label="Auto-Prompt" value="Rewrite asks into a brief">
             <Toggle on={flags.autoprompt} onClick={() => toggle("autoprompt")} />
           </Row>
+          <Row label="Web access" value="Let Hamrin search the web and read pages. Lookups run through the harness server, not your browser.">
+            <Toggle on={flags.web !== false} onClick={() => toggle("web")} />
+          </Row>
           <Row label="Language" value="English" />
         </Card>
       )}

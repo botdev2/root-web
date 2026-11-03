@@ -54,6 +54,7 @@ export default function App() {
   const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref } = state || {};
   // One switch for the composer pill and Settings; the Brain flag also counts.
   const autoPrompt = !!(prefs?.autoprompt || brainEnabled?.["autoprompt.rewrite"]);
+  const webOn = prefs?.web !== false;
   const [themeId, setThemeId] = useState(readSavedThemeId);
   const [wallpaperId, setWallpaperId] = useState(readSavedWallpaper);
   const [view, setView] = useState(() => {
@@ -562,6 +563,7 @@ export default function App() {
         files: fileSnapshot(),
         fileTree: files?.[activeProject?.id] || {},
         autoprompt: autoPrompt,
+        web: webOn,
         title,
         onTrace: ({ steps, startedAt, elapsedMs }) => {
           setLocal((prev) => ({
@@ -1022,6 +1024,8 @@ export default function App() {
                     onSend={() => send()}
                     autoPrompt={autoPrompt}
                     onAutoPrompt={() => togglePref?.("autoprompt")}
+                    web={webOn}
+                    onWeb={() => togglePref?.("web")}
                     attachments={attachments}
                     onAttach={(files) => setAttachments((prev) => [...prev, ...files])}
                     onRemoveAttach={(name) => setAttachments((prev) => prev.filter((file) => file.name !== name))}

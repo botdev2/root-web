@@ -58,6 +58,14 @@ export function sendTurn(address, body) {
   return call("/v1/chat/turn", { address, method: "POST", body });
 }
 
+export function searchWeb(address, query) {
+  return call("/v1/web/search", { address, method: "POST", body: { query } });
+}
+
+export function readPage(address, url, offset = 0) {
+  return call("/v1/web/fetch", { address, method: "POST", body: { url, offset } });
+}
+
 export function writeBrief(address, body) {
   return call("/v1/autoprompt", { address, method: "POST", body });
 }

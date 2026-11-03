@@ -1,4 +1,4 @@
-import { sendTurn, writeBrief } from "./glmChat.js";
+import { readPage, searchWeb, sendTurn, writeBrief } from "./glmChat.js";
 import { MAX_REPOS, createHubProject, deleteHubFile, opsFetch, runHubCommand, writeHubFiles } from "./opsApi.js";
 
 const FENCE = /```(?:ops|json)\s*([\s\S]*?)```/g;
@@ -82,6 +82,7 @@ export async function runAgentTurn({
   files = "",
   fileTree = {},
   autoprompt = false,
+  web = false,
   title = "",
   allowTools = false,
   onStatus,
@@ -126,7 +127,12 @@ export async function runAgentTurn({
     publish();
   }
 
-  for (let step = 0; step < (allowTools ? MAX_STEPS : 1); step += 1) {
+  // Web lookups work in every mode. Outside Agent mode they are the only tools allowed.
+  const toolsOn = allowTools || web;
+  const webOnly = web && !allowTools;
+  const lookups = { count: 0 };
+
+  for (let step = 0; step < (toolsOn ? MAX_STEPS : 1); step += 1) {
     if (step > 0) {
       finishActive(steps);
       steps.push({ title: thinkingTitle(mode, step), state: "active", kind: "spark", detail: "" });
@@ -142,6 +148,7 @@ export async function runAgentTurn({
       brain,
       files,
       autoprompt: step === 0 && autoprompt && !briefed,
+      web,
     });
     convo = last.conversation?.id || convo;
     const thought = thoughtDetail(last);
@@ -150,7 +157,7 @@ export async function runAgentTurn({
       active.detail = thought;
       publish();
     }
-    if (!allowTools) break;
+    if (!toolsOn) break;
     const { tools, cleaned } = parseOpsTools(last.text || "");
     if (!tools.length) break;
     finishActive(steps);
@@ -162,6 +169,9 @@ export async function runAgentTurn({
     });
     publish();
     const executed = await executeTools({
+      address,
+      webOnly,
+      lookups,
       tools,
       token,
       project: current,
@@ -187,11 +197,14 @@ export async function runAgentTurn({
     tree = executed.tree;
     actions.push(...executed.actions);
     finishActive(steps);
+    const lookedUp = executed.results.some((item) => item.tool === "web_search" || item.tool === "fetch_url");
     prompt = [
       "[ops-result]",
-      JSON.stringify(executed.results),
+      JSON.stringify(executed.results).slice(0, 14000),
       "[/ops-result]",
-      "Continue. If more Hub changes or commands are required, emit ops fences. If you are done, say what changed, with repository and paths, and do not emit a fence.",
+      lookedUp && webOnly
+        ? "Continue. Answer from these results and cite sources as [Site](url). Emit another lookup fence only if you truly need it. Otherwise do not emit a fence."
+        : "Continue. If more Hub changes, commands, or web lookups are required, emit ops fences. If you are done, say what changed or what you found, with sources, and do not emit a fence.",
     ].join("\n");
     files = snapshot(tree);
   }
@@ -232,7 +245,45 @@ function thoughtDetail(result) {
   return sentence.slice(0, 220);
 }
 
-async function executeTools({ tools, token, project, tree, message, onProject, onWrote, onRefresh, onTool }) {
+const WEB_TOOLS = new Set(["web_search", "fetch_url"]);
+const MAX_LOOKUPS = 6;
+
+function formatSearch(data) {
+  const line = (item, index) =>
+    `${index + 1}. ${item.title}${item.source ? ` (${item.source}${item.date ? ", " + item.date : ""})` : item.date ? ` (${item.date})` : ""}${item.url ? "\n   " + item.url : ""}${item.snippet ? "\n   " + item.snippet : ""}`;
+  const parts = [`Search: "${data.query}". Today is ${data.today}.`];
+  if (data.quick?.length) parts.push("QUICK (live readings):\n" + data.quick.join("\n"));
+  if (data.news?.length) parts.push("NEWS (newest first where dated):\n" + data.news.map(line).join("\n"));
+  if (data.results?.length) parts.push("WEB:\n" + data.results.map(line).join("\n"));
+  return parts.join("\n\n");
+}
+
+function formatPage(data) {
+  const head = `Page: ${data.title || data.url}\nURL: ${data.url}\nShowing characters ${data.offset}-${data.offset + data.text.length} of ${data.total}.${data.next ? ` More follows: call fetch_url again with offset ${data.next}.` : ""}`;
+  const links = data.links?.length ? "\n\nLinks on the page:\n" + data.links.map((item) => `- ${item.label}: ${item.url}`).join("\n") : "";
+  return `${head}\n\n${data.text}${links}`;
+}
+
+async function runWebTool(name, call, address, lookups) {
+  if (!address) throw new Error("Connect a wallet to use web access.");
+  if (lookups.count >= MAX_LOOKUPS) throw new Error("The lookup limit for this question was reached. Answer from what you have.");
+  lookups.count += 1;
+  if (name === "web_search") {
+    const query = String(call.query || "").trim();
+    if (!query) throw new Error("web_search needs a query.");
+    const data = await searchWeb(address, query);
+    if (data.error) throw new Error(data.error);
+    const count = (data.quick?.length || 0) + (data.news?.length || 0) + (data.results?.length || 0);
+    return { text: formatSearch(data), detail: `${count} results for "${data.query}"` };
+  }
+  const url = String(call.url || "").trim();
+  if (!url) throw new Error("fetch_url needs a url.");
+  const data = await readPage(address, url, Number(call.offset) || 0);
+  if (data.error) throw new Error(data.error);
+  return { text: formatPage(data), detail: data.title || data.url };
+}
+
+async function executeTools({ address, webOnly = false, lookups = { count: 0 }, tools, token, project, tree, message, onProject, onWrote, onRefresh, onTool }) {
   let current = project;
   let files = { ...tree };
   const writes = {};
@@ -264,7 +315,13 @@ async function executeTools({ tools, token, project, tree, message, onProject, o
     const label = toolTitle(call);
     onTool?.({ phase: "start", title: label.title, kind: label.kind, detail: label.detail });
     try {
-      if (name === "list_repos") {
+      if (WEB_TOOLS.has(name)) {
+        const looked = await runWebTool(name, call, address, lookups);
+        results.push({ tool: name, ok: true, text: looked.text });
+        onTool?.({ phase: "done", ok: true, detail: clip(looked.detail) });
+      } else if (webOnly) {
+        throw new Error("Only web lookups are available in this mode. Switch to Agent mode to work on the repository.");
+      } else if (name === "list_repos") {
         results.push({ tool: name, ok: true, repos: await listRepos(token) });
       } else if (name === "list_files") {
         results.push({ tool: name, ok: true, files: Object.keys(files) });
@@ -412,6 +469,8 @@ function describeTool(call) {
   if (call.tool === "search_files") return `Search files for \`${call.query}\`.`;
   if (call.tool === "list_files") return "List repository files.";
   if (call.tool === "list_repos") return "List Ops Hub repositories.";
+  if (call.tool === "web_search") return `Search the web for \`${String(call.query || "").slice(0, 80)}\`.`;
+  if (call.tool === "fetch_url") return `Read \`${String(call.url || "").slice(0, 80)}\`.`;
   return "";
 }
 
@@ -454,6 +513,16 @@ function toolTitle(call) {
   if (name === "read_file") return { title: `Read ${file}`, kind: "eye", detail: "" };
   if (name === "list_files" || name === "list_repos") return { title: name === "list_repos" ? "Explore repositories" : "Explore repository", kind: "folder", detail: "" };
   if (name === "search_files") return { title: `Search files for "${String(call.query || "").slice(0, 48)}"`, kind: "search", detail: "" };
+  if (name === "web_search") return { title: `Search the web for "${String(call.query || "").slice(0, 56)}"`, kind: "search", detail: "" };
+  if (name === "fetch_url") {
+    let host = String(call.url || "page");
+    try {
+      host = new URL(String(call.url)).hostname.replace(/^www\./, "");
+    } catch {
+      /* keep the raw text */
+    }
+    return { title: `Read ${host.slice(0, 60)}`, kind: "eye", detail: "" };
+  }
   if (name === "create_repo") return { title: `Create ${call.name || "repository"}`, kind: "folder", detail: "" };
   if (name === "git_status") return { title: "Review repository status", kind: "check", detail: "" };
   if (name === "git_diff") return { title: "Review the diff", kind: "check", detail: "" };

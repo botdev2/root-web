@@ -3,6 +3,7 @@ import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
+import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 import { creditTitle, formatCredits } from "../glmChat.js";
 const MODES = [
   { id: "agent", label: "Agent", icon: "bot" },
@@ -34,8 +35,132 @@ export default function Composer({
   const { mode, setMode } = useAppState();
   const { isConnected } = useAccount();
   const { open } = useAppKit();
+  const { editing } = useLayout();
   const fileRef = useRef(null);
   const boxRef = useRef(null);
+
+  const pool = [
+    {
+      id: "modes",
+      label: "Mode switch",
+      home: "composer",
+      className: "shrink-0",
+      node: (
+        <div data-tour="modes" className="flex shrink-0 overflow-hidden rounded-[9px] border border-[var(--stroke)]">
+          {MODES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              title={item.label}
+              onClick={() => setMode(item.id)}
+              className={`flex h-8 items-center gap-1 px-2 text-[12px] md:h-[30px] md:px-2.5 ${
+                mode === item.id
+                  ? item.id === "ask"
+                    ? "bg-[color-mix(in_srgb,#7ea4d9_22%,transparent)] text-[#9ec0ea]"
+                    : item.id === "plan"
+                      ? "bg-[color-mix(in_srgb,var(--amber)_18%,transparent)] text-[var(--amber)]"
+                      : "bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "text-[var(--ink)] hover:bg-[var(--hover)]"
+              }`}
+            >
+              <Icon name={item.icon} size={14} />
+              <span className="hidden sm:inline">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "autoprompt",
+      label: "Auto-Prompt",
+      home: "composer",
+      className: "shrink-0",
+      node: (
+        <Pill tour="autoprompt" onClick={onAutoPrompt} active={autoPrompt} title="Auto-Prompt">
+          <Icon name="spark" size={14} />
+          <span className="hidden sm:inline">Auto-Prompt{autoPrompt ? " · on" : ""}</span>
+        </Pill>
+      ),
+    },
+    {
+      id: "web",
+      label: "Web",
+      home: "composer",
+      className: "shrink-0",
+      node: (
+        <Pill tour="web" onClick={onWeb} active={web} title={web ? "Web access is on: Hamrin can search and read pages" : "Web access is off"}>
+          <Icon name="globe" size={14} />
+          <span className="hidden sm:inline">Web{web ? " · on" : ""}</span>
+        </Pill>
+      ),
+    },
+    ...(isConnected
+      ? [
+          {
+            id: "model",
+            label: "Model",
+            home: "composer",
+            className: "shrink-0",
+            node: (
+              <Pill tour="model" title="Hamrin 1.0">
+                <Icon name="cloud" size={14} />
+                <span className="hidden sm:inline">Hamrin 1.0</span>
+              </Pill>
+            ),
+          },
+        ]
+      : []),
+    {
+      id: "attach",
+      label: "Attach",
+      home: "composer",
+      className: "shrink-0",
+      node: (
+        <Pill tour="attach" title="Attach" onClick={() => fileRef.current?.click()}>
+          <Icon name="paperclip" size={14} />
+          <span className="hidden sm:inline">Attach</span>
+        </Pill>
+      ),
+    },
+    {
+      id: "space",
+      label: "Flexible space",
+      home: "composer",
+      locked: false,
+      className: `min-w-[4px] flex-1 ${editing ? "min-w-[84px]" : ""}`,
+      node: editing ? <span className="flex h-[30px] items-center px-2 text-[11px] text-[var(--faint)]">↔ space</span> : <span />,
+    },
+    {
+      id: "meters",
+      label: "Meters",
+      home: "composer",
+      className: "shrink-0",
+      node: (
+        <span data-tour="meters" className="flex items-center gap-2">
+          <ContextMeter percent={usagePercent} />
+          <CreditMeter credit={credit} />
+        </span>
+      ),
+    },
+    {
+      id: "json",
+      label: "JSON export",
+      home: "composer",
+      className: "shrink-0",
+      node: (
+        <button
+          type="button"
+          data-tour="json"
+          title="Download this chat as JSON"
+          onClick={() => downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercent, credit })}
+          className="flex h-8 items-center gap-1 rounded-[9px] border border-[var(--stroke)] px-2 text-[11px] text-[var(--ink)] hover:bg-[var(--hover)] md:h-[30px]"
+        >
+          <Icon name="download" size={13} />
+          JSON
+        </button>
+      ),
+    },
+  ];
   useEffect(() => {
     const box = boxRef.current;
     if (!box) return;
@@ -53,6 +178,7 @@ export default function Composer({
   if (archived) {
     return (
       <div className="px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-1.5 md:px-8 md:pb-3">
+      <PanelGrip panel="composer" className="absolute right-6 top-[-4px]" />
         <div
           data-tour="composer"
           className="frost-input composer-shadow mx-auto flex max-w-[820px] flex-col gap-3 rounded-[16px] border border-[var(--stroke)] px-4 py-3.5 sm:flex-row sm:items-center"
@@ -90,6 +216,7 @@ export default function Composer({
 
   return (
     <div className="px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-1.5 md:px-8 md:pb-3">
+      <PanelGrip panel="composer" className="absolute right-6 top-[-4px]" />
       <div data-tour="composer" className="frost-input composer-shadow mx-auto max-w-[820px] rounded-[16px] border border-[var(--stroke)] px-3 pb-2 pt-3 md:px-4 md:pb-2.5 md:pt-3.5">
         {attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">
@@ -121,73 +248,24 @@ export default function Composer({
           className="min-h-[26px] w-full resize-none bg-transparent text-[16px] outline-none placeholder:text-[var(--faint)] md:text-[14px]"
         />
         <div className="mt-2 flex items-center gap-2">
-          <div className="scroll-thin flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto md:gap-2">
-            <div data-tour="modes" className="flex shrink-0 overflow-hidden rounded-[9px] border border-[var(--stroke)]">
-              {MODES.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  title={item.label}
-                  onClick={() => setMode(item.id)}
-                  className={`flex h-8 items-center gap-1 px-2 text-[12px] md:h-[30px] md:px-2.5 ${
-                    mode === item.id
-                      ? item.id === "ask"
-                        ? "bg-[color-mix(in_srgb,#7ea4d9_22%,transparent)] text-[#9ec0ea]"
-                        : item.id === "plan"
-                          ? "bg-[color-mix(in_srgb,var(--amber)_18%,transparent)] text-[var(--amber)]"
-                          : "bg-[var(--accent-soft)] text-[var(--accent)]"
-                      : "text-[var(--ink)] hover:bg-[var(--hover)]"
-                  }`}
-                >
-                  <Icon name={item.icon} size={14} />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </button>
-              ))}
-            </div>
-            <Pill tour="autoprompt" onClick={onAutoPrompt} active={autoPrompt} title="Auto-Prompt">
-              <Icon name="spark" size={14} />
-              <span className="hidden sm:inline">Auto-Prompt{autoPrompt ? " · on" : ""}</span>
-            </Pill>
-            <Pill tour="web" onClick={onWeb} active={web} title={web ? "Web access is on: Hamrin can search and read pages" : "Web access is off"}>
-              <Icon name="globe" size={14} />
-              <span className="hidden sm:inline">Web{web ? " · on" : ""}</span>
-            </Pill>
-            {isConnected && (
-              <Pill tour="model" title="Hamrin 1.0">
-                <Icon name="cloud" size={14} />
-                <span className="hidden sm:inline">Hamrin 1.0</span>
-              </Pill>
-            )}
-            <Pill tour="attach" title="Attach" onClick={() => fileRef.current?.click()}>
-              <Icon name="paperclip" size={14} />
-              <span className="hidden sm:inline">Attach</span>
-            </Pill>
-            <input
-              ref={fileRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={(event) => {
-                onAttach?.(Array.from(event.target.files || []).map((file) => ({ name: file.name, size: file.size })));
-                event.target.value = "";
-              }}
-            />
-          </div>
+          <Zone
+            zone="composer"
+            group="composer"
+            dir="h"
+            pool={pool}
+            className={`flex min-w-0 flex-1 items-center gap-1.5 md:gap-2 ${editing ? "flex-wrap py-1" : "scroll-thin overflow-x-auto"}`}
+          />
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              onAttach?.(Array.from(event.target.files || []).map((file) => ({ name: file.name, size: file.size })));
+              event.target.value = "";
+            }}
+          />
           <div className="flex shrink-0 items-center gap-2">
-            <span data-tour="meters" className="flex items-center gap-2">
-              <ContextMeter percent={usagePercent} />
-              <CreditMeter credit={credit} />
-            </span>
-            <button
-              type="button"
-              data-tour="json"
-              title="Download this chat as JSON"
-              onClick={() => downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercent, credit })}
-              className="flex h-8 items-center gap-1 rounded-[9px] border border-[var(--stroke)] px-2 text-[11px] text-[var(--ink)] hover:bg-[var(--hover)] md:h-[30px]"
-            >
-              <Icon name="download" size={13} />
-              JSON
-            </button>
             <button
               type="button"
               data-tour="send"

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Pager, { usePaged } from "./Pager.jsx";
 import { THEMES, WALLPAPERS } from "../themes.js";
 import { useAppState } from "../AppState.jsx";
+import { useLayout } from "../layout.jsx";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { formatModelLabel } from "../models.js";
@@ -26,7 +27,8 @@ const FONTS = [
 ];
 
 
-export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt }) {
+export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt, onLayout }) {
+  const { custom, reset: resetLayout } = useLayout();
   const { project, model, fontId, setFontId, notice, prefs, togglePref, setPrefs, videos, upsertVideo, deleteVideo } = useAppState();
   const { isConnected } = useAccount();
   const { open } = useAppKit();
@@ -68,6 +70,21 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
           </Row>
           <Row label="Web access" value="Let Hamrin search the web and read pages. Lookups run through the harness server, not your browser.">
             <Toggle on={flags.web !== false} onClick={() => toggle("web")} />
+          </Row>
+          <Row label="Interface layout" value={custom ? "Customized. Drag items, hide them, or dock the sidebar, header and composer on another edge." : "Drag and drop the sidebar, header and composer controls wherever you like."}>
+            <div className="flex shrink-0 gap-1.5">
+              <Ghost onClick={onLayout}>Arrange</Ghost>
+              {custom && (
+                <Ghost
+                  onClick={() => {
+                    resetLayout();
+                    notice("Layout reset.");
+                  }}
+                >
+                  Reset
+                </Ghost>
+              )}
+            </div>
           </Row>
           <Row label="Language" value="English" />
         </Card>

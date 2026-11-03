@@ -20,7 +20,8 @@ const HITS = [
   { id: "telemetry", label: "Telemetry", hint: "Session privacy" },
   { id: "updates", label: "Updates", hint: "Channel and version" },
   { id: "hamrin", label: "Meet Hamrin 1.0", hint: "The model behind /root" },
-  { id: "tour", label: "Take the tour", hint: "A guided first repository and prompt" },
+  { id: "layout", label: "Arrange the interface", hint: "Drag items, hide them, dock panels" },
+  { id: "tour", label: "Take the tour", hint: "A guided first repository and prompt (resets your layout)" },
   { id: "help", label: "Help", hint: "How /root works" },
 ];
 

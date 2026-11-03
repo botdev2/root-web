@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
 import AddProjectMenu from "./AddProjectMenu.jsx";
+import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 
 const NAV = [
   { id: "home", label: "New Agent" },
@@ -68,6 +69,7 @@ export default function Sidebar({
   onDeleteProject,
 }) {
   const state = useAppState();
+  const { layout } = useLayout();
   const { onboarding, doneCount, dismissOnboarding } = state;
   const source = listedProjects ?? [];
   const sessionsFor = (id) => (walletReady ? cloudSessions.filter((item) => item.projectId === id).sort(byRecent) : []);
@@ -106,34 +108,26 @@ export default function Sidebar({
 
   const nextLabel = !onboarding.skills ? "Bridge Skills" : !onboarding.repos ? "Connect a project" : "Connect GitHub";
 
-  return (
-    <aside data-tour="sidebar" className="frost flex h-full w-[min(248px,86vw)] shrink-0 flex-col border-r border-[var(--stroke)]">
-      <div className="flex items-center justify-between px-3.5 pb-1 pt-3.5">
-        <button
-          type="button"
-          onClick={() => go(onSearch)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--hover)]"
-          title="Search"
+  const linkPool = [
+    ...NAV.map((item) => ({
+      id: item.id === "home" ? "nav-home" : item.id,
+      label: item.label,
+      home: "nav",
+      node: (
+        <NavButton
+          tour={item.id === "home" ? "nav-home" : undefined}
+          active={item.id === "home" ? view === "home" : view === item.id}
+          onClick={() => go(() => (item.id === "home" ? onNewChat() : onView(item.id)))}
         >
-          <Icon name="search" size={16} />
-        </button>
-        <span className="pr-1 text-[12px] text-[var(--faint)] md:hidden">/root</span>
-      </div>
-
-      <div className="px-3.5">
-        <div data-tour="nav">
-          {NAV.map((item) => (
-            <NavButton
-              key={item.id}
-              tour={item.id === "home" ? "nav-home" : undefined}
-              active={item.id === "home" ? view === "home" : view === item.id}
-              onClick={() => go(() => (item.id === "home" ? onNewChat() : onView(item.id)))}
-            >
-              {item.label}
-            </NavButton>
-          ))}
-        </div>
-
+          {item.label}
+        </NavButton>
+      ),
+    })),
+    {
+      id: "project",
+      label: "Project switcher",
+      home: "nav",
+      node: (
         <button
           type="button"
           data-tour="project-switch"
@@ -143,7 +137,7 @@ export default function Sidebar({
             if (!next) return;
             pickProject(next.id);
           }}
-          className="mt-2 flex w-full items-center gap-2.5 rounded-xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left"
+          className="mb-1 mt-1 flex w-full items-center gap-2.5 rounded-xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left"
         >
           <Icon name="folder" size={16} className="text-[var(--accent)]" />
           <span className="min-w-0">
@@ -151,122 +145,183 @@ export default function Sidebar({
             <div className="truncate text-[12.5px]">{projects.find((item) => item.id === projectId)?.label || "No repositories yet"}</div>
           </span>
         </button>
+      ),
+    },
+    ...FOOTER.map((item) => ({
+      id: item.id,
+      label: item.label,
+      home: "footer",
+      locked: item.id === "settings",
+      node: (
+        <NavButton active={view === item.id} onClick={() => go(() => onView(item.id))}>
+          {item.label}
+        </NavButton>
+      ),
+    })),
+    {
+      id: "avatar-nav",
+      label: "Avatar",
+      home: "footer",
+      className: "sm:hidden",
+      node: (
+        <NavButton active={avatarOn} onClick={() => go(() => onAvatar?.())}>
+          Avatar
+        </NavButton>
+      ),
+    },
+  ];
+
+  const listPool = [
+    {
+      id: "chats",
+      label: "Chats",
+      home: "lists",
+      node: (
+        <div>
+          <div data-tour="chats-head" className="mb-1 flex items-center justify-between px-2 pt-3">
+            <span className="text-[12px] text-[var(--faint)]">Chats</span>
+            {walletReady && <span className="text-[11px] text-[var(--faint)]">{Math.min(chats.length, convoMax)}/{convoMax}</span>}
+          </div>
+          {chats.length === 0 && (
+            <div className="px-2 py-1.5 text-[12.5px] text-[var(--muted)]">{walletReady ? "No chats yet." : "Sign in to see chats."}</div>
+          )}
+          {chats.map((session) => {
+            const active = view === "chat" && sessionId === session.id;
+            return (
+              <div
+                key={session.id}
+                data-chat={session.id}
+                className={`mb-0.5 flex w-full items-center rounded-[10px] pr-1 ${
+                  active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
+                } ${session.archived ? "opacity-70" : ""}`}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    go(() => {
+                      if (session.projectId) pickProject(session.projectId);
+                      onSession(session.id, session.title, session.projectId);
+                    })
+                  }
+                  className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left"
+                >
+                  <Icon name="chat" size={14} className="shrink-0 text-[var(--muted)]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="title-fade min-w-0 flex-1 truncate text-[13px]">{session.title}</span>
+                      {busy?.sessionId === session.id && <LiveDot />}
+                      <span className="shrink-0 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
+                    </span>
+                    <span className="block truncate text-[11px] text-[var(--faint)]">
+                      {session.archived && <span className="mr-1.5 rounded border border-[var(--stroke)] px-1 text-[9.5px] uppercase tracking-wide">Archived</span>}
+                      {projectName(session.projectId)}
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete ${session.title || "chat"}`}
+                  title="Delete chat"
+                  onClick={() => onDeleteChat?.(session)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
+                >
+                  <Icon name="x" size={12} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ),
+    },
+    {
+      id: "projects",
+      label: "Projects",
+      home: "lists",
+      node: (
+        <div>
+          <div data-tour="projects-head" className="relative mb-1 mt-3 flex items-center justify-between px-2 pt-1">
+            <span className="text-[12px] text-[var(--faint)]">Projects</span>
+            <button
+              type="button"
+              data-tour="add-project"
+              onClick={() => setAddOpen(true)}
+              className="flex h-7 w-7 items-center justify-center text-[16px] text-[var(--muted)] hover:text-[var(--ink)]"
+            >
+              +
+            </button>
+            <AddProjectMenu
+              open={addOpen}
+              token={opsToken}
+              onToken={onOpsToken}
+              onCreate={onCreateProject}
+              onTemplates={() => onAddProject?.()}
+              onClose={() => setAddOpen(false)}
+            />
+          </div>
+          {projects.length === 0 && (
+            <div className="px-2 py-2 text-[12.5px] text-[var(--muted)]">No repositories yet.</div>
+          )}
+          {projects.map((project) => {
+            const active = project.id === projectId;
+            const count = sessionsFor(project.id).length;
+            const pending = busy?.projectId === project.id;
+            return (
+              <div key={project.id} data-project={project.label} className={`mb-0.5 flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
+                <button
+                  type="button"
+                  onClick={() => pickProject(project.id)}
+                  className="flex h-10 min-w-0 flex-1 items-center rounded-[10px] px-2 text-left hover:bg-[var(--hover)]"
+                >
+                  <Icon name="folder" size={15} className="text-[var(--muted)]" />
+                  <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
+                  {pending && <LiveDot />}
+                  <span className="ml-2 text-[11px] text-[var(--faint)]">{count}</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete ${project.label}`}
+                  title="Delete project"
+                  onClick={() => onDeleteProject?.(project)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
+                >
+                  <Icon name="x" size={12} />
+                </button>
+                {project.href && (
+                  <a
+                    href={project.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 px-1.5 text-[11px] text-[var(--muted)] underline"
+                  >
+                    Hub
+                  </a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <aside data-tour="sidebar" className={`frost flex h-full w-[min(248px,86vw)] shrink-0 flex-col border-[var(--stroke)] ${layout.sidebar === "right" ? "border-r md:border-l md:border-r-0" : "border-r"}`}>
+      <div className="flex items-center justify-between gap-2 px-3.5 pb-1 pt-3.5">
+        <button
+          type="button"
+          onClick={() => go(onSearch)}
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--hover)]"
+          title="Search"
+        >
+          <Icon name="search" size={16} />
+        </button>
+        <PanelGrip panel="sidebar" />
+        <span className="pr-1 text-[12px] text-[var(--faint)] md:hidden">/root</span>
       </div>
 
-      <div ref={listRef} className="scroll-thin mt-1 min-h-0 flex-1 overflow-y-auto px-3.5">
-        <div data-tour="chats-head" className="mb-1 flex items-center justify-between px-2 pt-3">
-          <span className="text-[12px] text-[var(--faint)]">Chats</span>
-          {walletReady && <span className="text-[11px] text-[var(--faint)]">{Math.min(chats.length, convoMax)}/{convoMax}</span>}
-        </div>
-        {chats.length === 0 && (
-          <div className="px-2 py-1.5 text-[12.5px] text-[var(--muted)]">{walletReady ? "No chats yet." : "Sign in to see chats."}</div>
-        )}
-        {chats.map((session) => {
-          const active = view === "chat" && sessionId === session.id;
-          return (
-            <div
-              key={session.id}
-              data-chat={session.id}
-              className={`mb-0.5 flex w-full items-center rounded-[10px] pr-1 ${
-                active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
-              } ${session.archived ? "opacity-70" : ""}`}
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  go(() => {
-                    if (session.projectId) pickProject(session.projectId);
-                    onSession(session.id, session.title, session.projectId);
-                  })
-                }
-                className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-left"
-              >
-                <Icon name="chat" size={14} className="shrink-0 text-[var(--muted)]" />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="title-fade min-w-0 flex-1 truncate text-[13px]">{session.title}</span>
-                    {busy?.sessionId === session.id && <LiveDot />}
-                    <span className="shrink-0 text-[10px] text-[var(--faint)]">{shortWhen(session.updatedAt)}</span>
-                  </span>
-                  <span className="block truncate text-[11px] text-[var(--faint)]">
-                    {session.archived && <span className="mr-1.5 rounded border border-[var(--stroke)] px-1 text-[9.5px] uppercase tracking-wide">Archived</span>}
-                    {projectName(session.projectId)}
-                  </span>
-                </span>
-              </button>
-              <button
-                type="button"
-                aria-label={`Delete ${session.title || "chat"}`}
-                title="Delete chat"
-                onClick={() => onDeleteChat?.(session)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
-              >
-                <Icon name="x" size={12} />
-              </button>
-            </div>
-          );
-        })}
-        <div data-tour="projects-head" className="relative mb-1 mt-3 flex items-center justify-between px-2 pt-1">
-          <span className="text-[12px] text-[var(--faint)]">Projects</span>
-          <button
-            type="button"
-            data-tour="add-project"
-            onClick={() => setAddOpen(true)}
-            className="flex h-7 w-7 items-center justify-center text-[16px] text-[var(--muted)] hover:text-[var(--ink)]"
-          >
-            +
-          </button>
-          <AddProjectMenu
-            open={addOpen}
-            token={opsToken}
-            onToken={onOpsToken}
-            onCreate={onCreateProject}
-            onTemplates={() => onAddProject?.()}
-            onClose={() => setAddOpen(false)}
-          />
-        </div>
-        {projects.length === 0 && (
-          <div className="px-2 py-2 text-[12.5px] text-[var(--muted)]">No repositories yet.</div>
-        )}
-        {projects.map((project) => {
-          const active = project.id === projectId;
-          const count = sessionsFor(project.id).length;
-          const pending = busy?.projectId === project.id;
-          return (
-            <div key={project.id} data-project={project.label} className={`mb-0.5 flex h-10 w-full items-center rounded-[10px] pr-1 ${active ? "bg-[var(--sidebar-sel)]" : ""}`}>
-              <button
-                type="button"
-                onClick={() => pickProject(project.id)}
-                className="flex h-10 min-w-0 flex-1 items-center rounded-[10px] px-2 text-left hover:bg-[var(--hover)]"
-              >
-                <Icon name="folder" size={15} className="text-[var(--muted)]" />
-                <span className="title-fade ml-2 min-w-0 flex-1 truncate text-[12.5px]">{project.label}</span>
-                {pending && <LiveDot />}
-                <span className="ml-2 text-[11px] text-[var(--faint)]">{count}</span>
-              </button>
-              <button
-                type="button"
-                aria-label={`Delete ${project.label}`}
-                title="Delete project"
-                onClick={() => onDeleteProject?.(project)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
-              >
-                <Icon name="x" size={12} />
-              </button>
-              {project.href && (
-                <a
-                  href={project.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="shrink-0 px-1.5 text-[11px] text-[var(--muted)] underline"
-                >
-                  Hub
-                </a>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <Zone zone="nav" group="sidebar-links" pool={linkPool} tour="nav" className="px-3.5" />
+
+      <Zone zone="lists" group="sidebar-lists" pool={listPool} innerRef={listRef} className="scroll-thin mt-1 min-h-0 flex-1 overflow-y-auto px-3.5" />
 
       <div className="px-3.5 pb-[max(14px,env(safe-area-inset-bottom))] pt-1.5">
         <div className="mx-1 mb-2 h-px bg-[var(--stroke-soft)]" />
@@ -303,16 +358,7 @@ export default function Sidebar({
             </div>
           </div>
         )}
-        {FOOTER.map((item) => (
-          <NavButton key={item.id} active={view === item.id} onClick={() => go(() => onView(item.id))}>
-            {item.label}
-          </NavButton>
-        ))}
-        <div className="sm:hidden">
-          <NavButton active={avatarOn} onClick={() => go(() => onAvatar?.())}>
-            Avatar
-          </NavButton>
-        </div>
+        <Zone zone="footer" group="sidebar-links" pool={linkPool} />
       </div>
     </aside>
   );

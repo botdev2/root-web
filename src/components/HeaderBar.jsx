@@ -2,6 +2,7 @@ import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
 import { creditTitle, formatCredits, PALM_PER_CREDIT } from "../glmChat.js";
 import WalletButton from "./WalletButton.jsx";
+import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 
 const HEADERS = {
   home: { title: "New Agent" },
@@ -43,9 +44,62 @@ export default function HeaderBar({
     view === "chat" && sessionTitle ? sessionTitle : view === "editor" && sessionTitle ? sessionTitle : header.title;
   const subtitle = header.subtitle || (liveProject ? liveProject.label : "Create a repository on the Ops Hub");
   const rate = Number(credit?.palmPerCredit) || PALM_PER_CREDIT;
+  const { layout } = useLayout();
+  const bottom = layout.header === "bottom";
+
+  const pool = [
+    ...(credit && Number.isFinite(credit.allowance)
+      ? [
+          {
+            id: "credits",
+            label: "Credits",
+            home: "header",
+            className: "shrink-0",
+            node: (
+              <button
+                type="button"
+                data-tour="credits"
+                onClick={onBilling}
+                title={creditTitle(credit) + " Click for billing."}
+                className="flex shrink-0 flex-col items-end rounded-lg border border-[var(--stroke)] bg-[var(--panel)] px-2.5 py-1 text-right leading-tight hover:bg-[var(--hover)]"
+              >
+                <div className="tabular-nums text-[13px] text-[var(--ink)]">
+                  {formatCredits(credit.remaining)}
+                  <span className="ml-1 text-[11px] text-[var(--faint)]">credits</span>
+                </div>
+                <div className="text-[10px] text-[var(--faint)]">{rate.toLocaleString()} $PALM = 1 credit</div>
+              </button>
+            ),
+          },
+        ]
+      : []),
+    {
+      id: "wallet",
+      label: "Wallet",
+      home: "header",
+      locked: true,
+      className: "shrink-0",
+      node: (
+        <span data-tour="wallet" className="inline-flex shrink-0">
+          <WalletButton className="shrink-0" />
+        </span>
+      ),
+    },
+    ...(!signedIn ? [{ id: "unlock", label: "Unlock", home: "header", className: "shrink-0", node: <Ghost onClick={onUnlock}>Unlock</Ghost> }] : []),
+    { id: "avatar", label: "Avatar", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onAvatar} active={avatarOn}>Avatar</Ghost> },
+    { id: "help", label: "Help", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onHelp}>Help</Ghost> },
+    { id: "files", label: "Files", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onFiles} active={filesOpen}>Files</Ghost> },
+    { id: "clear", label: "Clear", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onClear}>Clear</Ghost> },
+  ];
 
   return (
-    <header data-tour="header" className="frost-header flex min-h-[52px] shrink-0 items-center gap-2 border-b border-[var(--stroke-soft)] px-3 pt-[env(safe-area-inset-top)] md:px-7">
+    <header
+      data-tour="header"
+      className={`frost-header relative flex min-h-[52px] shrink-0 items-center gap-2 border-[var(--stroke-soft)] px-3 md:px-7 ${
+        bottom ? "order-last border-t pb-[env(safe-area-inset-bottom)]" : "border-b pt-[env(safe-area-inset-top)]"
+      }`}
+    >
+      <PanelGrip panel="header" className={`absolute left-1/2 -translate-x-1/2 ${bottom ? "top-[-11px]" : "bottom-[-11px]"}`} />
       <button
         type="button"
         onClick={onMenu}
@@ -69,39 +123,7 @@ export default function HeaderBar({
           )}
         </div>
       </div>
-      {credit && Number.isFinite(credit.allowance) ? (
-        <button
-          type="button"
-          data-tour="credits"
-          onClick={onBilling}
-          title={creditTitle(credit) + " Click for billing."}
-          className="flex shrink-0 flex-col items-end rounded-lg border border-[var(--stroke)] bg-[var(--panel)] px-2.5 py-1 text-right leading-tight hover:bg-[var(--hover)]"
-        >
-          <div className="tabular-nums text-[13px] text-[var(--ink)]">
-            {formatCredits(credit.remaining)}
-            <span className="ml-1 text-[11px] text-[var(--faint)]">credits</span>
-          </div>
-          <div className="text-[10px] text-[var(--faint)]">
-            {rate.toLocaleString()} $PALM = 1 credit
-          </div>
-        </button>
-      ) : null}
-      <span data-tour="wallet" className="inline-flex shrink-0">
-        <WalletButton className="shrink-0" />
-      </span>
-      {!signedIn && (
-        <Ghost onClick={onUnlock}>Unlock</Ghost>
-      )}
-      <div className="hidden shrink-0 items-center gap-0.5 sm:flex">
-        <Ghost onClick={onAvatar} active={avatarOn}>
-          Avatar
-        </Ghost>
-        <Ghost onClick={onHelp}>Help</Ghost>
-        <Ghost onClick={onFiles} active={filesOpen}>
-          Files
-        </Ghost>
-        <Ghost onClick={onClear}>Clear</Ghost>
-      </div>
+      <Zone zone="header" group="header" dir="h" pool={pool} className="flex shrink-0 items-center gap-1.5" />
       <button
         type="button"
         onClick={onFiles}

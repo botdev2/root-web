@@ -1106,3 +1106,37 @@ textarea {
   }
 }
 
+
+/* ---- Arrange mode (layout.jsx) ---- */
+.lay-inert { display: contents; pointer-events: none; }
+.lay-zone { outline: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent); outline-offset: 2px; border-radius: 8px; }
+.lay-item { position: relative; border-radius: 9px; }
+.lay-item::after { content: ""; position: absolute; inset: 0; border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); border-radius: inherit; pointer-events: none; }
+.lay-grab { position: absolute; inset: 0; z-index: 10; cursor: grab; border-radius: inherit; }
+.lay-grab:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.lay-grab:active { cursor: grabbing; }
+.lay-hidden { opacity: 0.4; }
+.lay-eye { position: absolute; top: -7px; right: -5px; z-index: 20; display: flex; height: 17px; width: 17px; align-items: center; justify-content: center; border-radius: 999px; border: 1px solid var(--stroke); background: var(--panel); color: var(--ink); cursor: pointer; }
+.lay-eye:hover { background: var(--hover); }
+.lay-mark { position: absolute; z-index: 30; background: var(--accent); border-radius: 2px; pointer-events: none; }
+.lay-mark-h { top: -2px; bottom: -2px; width: 3px; }
+.lay-mark-h.lay-before { left: -4px; }
+.lay-mark-h.lay-after { right: -4px; }
+.lay-mark-v { left: 0; right: 0; height: 3px; }
+.lay-mark-v.lay-before { top: -2px; }
+.lay-mark-v.lay-after { bottom: -2px; }
+.lay-tail { display: block; height: 3px; min-width: 24px; background: var(--accent); border-radius: 2px; }
+.lay-empty { display: flex; min-height: 30px; min-width: 70px; align-items: center; justify-content: center; border: 1px dashed var(--stroke); border-radius: 9px; padding: 0 10px; font-size: 11px; color: var(--faint); }
+.lay-panel-grip { z-index: 40; display: inline-flex; cursor: grab; align-items: center; gap: 6px; border-radius: 999px; border: 1px solid var(--accent); background: var(--panel); padding: 3px 10px 3px 8px; font-size: 11px; color: var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+.lay-panel-grip:active { cursor: grabbing; }
+.lay-dock { position: fixed; inset: 0; z-index: 80; display: flex; gap: 10px; padding: 46px 10px 10px; background: color-mix(in srgb, #000 28%, transparent); }
+.lay-dock-v { flex-direction: column; }
+.lay-dock-cell { display: flex; flex: 1; align-items: center; justify-content: center; border: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent); border-radius: 16px; background: color-mix(in srgb, var(--bg) 55%, transparent); font-size: 14px; color: var(--ink); transition: background 0.12s, border-color 0.12s; }
+.lay-dock-cell span { pointer-events: none; }
+.lay-dock-hot { border-style: solid; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--bg)); }
+.lay-bar { position: fixed; left: 50%; top: calc(50% + 120px); transform: translateX(-50%); z-index: 70; display: flex; max-width: min(460px, calc(100vw - 32px)); align-items: center; gap: 12px; border: 1px solid var(--accent); border-radius: 14px; background: var(--panel); padding: 10px 12px 10px 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.28); }
+.lay-btn { height: 30px; flex-shrink: 0; border-radius: 9px; border: 1px solid var(--stroke); padding: 0 12px; font-size: 12.5px; color: var(--ink); }
+.lay-btn:hover:not(:disabled) { background: var(--hover); }
+.lay-btn:disabled { opacity: 0.45; }
+.lay-btn-main { border-color: var(--accent); background: var(--accent); color: var(--bg); }
+.lay-btn-main:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }

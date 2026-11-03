@@ -45,12 +45,14 @@ import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
 import Tour from "./components/Tour.jsx";
+import { DockTargets, LayoutBar, useLayout } from "./layout.jsx";
 import HamrinIntro, { hamrinSeen } from "./components/HamrinIntro.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
 export default function App() {
   const state = useAppState();
+  const { layout, setEditing, reset: resetLayout } = useLayout();
   const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref } = state || {};
   // One switch for the composer pill and Settings; the Brain flag also counts.
   const autoPrompt = !!(prefs?.autoprompt || brainEnabled?.["autoprompt.rewrite"]);
@@ -122,6 +124,27 @@ export default function App() {
   const theme = useMemo(() => findTheme(themeId), [themeId]);
   const tourLook = useRef(null);
   const touring = !!tour;
+
+  // The tour points at the stock layout, so playing it puts everything back where it started.
+  useEffect(() => {
+    if (!touring) return;
+    setEditing(false);
+    resetLayout();
+  }, [touring]);
+
+  const customizeLayout = () => {
+    if (window.innerWidth < 768) {
+      notice?.("Rearranging works on a wider screen. Open /root on a desktop or tablet.");
+      return;
+    }
+    setPaletteOpen(false);
+    setNavOpen(false);
+    setFilesOpen(false);
+    setView("home");
+    setSessionId(null);
+    setSessionTitle("New Agent");
+    setEditing(true);
+  };
 
   // The tour plays in Sakura (Serenity). Your own look comes back when it ends.
   useEffect(() => {
@@ -824,7 +847,7 @@ export default function App() {
             />
           )}
           <div
-            className={`absolute inset-y-0 left-0 z-30 transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${
+            className={`absolute inset-y-0 left-0 z-30 transition-transform duration-200 md:static md:z-auto md:translate-x-0 ${layout.sidebar === "right" ? "md:order-last" : ""} ${
               navOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             }`}
           >
@@ -940,6 +963,7 @@ export default function App() {
                     wallpaperId={wallpaperId}
                     onWallpaper={setWallpaperId}
                     initialTab={settingsTab}
+                    onLayout={customizeLayout}
                     onPrompt={(text) => {
                       setSessionId(null);
                       setSessionTitle("New Agent");
@@ -998,7 +1022,7 @@ export default function App() {
                   />
                 )}
                 {showComposer && (
-                  <div className="relative">
+                  <div className={`relative ${layout.composer === "top" ? "order-first" : ""}`}>
                     <div className="flex items-center md:pointer-events-none md:absolute md:inset-y-0 md:left-0 md:z-20 md:items-end md:pb-[18px] md:pl-3.5">
                       <div className="pointer-events-auto">
                         <DayTasksToggle
@@ -1069,6 +1093,8 @@ export default function App() {
         projectLabel={activeProject?.label || ""}
       />
       <HamrinIntro open={hamrinOpen && !tour} onClose={() => setHamrinOpen(false)} onTour={startTour} />
+      <LayoutBar />
+      <DockTargets />
       {tour && (
         <Tour
           autoplay={tour.auto}
@@ -1125,6 +1151,10 @@ export default function App() {
             }
             if (id === "tour") {
               startTour();
+              return;
+            }
+            if (id === "layout") {
+              customizeLayout();
               return;
             }
             if (id === "hamrin") {

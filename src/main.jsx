@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { AppStateProvider } from "./AppState.jsx";
 import { queryClient, wagmiConfig } from "./web3/config.js";
+import { LayoutProvider } from "./layout.jsx";
 import App from "./App.jsx";
 import "./index.css";
 
@@ -12,7 +13,9 @@ createRoot(document.getElementById("root")).render(
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <AppStateProvider>
-          <App />
+          <LayoutProvider>
+            <App />
+          </LayoutProvider>
         </AppStateProvider>
       </QueryClientProvider>
     </WagmiProvider>

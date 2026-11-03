@@ -545,6 +545,85 @@ export const THEMES = [
   },
 ];
 
+// New themes are described by a few colors; the rest of the palette is derived.
+function hexToRgb(hex) {
+  const value = hex.replace("#", "");
+  return [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16));
+}
+
+function mix(from, to, amount) {
+  const a = hexToRgb(from);
+  const b = hexToRgb(to);
+  return (
+    "#" +
+    a
+      .map((channel, index) => Math.round(channel + (b[index] - channel) * amount).toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase()
+  );
+}
+
+function makeTheme({ id, name, description, isDark, bg, ink, accent, green, amber, rose, tint }) {
+  const white = "#FFFFFF";
+  const black = "#000000";
+  const panel = isDark ? mix(bg, ink, 0.07) : mix(bg, white, 0.55);
+  const sidebar = isDark ? mix(bg, ink, 0.05) : mix(bg, ink, 0.06);
+  const top = isDark ? mix(bg, ink, 0.03) : mix(bg, white, 0.4);
+  const second = tint || accent;
+  return {
+    id,
+    name,
+    description,
+    isDark,
+    wallpaper: false,
+    swatches: [bg, accent, green || (isDark ? "#4BB87A" : "#3F8F63"), amber || (isDark ? "#D4A04A" : "#B58A3C")],
+    vars: {
+      "--bg": bg,
+      "--top": top,
+      "--sidebar": sidebar,
+      "--sidebar-sel": mix(bg, accent, isDark ? 0.2 : 0.16),
+      "--panel": panel,
+      "--panel-soft": isDark ? mix(bg, ink, 0.1) : mix(bg, white, 0.35),
+      "--input": isDark ? mix(bg, black, 0.25) : mix(bg, white, 0.75),
+      "--stroke": mix(bg, ink, isDark ? 0.2 : 0.16),
+      "--stroke-soft": mix(bg, ink, isDark ? 0.12 : 0.09),
+      "--ink": ink,
+      "--muted": mix(bg, ink, 0.72),
+      "--faint": mix(bg, ink, 0.5),
+      "--accent": accent,
+      "--accent-soft": mix(bg, accent, isDark ? 0.24 : 0.2),
+      "--hover": mix(bg, accent, isDark ? 0.13 : 0.1),
+      "--tab": mix(bg, accent, isDark ? 0.22 : 0.18),
+      "--code": isDark ? mix(bg, black, 0.18) : mix(bg, ink, 0.05),
+      "--bubble": mix(bg, accent, isDark ? 0.16 : 0.13),
+      "--green": green || (isDark ? "#4BB87A" : "#3F8F63"),
+      "--amber": amber || (isDark ? "#D4A04A" : "#B58A3C"),
+      "--rose": rose || (isDark ? "#C48A84" : "#C98A86"),
+      "--shell": `linear-gradient(160deg, ${top}, ${bg} 55%, ${mix(bg, second, isDark ? 0.14 : 0.1)})`,
+    },
+  };
+}
+
+THEMES.push(
+  ...[
+    { id: "aurora", name: "Aurora", description: "Northern lights over black ice", isDark: true, bg: "#0B1418", ink: "#E4F5EF", accent: "#5CE0B8", rose: "#B58AE0", tint: "#5CE0B8" },
+    { id: "ember", name: "Ember", description: "Glowing coals on warm charcoal", isDark: true, bg: "#17110E", ink: "#FBEEE2", accent: "#FF7A3D", amber: "#F2B04A" },
+    { id: "obsidian", name: "Obsidian", description: "Volcanic glass with a violet edge", isDark: true, bg: "#0C0B10", ink: "#ECE9F5", accent: "#9D8CFF" },
+    { id: "neon-tokyo", name: "Neon Tokyo", description: "Rain-slick streets, magenta and cyan", isDark: true, bg: "#0D0A1F", ink: "#F1EBFF", accent: "#FF3DAE", green: "#22E3D0", rose: "#FF6FC8", tint: "#22E3D0" },
+    { id: "twilight", name: "Twilight", description: "Dusk violet fading to amber", isDark: true, bg: "#15112A", ink: "#F3ECFA", accent: "#F2A65A", rose: "#D993C8" },
+    { id: "sequoia", name: "Sequoia", description: "Old-growth redwood and moss", isDark: true, bg: "#12150F", ink: "#EDEBDD", accent: "#A8C26B", amber: "#C9A24E" },
+    { id: "volcanic", name: "Volcanic", description: "Basalt black and molten red", isDark: true, bg: "#140C0C", ink: "#F6E7E4", accent: "#FF4D4D", amber: "#E8A23C" },
+    { id: "cobalt-night", name: "Cobalt Night", description: "Electric blue after dark", isDark: true, bg: "#080F1F", ink: "#E8F0FF", accent: "#4C8DFF", rose: "#B79AE0" },
+    { id: "moonstone", name: "Moonstone", description: "Cool grey with a pearl glow", isDark: true, bg: "#12151C", ink: "#E6E9F0", accent: "#A9B8D6" },
+    { id: "alpine-frost", name: "Alpine Frost", description: "Glacier white and cold blue", isDark: false, bg: "#EEF3F8", ink: "#1B2733", accent: "#2F6FB5" },
+    { id: "desert-dune", name: "Desert Dune", description: "Warm sand and terracotta", isDark: false, bg: "#F2E8DA", ink: "#2E2218", accent: "#C2623A" },
+    { id: "lavender-fields", name: "Lavender Fields", description: "Provence lilac haze", isDark: false, bg: "#F0EBF7", ink: "#2A2336", accent: "#7A5CC2" },
+    { id: "citrus-grove", name: "Citrus Grove", description: "Sunlit lemon and fresh leaf", isDark: false, bg: "#F6F3E3", ink: "#26301A", accent: "#6E9A1E", amber: "#D9A21B" },
+    { id: "saffron", name: "Saffron", description: "Spice-market gold", isDark: false, bg: "#F7EEDC", ink: "#33260F", accent: "#D08A00" },
+    { id: "coral-reef", name: "Coral Reef", description: "Shallow water and warm coral", isDark: false, bg: "#FBEFEA", ink: "#3A2420", accent: "#E0566A", green: "#2F9A8A" },
+  ].map(makeTheme),
+);
+
 export const DEFAULT_THEME_ID = "default";
 
 export function findTheme(id) {
@@ -557,6 +636,35 @@ export const WALLPAPERS = [
   { id: "storm", name: "Storm ocean", src: "/wallpaper.png" },
   { id: "serenity", name: "Serenity", src: "/serenity-wallpaper.jpg" },
   { id: "morning", name: "Morning", src: "/morning-wallpaper.png" },
+  ...[
+    ["alpine-mirror", "Alpine Mirror", "Clouds in still mountain water"],
+    ["polar-night", "Polar Night", "Aurora over dark pines"],
+    ["lofoten-lights", "Lofoten Lights", "Green sky above the fjords"],
+    ["morning-mist", "Morning Mist", "Fog lifting off the forest"],
+    ["dark-pines", "Dark Pines", "Mist over a quiet treeline"],
+    ["golden-dunes", "Golden Dunes", "Wind-carved desert ridges"],
+    ["emerald-falls", "Emerald Falls", "Water over a green cliff"],
+    ["summit-snow", "Summit Snow", "A hiker above the snowline"],
+    ["southern-milky-way", "Southern Milky Way", "The galactic core over Streaky Bay"],
+    ["violet-night", "Violet Night", "A purple starfield"],
+    ["ocean-ripple", "Ocean Ripple", "Slow swell, close up"],
+    ["neon-skyline", "Neon Skyline", "Shanghai across the river at night"],
+    ["golden-shore", "Golden Shore", "Sunset on an empty beach"],
+    ["sea-cliffs", "Sea Cliffs", "Coastline from above"],
+    ["lavender-meadow", "Lavender Meadow", "Rows of purple in full bloom"],
+    ["autumn-slope", "Autumn Slope", "Amber forest on a hillside"],
+    ["terrace-green", "Terrace Green", "Rice terraces in Sapa"],
+    ["patagonia-ice", "Patagonia Ice", "Perito Moreno Glacier"],
+    ["khorgo-crater", "Khorgo Crater", "A dormant volcano in Mongolia"],
+    ["starlit-lake", "Starlit Lake", "Stars over a mountain lake"],
+  ].map(([id, name, detail]) => ({
+    id,
+    name,
+    detail,
+    src: `/wallpapers/${id}.jpg`,
+    thumb: `/wallpapers/thumb/${id}.jpg`,
+    uhd: true,
+  })),
 ];
 
 export function resolveWallpaper(id) {

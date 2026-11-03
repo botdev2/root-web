@@ -1107,6 +1107,18 @@ export default function App() {
           onClose={() => setPaletteOpen(false)}
           onPick={(id) => {
             setPaletteOpen(false);
+            if (id.startsWith("theme:")) {
+              const next = findTheme(id.slice(6));
+              setThemeId(next.id);
+              notice?.(next.name + " theme.");
+              return;
+            }
+            if (id.startsWith("wallpaper:")) {
+              const next = id.slice(10);
+              setWallpaperId(next);
+              notice?.(next === "none" ? "Wallpaper off." : "Wallpaper changed.");
+              return;
+            }
             if (id === "tour") {
               startTour();
               return;

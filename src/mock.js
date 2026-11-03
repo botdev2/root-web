@@ -215,7 +215,7 @@ export const HELP = [
     title: "Settings",
     summary: "Appearance, models, privacy.",
     body: "Nine tabs match the desktop. Theme and wallpaper apply live. Font changes the UI face — PALM is the default.",
-    bullets: ["17 themes", "Wallpaper: None, Nordic, Storm ocean, Serenity, Morning", "Hamrin 1.0 after a wallet is connected"],
+    bullets: ["32 themes, light and dark, searchable and paged", "24 wallpapers, 20 of them 4K photos", "Search /root also finds themes and wallpapers", "Hamrin 1.0 after a wallet is connected"],
   },
   {
     id: "telemetry",

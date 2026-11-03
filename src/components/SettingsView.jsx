@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Pager, { usePaged } from "./Pager.jsx";
 import { THEMES, WALLPAPERS } from "../themes.js";
 import { useAppState } from "../AppState.jsx";
 import { useAppKit } from "@reown/appkit/react";
@@ -35,6 +36,25 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
   const flags = prefs;
   const toggle = (key) => togglePref(key);
 
+  const [look, setLook] = useState("");
+  const [scheme, setScheme] = useState("all");
+  const needle = look.trim().toLowerCase();
+  const themeList = useMemo(
+    () =>
+      THEMES.filter((item) => {
+        if (scheme !== "all" && item.isDark !== (scheme === "dark")) return false;
+        if (!needle) return true;
+        return (item.name + " " + item.description + " " + (item.isDark ? "dark" : "light")).toLowerCase().includes(needle);
+      }),
+    [needle, scheme],
+  );
+  const wallList = useMemo(
+    () => WALLPAPERS.filter((item) => !needle || (item.name + " " + (item.detail || "")).toLowerCase().includes(needle)),
+    [needle],
+  );
+  const themePaged = usePaged(themeList, 9, { resetKey: needle + "|" + scheme, startIndex: Math.max(0, themeList.findIndex((item) => item.id === theme.id)) });
+  const wallPaged = usePaged(wallList, 8, { resetKey: needle, startIndex: Math.max(0, wallList.findIndex((item) => item.id === wallpaperId)) });
+
   return (
     <Page wide>
       <Tabs tabs={TABS} value={tab} onChange={setTab} />
@@ -52,10 +72,36 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
 
       {tab === "appearance" && (
         <>
-          <Section title="Theme">
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[200px] flex-1">
+              <input
+                value={look}
+                onChange={(event) => setLook(event.target.value)}
+                placeholder={`Search ${THEMES.length} themes and ${WALLPAPERS.length - 1} wallpapers`}
+                className="h-10 w-full rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 pr-9 text-[14px] outline-none placeholder:text-[var(--faint)]"
+              />
+              {look && (
+                <button
+                  type="button"
+                  onClick={() => setLook("")}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[var(--faint)] hover:bg-[var(--hover)]"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {["all", "dark", "light"].map((id) => (
+              <Ghost key={id} active={scheme === id} onClick={() => setScheme(id)}>
+                {id === "all" ? "All" : id === "dark" ? "Dark" : "Light"}
+              </Ghost>
+            ))}
+          </div>
+          <Section title={`Theme · ${themeList.length}`}>
             <Card className="p-3.5">
+              {themeList.length === 0 && <div className="py-6 text-center text-[12.5px] text-[var(--faint)]">No theme matches that search.</div>}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {THEMES.map((item) => {
+                {themePaged.slice.map((item) => {
                   const selected = item.id === theme.id;
                   return (
                     <button
@@ -87,6 +133,7 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
                   );
                 })}
               </div>
+              <Pager paged={themePaged} label="themes" />
             </Card>
           </Section>
           <Section title="Typography">
@@ -106,10 +153,12 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
               ))}
             </Card>
           </Section>
-          <Section title="Wallpaper">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {WALLPAPERS.map((item) => {
+          <Section title={`Wallpaper · ${wallList.length}`}>
+            {wallList.length === 0 && <div className="py-6 text-center text-[12.5px] text-[var(--faint)]">No wallpaper matches that search.</div>}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+              {wallPaged.slice.map((item) => {
                 const selected = item.id === wallpaperId;
+                const preview = item.thumb || item.src;
                 return (
                   <button
                     key={item.id}
@@ -123,14 +172,22 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
                     }`}
                   >
                     <div
-                      className="h-16 bg-[var(--panel)] bg-cover bg-center"
-                      style={item.src ? { backgroundImage: `url('${item.src}')` } : undefined}
-                    />
-                    <div className="px-3 py-2 text-[12.5px]">{item.name}</div>
+                      className="relative h-20 bg-[var(--panel)] bg-cover bg-center"
+                      style={preview ? { backgroundImage: `url('${preview}')` } : undefined}
+                    >
+                      {item.uhd && (
+                        <span className="absolute right-1.5 top-1.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9.5px] tracking-wide text-white">4K</span>
+                      )}
+                    </div>
+                    <div className="px-3 py-2">
+                      <div className="truncate text-[12.5px]">{item.name}</div>
+                      {item.detail && <div className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{item.detail}</div>}
+                    </div>
                   </button>
                 );
               })}
             </div>
+            <Pager paged={wallPaged} label="wallpapers" />
           </Section>
         </>
       )}

@@ -215,7 +215,7 @@ export async function runAgentTurn({
   return { result: last, project: current, actions, conversationId: convo, trace: steps.map((step) => ({ ...step, state: "done" })), startedAt, elapsedMs };
 }
 
-function send(address, { conversationId, project, title, mode, text, brain, files, autoprompt }) {
+function send(address, { conversationId, project, title, mode, text, brain, files, autoprompt, web }) {
   return sendTurn(address, {
     conversationId,
     projectId: project?.id || "project",
@@ -227,6 +227,7 @@ function send(address, { conversationId, project, title, mode, text, brain, file
     brain,
     files,
     autoprompt,
+    web: web === true,
   });
 }
 

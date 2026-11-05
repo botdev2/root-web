@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import portrait from "../assets/avatar.png";
 import { COLORS, Op, opDuration } from "../classroom/draw.jsx";
-import { WIDGETS } from "../classroom/widgets.jsx";
+import { WIDGETS, WIDGET_DEMOS } from "../classroom/widgets.jsx";
 import { CLASS_ORDER, findClassroom, starsOf } from "../classroom/episodes.js";
 import { gradeOf, saveProgress } from "../classroom/progress.js";
 
@@ -92,7 +92,7 @@ function WallClock({ progress }) {
   );
 }
 
-export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
+export default function Classroom({ episodeId, controls, onClose, onSwitch, tv = false, onEnd, container }) {
   const ep = findClassroom(episodeId);
   const stars = useMemo(() => starsOf(ep), [ep]);
   const qa = useMemo(() => {
@@ -111,7 +111,15 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
   const [say, setSay] = useState("");
   const [pen, setPen] = useState({ x: 500, y: 280, color: "ink", on: false });
   const [paused, setPaused] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(() => {
+    // The TV channel can be sped up for testing with ?speed=8.
+    if (!tv) return 1;
+    try {
+      return Number(new URLSearchParams(window.location.search).get("speed")) || 1;
+    } catch {
+      return 1;
+    }
+  });
   const [ask, setAsk] = useState(null);
   const [widget, setWidget] = useState(null);
   const [earned, setEarned] = useState([]);
@@ -233,7 +241,15 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
         pushOps([op]);
       }
     })();
-    typeLine("Take a seat. Class is about to begin, and there's a short quiz at the end.", tok);
+    typeLine(tv ? `Welcome back. Episode ${ep.number} starts now.` : "Take a seat. Class is about to begin, and there's a short quiz at the end.", tok);
+    if (tv) {
+      (async () => {
+        if (!(await wait(4200, tok))) return;
+        setPhase("class");
+        setSceneIdx(0);
+        setRunKey((value) => value + 1);
+      })();
+    }
     return () => {
       tokenRef.current += 1;
     };
@@ -253,9 +269,20 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
     const runAsk = async (item) => {
       missed.current = false;
       setAsk({ ...item, wrong: -1, solved: -1 });
-      const result = await new Promise((resolve) => {
-        askResolve.current = resolve;
-      });
+      const result = tv
+        ? await (async () => {
+            if (!(await wait(3800, tok))) return null;
+            const wrongIndex = item.options.findIndex((_, i) => i !== item.answer);
+            setAsk((prev) => (prev ? { ...prev, wrong: wrongIndex } : prev));
+            setSay(item.hint);
+            if (!(await wait(4600, tok))) return null;
+            setAsk((prev) => (prev ? { ...prev, solved: item.answer, wrong: -1 } : prev));
+            await wait(900, tok);
+            return { ok: true };
+          })()
+        : await new Promise((resolve) => {
+            askResolve.current = resolve;
+          });
       askResolve.current = null;
       if (tokenRef.current !== tok) return;
       if (!result?.skipped && !missed.current) award(item.id);
@@ -314,6 +341,14 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
 
         if (step.ask) {
           await runAsk(step.ask);
+        } else if (step.widget && tv) {
+          for (const frame of WIDGET_DEMOS[step.widget]?.() || []) {
+            if (!(await wait(frame.ms, tok))) return;
+            setWidget((prev) => (prev ? { ...prev, s: frame.s } : prev));
+          }
+          award(step.widget);
+          if (!(await wait(3200, tok))) return;
+          setWidget((prev) => (prev ? { ...prev, finished: true } : prev));
         } else if (step.widget) {
           await new Promise((resolve) => {
             widgetResolve.current = resolve;
@@ -351,10 +386,14 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
     setAsk(null);
     setWidget(null);
     setErasing(false);
-    saveProgress(ep.id, earnedRef.current.length, stars.length);
+    if (!tv) saveProgress(ep.id, earnedRef.current.length, stars.length);
     const grade = gradeOf(earnedRef.current.length, stars.length);
     typeLine(
-      grade === "D"
+      tv
+        ? ep.number === 5
+          ? "That's the whole course. Stay tuned, we start again from Episode 1 after a short break."
+          : `That's Episode ${ep.number}. Stay tuned, the next class starts after a short break.`
+        : grade === "D"
         ? "That one was tricky. Rewatch it any time, the lessons stay put."
         : ep.number === 5
           ? "Class dismissed, and that's the whole course. Well done."
@@ -368,6 +407,7 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
         last = op.at ?? 0;
         pushOps([op]);
       }
+      if (tv && (await wait(9000, tok))) onEnd?.();
     })();
     return () => {
       tokenRef.current += 1;
@@ -384,6 +424,7 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
   );
 
   useEffect(() => {
+    if (tv) return undefined;
     const onKey = (event) => {
       const tag = event.target?.tagName || "";
       if (event.key === "Escape") {
@@ -429,11 +470,17 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
   const sceneTitle = phase === "class" ? ep.scenes[sceneIdx]?.title : phase === "outro" ? "Report card" : "Take a seat";
 
   return createPortal(
-    <div className="cr-root" role="dialog" aria-label={`${ep.label}`}>
+    <div className={`cr-root ${tv ? "cr-root--tv" : ""}`} role="dialog" aria-label={`${ep.label}`}>
       <header className="cr-top">
-        <button type="button" className="cr-btn h-8 rounded-lg px-3 text-[12.5px]" onClick={() => exit()}>
-          Leave class
-        </button>
+        {tv ? (
+          <div className="tv-bug">
+            <i /> ROOT TV
+          </div>
+        ) : (
+          <button type="button" className="cr-btn h-8 rounded-lg px-3 text-[12.5px]" onClick={() => exit()}>
+            Leave class
+          </button>
+        )}
         <div className="min-w-0 flex-1 text-center">
           <div className="cr-kicker">Episode {ep.number}</div>
           <div className="truncate text-[14px] text-[var(--cr-wall-ink)]">{ep.title}</div>
@@ -503,7 +550,7 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
               {phase === "class" && !ask && !(widget && !widget.finished) && say.length > 0 && <span className="tour-caret" />}
             </p>
 
-            {phase === "intro" && (
+            {phase === "intro" && !tv && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -540,13 +587,13 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
               </div>
             )}
 
-            {def && !widget.finished && (
+            {def && !widget.finished && !tv && (
               <div className="mt-3">
                 <def.Controls s={widget.s} set={setWidgetState} award={award} done={earned.includes(widget.id)} finish={finishWidget} />
               </div>
             )}
 
-            {phase === "outro" && (
+            {phase === "outro" && !tv && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <div className="mr-1 basis-full text-[13px] text-[var(--cr-muted)]">{ep.homework.text}</div>
                 <button type="button" className="cr-btn cr-btn--solid h-10 rounded-lg px-4 text-[13.5px]" onClick={() => exit(ep.homework.view)}>
@@ -564,7 +611,7 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
               </div>
             )}
 
-            {phase === "class" && (
+            {phase === "class" && !tv && (
               <div className="cr-controls">
                 <button type="button" className="cr-btn h-8 rounded-lg px-3 text-[12.5px]" onClick={() => goScene(sceneIdx - 1)}>
                   Back
@@ -592,6 +639,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
         </div>
       </div>
     </div>,
-    document.body,
+    container || document.body,
   );
 }

@@ -812,11 +812,8 @@ const ep1 = {
       title: "Pick a plan",
       steps: [
         {
-          say: "Hosting is sold in flat monthly plans, so the bill never surprises you. Plot is eight dollars for two sites, Grove is twenty-four for eight, and Canopy is sixty for up to twenty.",
-        },
-        {
           widget: "plans",
-          say: "Your turn. I'll tell you how many sites someone runs, and you pick the cheapest plan that fits. Three rounds.",
+          say: "Hosting is sold in flat monthly plans, so the bill never surprises you. Plot is eight dollars for two sites, Grove is twenty-four for eight, and Canopy is sixty for up to twenty. Your turn: I'll say how many sites someone runs, and you pick the cheapest plan that fits.",
         },
       ],
     },

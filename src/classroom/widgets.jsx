@@ -539,3 +539,34 @@ export const WIDGETS = {
   leak: { label: "Sorted the leaks", initial: { placed: [], first: 0 }, Board: LeakBoard, Controls: LeakControls },
   revenue: { label: "Cleared $200 a month", initial: { subs: 20, price: 15, sales: 10, sites: 3 }, Board: RevenueBoard, Controls: RevenueControls },
 };
+
+/**
+ * Scripted play-throughs used by the TV channel, where nobody is clicking.
+ * Each list is a series of widget states with the pause (ms) before each one.
+ */
+export const WIDGET_DEMOS = {
+  swap: () => [0.4, 1.0, 1.8, 2.6, 3.4].map((paid, i) => ({ s: { paid }, ms: i ? 1200 : 900 })),
+  cadence: () => [
+    { s: { mode: "Hourly" }, ms: 1800 },
+    { s: { mode: "Weekly" }, ms: 2200 },
+    { s: { mode: "Daily" }, ms: 2200 },
+  ],
+  leak: () =>
+    LEAK_ITEMS.map((item, i) => ({
+      s: { placed: LEAK_ITEMS.slice(0, i + 1).map((it) => ({ s: it.s, to: it.to })), first: i + 1, why: item.why },
+      ms: i ? 1300 : 900,
+    })),
+  revenue: () => [
+    { s: { subs: 20, price: 15, sales: 10, sites: 3 }, ms: 900 },
+    { s: { subs: 40, price: 15, sales: 10, sites: 3 }, ms: 1600 },
+    { s: { subs: 40, price: 20, sales: 20, sites: 3 }, ms: 1600 },
+    { s: { subs: 40, price: 20, sales: 20, sites: 9 }, ms: 1800 },
+    { s: { subs: 60, price: 20, sales: 30, sites: 9 }, ms: 1800 },
+  ],
+  packs: () =>
+    PACK_ITEMS.map((item, i) => ({
+      s: { placed: PACK_ITEMS.slice(0, i + 1).map((it) => ({ s: it.s, to: it.to })), first: i + 1, why: item.why },
+      ms: i ? 1500 : 900,
+    })),
+  plans: () => [1, 2, 3].map((round, i) => ({ s: { round, first: round }, ms: i ? 1900 : 1200 })),
+};

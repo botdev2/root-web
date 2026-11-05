@@ -699,8 +699,205 @@ const ep5 = {
   ],
 };
 
-export const CLASSROOMS = { [ep2.id]: ep2, [ep3.id]: ep3, [ep4.id]: ep4, [ep5.id]: ep5 };
-export const CLASS_ORDER = [ep2.id, ep3.id, ep4.id, ep5.id];
+/* ================================================================= 1 */
+
+const ep1 = {
+  id: "ops-1",
+  number: 1,
+  title: "Introduction to Ops",
+  label: "Episode 1 - Introduction to Ops",
+  minutes: 5,
+  blurb: "What Ops is, how a site goes live, plans and domains, and how it plugs into this harness.",
+  homework: {
+    text: "Homework: open Ops, sign in, and have a look at what each plan includes.",
+    cta: "Open Ops",
+    view: "ops",
+  },
+  scenes: [
+    {
+      title: "What is Ops?",
+      steps: [
+        {
+          say: "Welcome to class. Lesson one is about Ops, the hosting and domains side of this platform, at ops.palmaierc.com. It's where the things you build with the agent go live.",
+          draw: [I("wallet", 170, 240, 90, { color: "green" }), A(235, 240, 385, 240, { color: "green" }), B(395, 140, 230, 200, "Ops", { color: "blue", size: 52 })],
+        },
+        {
+          say: "One wallet gets you three things: hosting for your sites, domain names, and a git home for your code. No email, no password, no sign-up form.",
+          draw: [
+            A(630, 190, 700, 160, { color: "green" }),
+            B(705, 120, 250, 70, "hosting", { color: "green", size: 32 }),
+            A(630, 240, 700, 240, { color: "orange" }),
+            B(705, 205, 250, 70, "domains", { color: "orange", size: 32 }),
+            A(630, 290, 700, 320, { color: "purple" }),
+            B(705, 290, 250, 70, "git home", { color: "purple", size: 32 }),
+          ],
+        },
+        {
+          say: "You sign in with your wallet. Sign one message to prove it's yours, then confirm with an authenticator code. New accounts also get forty-eight free hours to try things out.",
+          draw: [
+            I("wallet", 190, 450, 76, { color: "green" }),
+            A(240, 450, 350, 450, { color: "green" }),
+            T(440, 462, "one signature", { ...mid, size: 36, color: "green" }),
+            I("phone", 610, 450, 76, { color: "purple" }),
+            T(730, 462, "+ a code", { ...mid, size: 36, color: "purple" }),
+            T(500, 530, "48 free hours to try it", { ...mid, size: 32, color: "orange" }),
+          ],
+        },
+        {
+          ask: {
+            id: "signin",
+            label: "How you sign in",
+            q: "How do you sign in to Ops?",
+            options: ["Email and password", "Wallet signature plus an authenticator code", "A phone number"],
+            answer: 1,
+            say: "Hands up. How do you sign in to Ops?",
+            explain: "Right. Your wallet is the account, so there is no password to leak and no email to hand over.",
+            hint: "Look back at the board. There's no email on it.",
+          },
+        },
+      ],
+    },
+    {
+      title: "From code to live site",
+      steps: [
+        {
+          say: "Every site on Ops follows the same road. Your code lives in a repository. Ops fetches it, builds it, and serves the result under a name you choose.",
+          draw: [
+            I("repo", 130, 250, 84),
+            T(130, 335, "your code", { ...mid, size: 28 }),
+            A(190, 250, 300, 250),
+            B(305, 205, 180, 90, "build", { color: "orange", size: 36 }),
+            A(490, 250, 600, 250, { color: "orange" }),
+            I("site", 680, 245, 90, { color: "green" }),
+            T(680, 335, "live site", { ...mid, size: 28, color: "green" }),
+          ],
+        },
+        {
+          say: "To publish, pick a repository from GitHub or from your Ops Hub. Either way, Ops asks for a read-only deploy key, so it can fetch your code but never change it.",
+          draw: [
+            B(80, 400, 250, 80, "GitHub", { color: "ink", size: 36 }),
+            B(370, 400, 250, 80, "Ops Hub", { color: "purple", size: 36 }),
+            I("key", 800, 430, 76, { color: "blue" }),
+            T(800, 510, "read-only key", { ...mid, size: 28, color: "blue" }),
+          ],
+        },
+        {
+          say: "If you paste in a GitHub token, it's used once, to install that key, and then it's forgotten. We'll come back to why that matters in the privacy class.",
+          draw: [N(580, 95, 360, 95, ["token: used once.", "then forgotten."], { color: "red" })],
+        },
+        {
+          ask: {
+            id: "key",
+            label: "How private code is fetched",
+            q: "What does Ops use to fetch your private code?",
+            options: ["Your GitHub password", "A read-only deploy key", "Your wallet's private key"],
+            answer: 1,
+            say: "Hands up. What does Ops use to fetch your private code?",
+            explain: "A read-only deploy key. It can pull your code, but it can't push, delete, or touch anything else.",
+            hint: "It's the thing drawn in blue on the board.",
+          },
+        },
+      ],
+    },
+    {
+      title: "Build packs",
+      steps: [
+        {
+          widget: "packs",
+          say: "Now Ops has to know how to build your project. That's the build pack. Four of them cover nearly everything, so match each project to the right one.",
+        },
+      ],
+    },
+    {
+      title: "Pick a plan",
+      steps: [
+        {
+          say: "Hosting is sold in flat monthly plans, so the bill never surprises you. Plot is eight dollars for two sites, Grove is twenty-four for eight, and Canopy is sixty for up to twenty.",
+        },
+        {
+          widget: "plans",
+          say: "Your turn. I'll tell you how many sites someone runs, and you pick the cheapest plan that fits. Three rounds.",
+        },
+      ],
+    },
+    {
+      title: "Domains and your sites",
+      steps: [
+        {
+          say: "A site is nicer with a real name, and Ops sells domains too. Search for a name, see what's free, and pay in USDC. No card, no forms.",
+          draw: [
+            B(110, 140, 560, 80, "yourname.com", { color: "blue", size: 38 }),
+            I("magnifier", 760, 180, 70, { color: "blue" }),
+            T(250, 290, "free", { ...mid, size: 36, color: "green" }),
+            K(330, 280, { size: 40 }),
+            T(520, 290, "taken", { ...mid, size: 36, color: "red" }),
+            X(590, 280, { size: 40 }),
+          ],
+        },
+        {
+          say: "Ops is the registrant, so your personal details don't go into the public registry. Renewal dates live on the site's page, so set yourself a reminder.",
+          draw: [I("shield", 150, 440, 80, { color: "purple" }), T(430, 450, "Ops is the registrant", { ...mid, size: 40, color: "purple" })],
+        },
+        {
+          say: "Each site gets its own page: overview, deployments, logs, variables, usage and settings. When something looks wrong, logs are the first place to look.",
+          draw: [
+            T(180, 355, "overview", { ...mid, size: 28 }),
+            T(330, 355, "deployments", { ...mid, size: 28 }),
+            T(470, 355, "logs", { ...mid, size: 28, color: "red" }),
+            T(590, 355, "variables", { ...mid, size: 28 }),
+            T(720, 355, "usage", { ...mid, size: 28 }),
+            T(840, 355, "settings", { ...mid, size: 28 }),
+            U(430, 366, 80, { color: "red" }),
+          ],
+        },
+      ],
+    },
+    {
+      title: "Ops meets the harness",
+      steps: [
+        {
+          say: "Now, how does this connect to the harness you're sitting in? The agent writes your project files in a folder called slash root. When it's ready, you commit them to a repository in your Ops Hub.",
+          draw: [
+            I("robot", 120, 220, 76, { color: "purple" }),
+            T(120, 300, "agent", { ...mid, size: 28 }),
+            A(175, 220, 280, 220, { color: "purple" }),
+            I("book", 335, 215, 70),
+            T(335, 300, "/root", { ...mid, size: 28 }),
+            A(385, 220, 490, 220),
+            I("repo", 545, 215, 76),
+            T(545, 300, "Ops Hub", { ...mid, size: 28 }),
+            A(600, 220, 710, 220, { color: "orange" }),
+            I("site", 770, 215, 80, { color: "green" }),
+            T(770, 300, "Ops", { ...mid, size: 28, color: "green" }),
+          ],
+        },
+        {
+          say: "From the hub, publishing takes one click. Your projects, your wallet and the Ops tab all live in this same harness, so you never have to leave it. You can keep up to three Hub repositories per wallet.",
+          draw: [N(560, 380, 380, 110, ["max 3 hub repos", "per wallet."], { color: "blue" })],
+        },
+        {
+          ask: {
+            id: "route",
+            label: "How an idea goes live",
+            q: "In what order does an idea go live?",
+            options: ["Publish on Ops, then write the files", "Agent writes files, commit to the Hub, publish on Ops", "Commit to the Hub, then ask the agent"],
+            answer: 1,
+            say: "Last question. In what order does an idea go live?",
+            explain: "Agent writes the files, you commit to the Hub, then publish on Ops. Same road every time.",
+            hint: "Follow the arrows on the board, left to right.",
+          },
+        },
+        {
+          say: "That's Ops, from wallet to live site. Next lesson, we look at building products in DeFi. Class dismissed for now.",
+          draw: [T(500, 525, "class dismissed", { ...mid, size: 56, color: "red" }), U(300, 545, 400, { color: "red" })],
+        },
+      ],
+    },
+  ],
+};
+
+export const CLASSROOMS = { [ep1.id]: ep1, [ep2.id]: ep2, [ep3.id]: ep3, [ep4.id]: ep4, [ep5.id]: ep5 };
+export const CLASS_ORDER = [ep1.id, ep2.id, ep3.id, ep4.id, ep5.id];
 
 export function findClassroom(id) {
   return CLASSROOMS[id] || null;

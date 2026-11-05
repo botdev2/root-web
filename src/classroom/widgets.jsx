@@ -335,7 +335,205 @@ function RevenueControls({ s, set, award, done, finish }) {
 
 /* ------------------------------------------------------------ registry */
 
+/* ---------------------------------------------------------- build packs */
+
+export const PACKS = [
+  { id: "nixpacks", label: "Nixpacks", color: "blue" },
+  { id: "dockerfile", label: "Dockerfile", color: "purple" },
+  { id: "static", label: "Static", color: "green" },
+  { id: "dist", label: "Dist", color: "orange" },
+];
+
+export const PACK_ITEMS = [
+  { s: "a Node app with a package.json", to: "nixpacks", why: "Nixpacks reads your project files and works out the build by itself." },
+  { s: "a repo with its own Dockerfile", to: "dockerfile", why: "A Dockerfile means you decide every build step." },
+  { s: "plain HTML, CSS and images", to: "static", why: "Nothing to build, so Static just serves the files." },
+  { s: "a folder you already built", to: "dist", why: "Dist serves a build output you made yourself." },
+];
+
+function PackBoard({ s }) {
+  const placed = s.placed || [];
+  return (
+    <g className="bw-live">
+      {PACKS.map((pack, i) => {
+        const x = 40 + i * 235;
+        return (
+          <g key={pack.id}>
+            <rect x={x} y="130" width="215" height="70" rx="10" fill="none" stroke={COLORS[pack.color]} strokeWidth="3.4" />
+            <text x={x + 107} y="176" fontSize="34" textAnchor="middle" fill={COLORS[pack.color]} className="bw-text">
+              {pack.label}
+            </text>
+          </g>
+        );
+      })}
+      {placed.map((p) => {
+        const i = PACKS.findIndex((pack) => pack.id === p.to);
+        return (
+          <g key={p.s} className="bw-pop">
+            <text x={40 + i * 235 + 107} y="250" fontSize="26" textAnchor="middle" fill={COLORS.ink} className="bw-text">
+              {p.s.split(" ").slice(0, 3).join(" ")}
+            </text>
+            <text x={40 + i * 235 + 107} y="282" fontSize="26" textAnchor="middle" fill={COLORS.ink} className="bw-text">
+              {p.s.split(" ").slice(3).join(" ")}
+            </text>
+          </g>
+        );
+      })}
+      {placed.length >= PACK_ITEMS.length && (
+        <g className="bw-pop">
+          <text x="500" y="420" fontSize="40" textAnchor="middle" fill={COLORS.blue} className="bw-text">
+            when unsure, Nixpacks usually guesses right
+          </text>
+        </g>
+      )}
+    </g>
+  );
+}
+
+function PackControls({ s, set, award, done, finish }) {
+  const placed = s.placed || [];
+  const index = placed.length;
+  const item = PACK_ITEMS[index];
+  const wrong = s.wrong || "";
+  const answer = (id) => {
+    if (!item) return;
+    if (id !== item.to) {
+      set({ ...s, wrong: id, miss: true });
+      return;
+    }
+    const first = s.miss ? s.first || 0 : (s.first || 0) + 1;
+    const next = { ...s, placed: [...placed, { s: item.s, to: item.to }], wrong: "", miss: false, first, why: item.why };
+    set(next);
+    if (next.placed.length === PACK_ITEMS.length && first >= 3) award("packs");
+  };
+  const finished = index >= PACK_ITEMS.length;
+  return (
+    <div>
+      {!finished && (
+        <>
+          <div className="mb-2 text-[13px]">
+            Which pack builds <span className="cr-hand text-[19px]">{item.s}</span>?
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {PACKS.map((pack) => (
+              <button key={pack.id} type="button" onClick={() => answer(pack.id)} className={`${chip} ${wrong === pack.id ? "cr-shake cr-btn--bad" : ""}`}>
+                {pack.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <div className="mt-2 flex items-center gap-3">
+        <p className="text-[12.5px] text-[var(--cr-muted)]">
+          {wrong && item
+            ? "Not that one. What does the project already contain?"
+            : finished
+              ? `${s.first || 0} of ${PACK_ITEMS.length} on the first try. ${done ? "Nicely matched." : "Worth a second look."}`
+              : s.why || "Match all four."}
+        </p>
+        <Continue onClick={finish} label={finished ? "Continue" : "Skip"} />
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- plans */
+
+export const PLAN_CARDS = [
+  { id: "plot", label: "Plot", price: 8, cap: 2, color: "green" },
+  { id: "grove", label: "Grove", price: 24, cap: 8, color: "blue" },
+  { id: "canopy", label: "Canopy", price: 60, cap: 20, color: "purple" },
+];
+const PLAN_ROUNDS = [2, 6, 14];
+const planFor = (sites) => PLAN_CARDS.find((plan) => sites <= plan.cap);
+
+function PlanBoard({ s }) {
+  const round = Math.min(s.round || 0, PLAN_ROUNDS.length - 1);
+  const sites = PLAN_ROUNDS[round];
+  const right = planFor(sites);
+  const finished = (s.round || 0) >= PLAN_ROUNDS.length;
+  return (
+    <g className="bw-live">
+      {PLAN_CARDS.map((plan, i) => {
+        const x = 50 + i * 305;
+        const wrong = s.wrong === plan.id;
+        const good = s.picked === plan.id && !wrong;
+        const stroke = wrong ? COLORS.red : good ? COLORS.green : COLORS[plan.color];
+        return (
+          <g key={plan.id}>
+            <rect x={x} y="130" width="270" height="215" rx="12" fill="none" stroke={stroke} strokeWidth={wrong || good ? 5 : 3.4} />
+            <text x={x + 135} y="188" fontSize="46" textAnchor="middle" fill={COLORS[plan.color]} className="bw-text">
+              {plan.label}
+            </text>
+            <text x={x + 135} y="248" fontSize="40" textAnchor="middle" fill={COLORS.ink} className="bw-text">
+              ${plan.price} a month
+            </text>
+            <text x={x + 135} y="300" fontSize="30" textAnchor="middle" fill={COLORS.ink} opacity="0.75" className="bw-text">
+              up to {plan.cap} sites
+            </text>
+          </g>
+        );
+      })}
+      <text x="500" y="430" fontSize="46" textAnchor="middle" fill={COLORS.orange} className="bw-text">
+        {finished ? "flat price, no surprises" : `you run ${sites} sites`}
+      </text>
+      {!finished && s.picked && s.picked === right.id && (
+        <text x="500" y="490" fontSize="34" textAnchor="middle" fill={COLORS.green} className="bw-text">
+          that's the cheapest that fits
+        </text>
+      )}
+    </g>
+  );
+}
+
+function PlanControls({ s, set, award, done, finish }) {
+  const round = s.round || 0;
+  const finished = round >= PLAN_ROUNDS.length;
+  const sites = PLAN_ROUNDS[Math.min(round, PLAN_ROUNDS.length - 1)];
+  const right = planFor(sites);
+  const answer = (plan) => {
+    if (finished) return;
+    if (plan.id !== right.id) {
+      set({ ...s, wrong: plan.id, miss: true });
+      return;
+    }
+    const first = s.miss ? s.first || 0 : (s.first || 0) + 1;
+    const next = { ...s, round: round + 1, wrong: "", picked: "", miss: false, first };
+    set(next);
+    if (next.round >= PLAN_ROUNDS.length && first >= 2) award("plans");
+  };
+  return (
+    <div>
+      {!finished && (
+        <>
+          <div className="mb-2 text-[13px]">
+            You run <span className="cr-hand text-[19px]">{sites} sites</span>. Which is the cheapest plan that fits?
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {PLAN_CARDS.map((plan) => (
+              <button key={plan.id} type="button" onClick={() => answer(plan)} className={`${chip} ${s.wrong === plan.id ? "cr-shake cr-btn--bad" : ""}`}>
+                {plan.label} (${plan.price})
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <div className="mt-2 flex items-center gap-3">
+        <p className="text-[12.5px] text-[var(--cr-muted)]">
+          {s.wrong && !finished
+            ? "That one is either too small or too big. Count the sites."
+            : finished
+              ? `${s.first || 0} of ${PLAN_ROUNDS.length} on the first try. ${done ? "You can size a plan now." : "Plans only change when you outgrow them."}`
+              : `Round ${round + 1} of ${PLAN_ROUNDS.length}.`}
+        </p>
+        <Continue onClick={finish} label={finished ? "Continue" : "Skip"} />
+      </div>
+    </div>
+  );
+}
 export const WIDGETS = {
+  packs: { label: "Matched the build packs", initial: { placed: [], first: 0 }, Board: PackBoard, Controls: PackControls },
+  plans: { label: "Sized a plan", initial: { round: 0, first: 0 }, Board: PlanBoard, Controls: PlanControls },
   swap: { label: "Moved the price", initial: { paid: 0 }, Board: SwapBoard, Controls: SwapControls },
   cadence: { label: "Chose a cadence", initial: { mode: "Manual" }, Board: CadenceBoard, Controls: CadenceControls },
   leak: { label: "Sorted the leaks", initial: { placed: [], first: 0 }, Board: LeakBoard, Controls: LeakControls },

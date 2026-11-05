@@ -112,7 +112,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
   const [pen, setPen] = useState({ x: 500, y: 280, color: "ink", on: false });
   const [paused, setPaused] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [voice, setVoice] = useState(false);
   const [ask, setAsk] = useState(null);
   const [widget, setWidget] = useState(null);
   const [earned, setEarned] = useState([]);
@@ -123,7 +122,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
   const skipGen = useRef(0);
   const pausedRef = useRef(false);
   const speedRef = useRef(1);
-  const voiceRef = useRef(false);
   const seq = useRef(0);
   const askResolve = useRef(null);
   const widgetResolve = useRef(null);
@@ -133,7 +131,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
 
   pausedRef.current = paused;
   speedRef.current = speed;
-  voiceRef.current = voice;
 
   const estimate = useMemo(() => estimateSeconds(ep), [ep]);
 
@@ -152,31 +149,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
     window.clearTimeout(penTimer.current);
     penTimer.current = window.setTimeout(() => setPen((prev) => ({ ...prev, on: false })), dur + 300);
   }, []);
-
-  const stopSpeech = () => {
-    try {
-      window.speechSynthesis?.cancel();
-    } catch {
-      /* no speech */
-    }
-  };
-
-  const speak = (text) =>
-    new Promise((resolve) => {
-      try {
-        const synth = window.speechSynthesis;
-        if (!synth) return resolve();
-        synth.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.rate = Math.min(1.6, 0.98 * speedRef.current);
-        utter.onend = () => resolve();
-        utter.onerror = () => resolve();
-        synth.speak(utter);
-        window.setTimeout(resolve, Math.max(4000, text.length * 110));
-      } catch {
-        resolve();
-      }
-    });
 
   /** Wait while honouring pause, speed and a skip press. Returns false if the class moved on. */
   const wait = async (ms, tok, gen = skipGen.current) => {
@@ -214,13 +186,11 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
 
   const skip = () => {
     skipGen.current += 1;
-    stopSpeech();
     resolvePending();
   };
 
   const goScene = (index) => {
     skipGen.current += 1;
-    stopSpeech();
     resolvePending();
     setPaused(false);
     setPhase("class");
@@ -231,7 +201,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
   // A new episode starts from the bell.
   useEffect(() => {
     tokenRef.current += 1;
-    stopSpeech();
     earnedRef.current = [];
     setEarned([]);
     setSeconds(0);
@@ -318,7 +287,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
         if (tokenRef.current !== tok) return;
         const gen = skipGen.current;
         const text = step.ask ? step.ask.say : step.say;
-        const speaking = voiceRef.current && text ? speak(text) : null;
         const drawOps = (step.draw || []).map((op, i) => ({ ...op, at: op.at ?? i * 480 }));
         if (step.widget) setWidget({ id: step.widget, s: { ...WIDGETS[step.widget].initial }, finished: false });
 
@@ -342,7 +310,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
         const typing = text ? typeLine(text, tok, gen) : Promise.resolve(true);
         await Promise.all([drawing, typing]);
         if (tokenRef.current !== tok) return;
-        if (speaking) await Promise.race([speaking, wait(30000, tok)]);
         if (tokenRef.current !== tok) return;
 
         if (step.ask) {
@@ -373,7 +340,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
 
     return () => {
       tokenRef.current += 1;
-      stopSpeech();
     };
   }, [phase, sceneIdx, runKey, episodeId]);
 
@@ -411,7 +377,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
   const exit = useCallback(
     (dest) => {
       tokenRef.current += 1;
-      stopSpeech();
       controls.openView?.(dest || "help");
       onClose?.();
     },
@@ -551,9 +516,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
                 >
                   Start class
                 </button>
-                <label className="cr-check">
-                  <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} /> Read aloud
-                </label>
               </div>
             )}
 
@@ -621,17 +583,6 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch }) {
                 >
                   {speed}x
                 </button>
-                <label className="cr-check">
-                  <input
-                    type="checkbox"
-                    checked={voice}
-                    onChange={(event) => {
-                      setVoice(event.target.checked);
-                      if (!event.target.checked) stopSpeech();
-                    }}
-                  />{" "}
-                  Read aloud
-                </label>
                 <span className="ml-auto text-[12px] tabular-nums text-[var(--cr-muted)]">
                   {earned.length}/{stars.length} stars
                 </span>

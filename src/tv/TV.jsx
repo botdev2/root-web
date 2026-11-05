@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Classroom from "../components/Classroom.jsx";
 import { CLASS_ORDER, findClassroom } from "../classroom/episodes.js";
 
@@ -22,14 +22,14 @@ const BOOT = Date.now();
 // Intro board, report card and the gap between them add this much to an episode.
 const FRAME_SECONDS = 28;
 
-const LOGO = "/tv/palmlogo_local.png";
+const LOGO = "/brand/palmlogo_local.png";
 const PARTNERS = [
-  { name: "0x Protocol", src: "/tv/0x-protocol.png" },
-  { name: "SKALE", src: "/tv/skale.png" },
-  { name: "Codex", src: "/tv/codex.png" },
-  { name: "Google AI", src: "/tv/google-ai.png" },
-  { name: "Relay", src: "/tv/relay.svg" },
-  { name: "Spectre AI", src: "/tv/spectre-ai.png" },
+  { name: "0x Protocol", src: "/brand/0x-protocol.png" },
+  { name: "SKALE", src: "/brand/skale.png" },
+  { name: "Codex", src: "/brand/codex.png" },
+  { name: "Google AI", src: "/brand/google-ai.png" },
+  { name: "Relay", src: "/brand/relay.svg" },
+  { name: "Spectre AI", src: "/brand/spectre-ai.png" },
 ];
 
 const FACTS = [
@@ -182,7 +182,7 @@ function BreakScreen({ episode, left, total, schedule }) {
           <div key={slot.key} className={`tv-guide-slot ${index === 0 ? "is-next" : ""}`}>
             <b>{hhmm(slot.at)}</b>
             <span>
-              Ep {slot.ep.number} · {slot.ep.title}
+              Ep {slot.ep.number} Â· {slot.ep.title}
             </span>
           </div>
         ))}

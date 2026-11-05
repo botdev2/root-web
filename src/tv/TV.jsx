@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Classroom from "../components/Classroom.jsx";
 import { CLASS_ORDER, findClassroom } from "../classroom/episodes.js";
 
@@ -21,6 +21,9 @@ const STORE_KEY = "root-tv-next";
 const BOOT = Date.now();
 // Intro board, report card and the gap between them add this much to an episode.
 const FRAME_SECONDS = 28;
+// The guide shows this many minutes, in five minute columns.
+const GUIDE_MINUTES = 35;
+const MIN = 60 * 1000;
 
 const LOGO = "/brand/palmlogo_local.png";
 const PARTNERS = [
@@ -69,25 +72,29 @@ function startIndex() {
 }
 
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, "0")}`;
-const hhmm = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const hhmm = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+const dayLabel = (ms) => new Date(ms).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+const DASH = " \u2013 ";
+
+/** How long one airing lasts: the lesson plus its intro and report card. */
+function airingMs(ep, speed) {
+  return ((ep.minutes * 60 + FRAME_SECONDS) * 1000) / speed;
+}
 
 function Logo({ className = "" }) {
   return <span className={`tv-logo ${className}`} style={{ backgroundImage: `url(${LOGO})` }} role="img" aria-label="PaLM AI" />;
 }
 
-/** Channel bug: logo and LIVE tag on the left, local time on the right. Always on air. */
+/** Channel bug: the logo on the left, local time and date on the right. Always on screen. */
 function Bug({ now }) {
   return (
     <>
       <div className="tv-bug">
         <Logo />
-        <span className="tv-live">
-          <i /> LIVE
-        </span>
       </div>
       <div className="tv-clock">
         <b>{hhmm(now)}</b>
-        <span>on air</span>
+        <span>{dayLabel(now)}</span>
       </div>
     </>
   );
@@ -119,14 +126,71 @@ function Stinger({ kicker, title }) {
   );
 }
 
-function BreakScreen({ episode, left, total, schedule }) {
-  const [fact, setFact] = useState(() => Math.floor(Math.random() * FACTS.length));
-  useEffect(() => {
-    const timer = window.setInterval(() => setFact((value) => (value + 1) % FACTS.length), 7000);
-    return () => window.clearInterval(timer);
-  }, []);
+/** A proper programme guide: one row per episode, five minute columns, a NOW line. */
+function Guide({ airings, now }) {
+  const windowStart = Math.floor(now / (5 * MIN)) * 5 * MIN;
+  const windowEnd = windowStart + GUIDE_MINUTES * MIN;
+  const pct = (ms) => ((ms - windowStart) / (GUIDE_MINUTES * MIN)) * 100;
+  const ticks = Array.from({ length: GUIDE_MINUTES / 5 }, (_, i) => windowStart + i * 5 * MIN);
+  const nowPct = Math.max(0, Math.min(100, pct(now)));
 
-  const radius = 150;
+  return (
+    <div className="tv-guide">
+      <div className="tv-guide-head">
+        <span>PaLM TV guide</span>
+        <span>{dayLabel(now)}</span>
+      </div>
+      <div className="tv-guide-grid">
+        <div className="tv-guide-line tv-guide-line--ruler">
+          <div className="tv-guide-chan tv-guide-chan--ruler">Episodes</div>
+          <div className="tv-guide-cells tv-guide-cells--ruler">
+            {ticks.map((t) => (
+              <span key={t} style={{ left: `${pct(t)}%` }}>
+                {hhmm(t)}
+              </span>
+            ))}
+          </div>
+        </div>
+        {CLASS_ORDER.map((id) => {
+          const ep = findClassroom(id);
+          return (
+            <div className="tv-guide-line" key={id}>
+              <div className="tv-guide-chan">
+                <b>{ep.number}</b>
+                <span>{ep.title}</span>
+              </div>
+              <div className="tv-guide-cells">
+                {airings
+                  .filter((slot) => slot.ep.id === id && slot.end > windowStart && slot.start < windowEnd)
+                  .map((slot) => {
+                    const left = Math.max(0, pct(slot.start));
+                    const right = Math.min(100, pct(slot.end));
+                    return (
+                      <div
+                        key={slot.key}
+                        className={`tv-prog ${slot.state === "next" ? "is-next" : ""} ${slot.state === "past" ? "is-past" : ""}`}
+                        style={{ left: `${left}%`, width: `${right - left}%` }}
+                      >
+                        {hhmm(slot.start)}
+                        {DASH}
+                        {hhmm(slot.end)}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          );
+        })}
+        <div className="tv-guide-now" style={{ left: `calc(440px + (100% - 440px) * ${nowPct / 100})` }}>
+          <span>NOW</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BreakScreen({ episode, left, total, airings, now }) {
+  const radius = 118;
   const circumference = 2 * Math.PI * radius;
   const fraction = Math.max(0, Math.min(1, left / total));
 
@@ -134,21 +198,21 @@ function BreakScreen({ episode, left, total, schedule }) {
     <div className="tv-break">
       <div className="tv-break-kicker">be right back</div>
 
-      <div className="tv-break-main">
+      <div className="tv-break-top">
         <div className="tv-break-clock">
-          <svg width="360" height="360" viewBox="0 0 360 360" aria-hidden="true">
-            <circle cx="180" cy="180" r={radius} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="14" />
+          <svg width="290" height="290" viewBox="0 0 290 290" aria-hidden="true">
+            <circle cx="145" cy="145" r={radius} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="12" />
             <circle
-              cx="180"
-              cy="180"
+              cx="145"
+              cy="145"
               r={radius}
               fill="none"
               stroke="#ffd166"
-              strokeWidth="14"
+              strokeWidth="12"
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - fraction)}
-              transform="rotate(-90 180 180)"
+              transform="rotate(-90 145 145)"
               style={{ transition: "stroke-dashoffset 1s linear" }}
             />
           </svg>
@@ -158,8 +222,9 @@ function BreakScreen({ episode, left, total, schedule }) {
 
         <div className="tv-break-next">
           <div className="tv-break-label">up next</div>
-          <div className="tv-break-epno">Episode {episode.number}</div>
-          <div className="tv-break-title">{episode.title}</div>
+          <div className="tv-break-title">
+            Episode {episode.number}: {episode.title}
+          </div>
           <p className="tv-break-blurb">{episode.blurb}</p>
           <ol className="tv-break-scenes">
             {episode.scenes.map((scene, index) => (
@@ -172,21 +237,7 @@ function BreakScreen({ episode, left, total, schedule }) {
         </div>
       </div>
 
-      <div className="tv-break-fact" key={fact}>
-        {FACTS[fact]}
-      </div>
-
-      <div className="tv-guide">
-        <div className="tv-guide-tag">TV guide</div>
-        {schedule.map((slot, index) => (
-          <div key={slot.key} className={`tv-guide-slot ${index === 0 ? "is-next" : ""}`}>
-            <b>{hhmm(slot.at)}</b>
-            <span>
-              Ep {slot.ep.number} Â· {slot.ep.title}
-            </span>
-          </div>
-        ))}
-      </div>
+      <Guide airings={airings} now={now} />
 
       <div className="tv-partners">
         <span>with</span>
@@ -226,14 +277,14 @@ export default function TV() {
   useEffect(() => {
     document.title = "PaLM TV";
     document.documentElement.classList.add("tv-html");
-    const timer = window.setInterval(() => setNow(Date.now()), 5000);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => {
       window.clearInterval(timer);
       document.documentElement.classList.remove("tv-html");
     };
   }, []);
 
-  // Station idents last a couple of seconds, then get out of the way.
+  // Station idents last a few seconds, then get out of the way.
   useEffect(() => {
     if (!stinger) return undefined;
     const timer = window.setTimeout(() => setStinger(null), 3000);
@@ -256,8 +307,9 @@ export default function TV() {
         window.location.reload();
         return;
       }
+      const ep = findClassroom(CLASS_ORDER[index]);
       setPlay((count) => count + 1);
-      setStinger({ key: `ep-${index}-${Date.now()}`, kicker: `now playing  \u00b7  episode ${findClassroom(CLASS_ORDER[index]).number}`, title: findClassroom(CLASS_ORDER[index]).title });
+      setStinger({ key: `ep-${index}-${Date.now()}`, kicker: `now playing  \u00b7  episode ${ep.number}`, title: ep.title });
       setMode("class");
     }, 500);
     return () => window.clearTimeout(timer);
@@ -287,21 +339,26 @@ export default function TV() {
     return () => window.clearTimeout(watchdog.current);
   }, [mode, play, finish]);
 
-  // What is on next, and when. While a class is running the next slot starts after it ends.
-  const schedule = useMemo(() => {
-    const slots = [];
+  // What airs when. The slot after the break is "next", the one before it already "past".
+  const airings = useMemo(() => {
     const speed = Math.max(1, param("speed", 1));
-    let at = mode === "break" ? now + left * 1000 : now + (episode.minutes * 60 + FRAME_SECONDS) * 1000 / speed + breakSeconds * 1000;
-    for (let i = 0; i < 4; i += 1) {
-      const slotIndex = (mode === "break" ? index + i : index + 1 + i) % CLASS_ORDER.length;
-      const ep = findClassroom(CLASS_ORDER[slotIndex]);
-      slots.push({ key: `${slotIndex}-${i}`, ep, at });
-      at += ((ep.minutes * 60 + FRAME_SECONDS) * 1000) / speed + breakSeconds * 1000;
+    const gap = breakSeconds * 1000;
+    const nextStart = now + left * 1000;
+    const list = [];
+    const prev = findClassroom(CLASS_ORDER[(index + CLASS_ORDER.length - 1) % CLASS_ORDER.length]);
+    const prevEnd = nextStart - gap;
+    list.push({ key: "prev", ep: prev, start: prevEnd - airingMs(prev, speed), end: prevEnd, state: "past" });
+    let at = nextStart;
+    for (let i = 0; i < 9; i += 1) {
+      const ep = findClassroom(CLASS_ORDER[(index + i) % CLASS_ORDER.length]);
+      const end = at + airingMs(ep, speed);
+      list.push({ key: `${i}-${ep.id}`, ep, start: at, end, state: i === 0 ? "next" : "later" });
+      at = end + gap;
     }
-    return slots;
-  }, [mode, index, now, left, episode.minutes, breakSeconds]);
+    return list;
+  }, [index, now, left, breakSeconds]);
 
-  const upNext = mode === "break" ? episode : schedule[0].ep;
+  const upNext = mode === "break" ? episode : findClassroom(CLASS_ORDER[(index + 1) % CLASS_ORDER.length]);
   const tickerItems = useMemo(
     () => [
       `Up next: Episode ${upNext.number}, ${upNext.title}`,
@@ -322,7 +379,7 @@ export default function TV() {
         className="tv-stage"
         style={{ width: STAGE_W, height: STAGE_H, transform: `translate(-50%, -50%) scale(${scale})` }}
       >
-        {mode === "break" && <BreakScreen episode={episode} left={left} total={total} schedule={schedule} />}
+        {mode === "break" && <BreakScreen episode={episode} left={left} total={total} airings={airings} now={now} />}
         {mode === "class" && stageEl && (
           <Classroom key={`${episodeId}-${play}`} episodeId={episodeId} tv controls={{}} onEnd={finish} container={stageEl} />
         )}

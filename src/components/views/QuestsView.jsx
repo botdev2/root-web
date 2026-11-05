@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useAppState } from "../../AppState.jsx";
 import { claimQuest, formatCredits, readQuests } from "../../glmChat.js";
-import { Card, Page, Section, Skeleton, Tabs } from "../ui.jsx";
+import { Page, Skeleton } from "../ui.jsx";
 
 const LEVELS = [
   { name: "Seed", at: 0 },
@@ -13,13 +13,93 @@ const LEVELS = [
   { name: "Canopy", at: 3200 },
 ];
 
-const TIER = {
-  easy: { label: "Easy", tone: "text-[var(--green,#3fa56b)]" },
-  medium: { label: "Medium", tone: "text-[var(--amber)]" },
-  hard: { label: "Hard", tone: "text-[var(--red,#d9566a)]" },
-};
+const TIER = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
-const GROUPS = ["All", "Chat", "Tools", "Learn", "Explore", "Streaks"];
+// Each constellation is a skill tree: where its stars sit and which star leads to which.
+const SKY_W = 900;
+const SKY_H = 470;
+const CONSTELLATIONS = [
+  {
+    id: "speaker",
+    name: "The Speaker",
+    blurb: "Talk to Hamrin.",
+    groups: ["Chat"],
+    nodes: {
+      "first-words": [90, 310],
+      chatterbox: [250, 230],
+      centurion: [430, 110],
+      "ask-away": [370, 340],
+      planner: [540, 250],
+      "agent-smith": [720, 180],
+      collector: [680, 370],
+    },
+    edges: [
+      ["first-words", "chatterbox"],
+      ["chatterbox", "centurion"],
+      ["chatterbox", "ask-away"],
+      ["ask-away", "planner"],
+      ["planner", "agent-smith"],
+      ["planner", "collector"],
+    ],
+  },
+  {
+    id: "artisan",
+    name: "The Artisan",
+    blurb: "Tools and tabs.",
+    groups: ["Tools", "Explore"],
+    nodes: {
+      "prompt-smith": [190, 300],
+      scout: [430, 170],
+      explorer: [680, 290],
+    },
+    edges: [
+      ["prompt-smith", "scout"],
+      ["scout", "explorer"],
+    ],
+  },
+  {
+    id: "scholar",
+    name: "The Scholar",
+    blurb: "Class is in session.",
+    groups: ["Learn"],
+    nodes: {
+      "class-ops-1": [90, 300],
+      "class-defi-2": [250, 215],
+      "class-workflows-3": [420, 300],
+      "class-privacy-4": [590, 215],
+      "class-revenue-5": [760, 300],
+      graduate: [425, 95],
+    },
+    edges: [
+      ["class-ops-1", "class-defi-2"],
+      ["class-defi-2", "class-workflows-3"],
+      ["class-workflows-3", "class-privacy-4"],
+      ["class-privacy-4", "class-revenue-5"],
+      ["class-workflows-3", "graduate"],
+    ],
+  },
+  {
+    id: "flame",
+    name: "The Flame",
+    blurb: "Come back every day.",
+    groups: ["Streaks"],
+    nodes: {
+      "streak-3": [110, 340],
+      "streak-7": [270, 250],
+      "streak-14": [450, 170],
+      "streak-30": [680, 100],
+      "daily-1": [380, 370],
+      "daily-7": [610, 300],
+    },
+    edges: [
+      ["streak-3", "streak-7"],
+      ["streak-7", "streak-14"],
+      ["streak-14", "streak-30"],
+      ["streak-7", "daily-1"],
+      ["daily-1", "daily-7"],
+    ],
+  },
+];
 
 function levelOf(points) {
   let index = 0;
@@ -36,118 +116,192 @@ function clock(ms) {
   return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
 }
 
-function Bar({ value, total, done }) {
-  const share = total > 0 ? Math.min(100, (value / total) * 100) : 0;
+function stateOf(item) {
+  if (item.claimed) return "claimed";
+  if (item.done) return "ready";
+  if (item.progress > 0) return "progress";
+  return "locked";
+}
+
+// A few hundred tiny stars, the same every time.
+function scatter(seed, count) {
+  let value = seed;
+  const next = () => {
+    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
+    return value / 4294967296;
+  };
+  return Array.from({ length: count }, () => ({ x: next() * SKY_W, y: next() * SKY_H, r: 0.5 + next() * 1.3, d: next() * 6 }));
+}
+
+const STARDUST = scatter(7, 70);
+const STAR_PATH = "M0,-15 L3.6,-3.6 L15,0 L3.6,3.6 L0,15 L-3.6,3.6 L-15,0 L-3.6,-3.6 Z";
+
+/** A ring that fills as you get closer. Skill level or challenge, same idea. */
+function Ring({ size, stroke, value, total, children, tone = "gold" }) {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const share = total > 0 ? Math.min(1, value / total) : 0;
   return (
-    <div className="h-1.5 overflow-hidden rounded-full bg-[var(--stroke-soft)]">
-      <div
-        className={`h-full rounded-full transition-[width] duration-500 ${done ? "bg-[var(--accent)]" : "bg-[var(--amber)]"}`}
-        style={{ width: `${share}%` }}
-      />
+    <div className="qv-ring" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className={`qv-ring-arc qv-ring-arc--${tone}`}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - share)}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+      <div className="qv-ring-body">{children}</div>
     </div>
   );
 }
 
 function Reward({ points, perCredit }) {
   return (
-    <span className="text-[11.5px] tabular-nums text-[var(--muted)]">
-      +{points} pts · +{formatCredits(points / perCredit)} cr
+    <span className="qv-reward">
+      +{points} pts <i>·</i> +{formatCredits(points / perCredit)} cr
     </span>
   );
 }
 
-function ClaimButton({ item, busy, onClaim }) {
-  if (item.claimed) {
-    return <span className="rounded-lg border border-[var(--stroke-soft)] px-2.5 py-1 text-[11.5px] text-[var(--faint)]">Claimed</span>;
-  }
-  if (!item.done) {
-    return <span className="text-[11.5px] text-[var(--faint)]">In progress</span>;
-  }
+function Trial({ item, perCredit, busy, onClaim, wide = false }) {
+  const state = stateOf(item);
   return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClaim}
-      className="quest-claim h-8 rounded-lg bg-[var(--accent)] px-3 text-[12px] font-medium text-[var(--bg)] disabled:opacity-60"
-    >
-      {busy ? "Claiming…" : "Claim"}
-    </button>
-  );
-}
-
-function DailyCard({ item, perCredit, busy, onClaim }) {
-  const tier = TIER[item.tier];
-  return (
-    <Card className={`flex flex-col gap-3 p-4 ${item.claimed ? "opacity-70" : ""}`}>
-      <div className="flex items-center justify-between">
-        {tier ? <span className={`text-[10.5px] font-medium uppercase tracking-[0.14em] ${tier.tone}`}>{tier.label}</span> : <span />}
-        <Reward points={item.points} perCredit={perCredit} />
-      </div>
-      <div>
-        <div className="text-[14px]">{item.title}</div>
-        <div className="mt-0.5 text-[12px] leading-5 text-[var(--muted)]">{item.desc}</div>
-      </div>
-      <div className="mt-auto">
-        <Bar value={item.progress} total={item.target} done={item.done} />
-        <div className="mt-2.5 flex items-center justify-between">
-          <span className="text-[11.5px] tabular-nums text-[var(--faint)]">
-            {item.progress} / {item.target}
-          </span>
-          <ClaimButton item={item} busy={busy} onClaim={onClaim} />
+    <div className={`qv-trial is-${state} ${wide ? "qv-trial--wide" : ""}`}>
+      <div className="qv-trial-head">
+        <Ring size={58} stroke={4} value={item.progress} total={item.target} tone={state === "claimed" ? "bright" : "gold"}>
+          <svg width="24" height="24" viewBox="-18 -18 36 36" aria-hidden="true">
+            <path d={STAR_PATH} className="qv-trial-star" />
+          </svg>
+        </Ring>
+        <div className="qv-trial-top">
+          <div className="qv-tier">{TIER[item.tier] || "Bonus"}</div>
+          <div className="qv-trial-title">{item.title}</div>
         </div>
       </div>
-    </Card>
-  );
-}
-
-function Medal({ done, claimed, children }) {
-  return (
-    <div
-      className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border text-[12px] ${
-        claimed
-          ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--bg)]"
-          : done
-            ? "border-[var(--amber)] text-[var(--amber)]"
-            : "border-[var(--stroke)] text-[var(--faint)]"
-      }`}
-    >
-      {claimed ? (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      ) : (
-        children
-      )}
+      <div className="qv-trial-desc">{item.desc}</div>
+      <div className="qv-trial-foot">
+        <span className="qv-count">
+          {item.progress} / {item.target}
+        </span>
+        <Reward points={item.points} perCredit={perCredit} />
+      </div>
+      <div className="qv-trial-act">
+        {state === "claimed" ? (
+          <span className="qv-done">Unlocked</span>
+        ) : state === "ready" ? (
+          <button type="button" className="qv-unlock" disabled={busy} onClick={onClaim}>
+            {busy ? "…" : "Unlock"}
+          </button>
+        ) : (
+          <span className="qv-wait">In progress</span>
+        )}
+      </div>
     </div>
   );
 }
 
-function AchievementRow({ item, perCredit, busy, onClaim }) {
+function Constellation({ sky, byId, selectedId, onSelect }) {
+  const placed = Object.entries(sky.nodes).filter(([id]) => byId[id]);
+  const dust = useMemo(() => scatter(hashOf(sky.id), 26), [sky.id]);
   return (
-    <Card className={`flex items-center gap-3.5 p-3.5 ${item.claimed ? "opacity-75" : ""}`}>
-      <Medal done={item.done} claimed={item.claimed}>
-        {item.points}
-      </Medal>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <div className="truncate text-[13.5px]">{item.title}</div>
-          <Reward points={item.points} perCredit={perCredit} />
-        </div>
-        <div className="mt-0.5 text-[11.5px] leading-5 text-[var(--muted)]">{item.desc}</div>
-        <div className="mt-2 flex items-center gap-3">
-          <div className="flex-1">
-            <Bar value={item.progress} total={item.target} done={item.done} />
-          </div>
-          <span className="w-12 text-right text-[11px] tabular-nums text-[var(--faint)]">
-            {item.progress}/{item.target}
-          </span>
-        </div>
-      </div>
-      <div className="w-[68px] shrink-0 text-right">
-        <ClaimButton item={item} busy={busy} onClaim={onClaim} />
-      </div>
-    </Card>
+    <svg className="qv-svg" viewBox={`0 0 ${SKY_W} ${SKY_H}`} role="group" aria-label={sky.name}>
+      <defs>
+        <filter id="qv-glow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {STARDUST.map((dot, index) => (
+        <circle key={"d" + index} cx={dot.x} cy={dot.y} r={dot.r} className="qv-dust" style={{ animationDelay: `${dot.d}s` }} />
+      ))}
+      {dust.map((dot, index) => (
+        <circle key={"e" + index} cx={dot.x} cy={dot.y} r={dot.r + 0.6} className="qv-dust qv-dust--bright" style={{ animationDelay: `${dot.d}s` }} />
+      ))}
+
+      {sky.edges.map(([from, to]) => {
+        const a = sky.nodes[from];
+        const b = sky.nodes[to];
+        if (!a || !b || !byId[from] || !byId[to]) return null;
+        const lit = byId[from].claimed && byId[to].claimed;
+        const open = byId[from].claimed && !byId[to].claimed;
+        return (
+          <line
+            key={from + to}
+            x1={a[0]}
+            y1={a[1]}
+            x2={b[0]}
+            y2={b[1]}
+            className={`qv-line ${lit ? "is-lit" : open ? "is-open" : ""}`}
+          />
+        );
+      })}
+
+      {placed.map(([id, [x, y]]) => {
+        const item = byId[id];
+        const state = stateOf(item);
+        const radius = 24;
+        const circumference = 2 * Math.PI * radius;
+        const share = item.target > 0 ? Math.min(1, item.progress / item.target) : 0;
+        const selected = selectedId === id;
+        return (
+          <g
+            key={id}
+            transform={`translate(${x} ${y})`}
+            className={`qv-node is-${state} ${selected ? "is-selected" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-label={`${item.title}, ${state}`}
+            onClick={() => onSelect(id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelect(id);
+              }
+            }}
+          >
+            <circle r="38" fill="transparent" />
+            {selected && <circle r="34" className="qv-select" />}
+            <circle r={radius} fill="rgba(8,10,28,0.7)" className="qv-node-disc" />
+            <circle r={radius} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="2" />
+            <circle
+              r={radius}
+              fill="none"
+              className="qv-node-arc"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - (state === "claimed" || state === "ready" ? 1 : share))}
+              transform="rotate(-90)"
+            />
+            <path d={STAR_PATH} className="qv-star" filter={state === "claimed" || state === "ready" ? "url(#qv-glow)" : undefined} />
+            <text y="50" textAnchor="middle" className="qv-node-label">
+              {item.title}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
+}
+
+function hashOf(text) {
+  let value = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    value ^= text.charCodeAt(i);
+    value = Math.imul(value, 16777619) >>> 0;
+  }
+  return value >>> 0;
 }
 
 export default function QuestsView({ token = "", onRefresh }) {
@@ -156,7 +310,8 @@ export default function QuestsView({ token = "", onRefresh }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
-  const [group, setGroup] = useState("All");
+  const [skyId, setSkyId] = useState(CONSTELLATIONS[0].id);
+  const [picked, setPicked] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -180,7 +335,6 @@ export default function QuestsView({ token = "", onRefresh }) {
     load();
   }, [address, token]);
 
-  // A new day brings new challenges.
   const resetsAt = data ? Date.parse(data.resetsAt) : NaN;
   const left = Number.isFinite(resetsAt) ? resetsAt - now : NaN;
   useEffect(() => {
@@ -205,126 +359,185 @@ export default function QuestsView({ token = "", onRefresh }) {
 
   const level = useMemo(() => levelOf(data?.points || 0), [data?.points]);
   const perCredit = data?.pointsPerCredit || 2000;
-  const shown = useMemo(
-    () => (data?.achievements || []).filter((item) => group === "All" || item.group === group),
-    [data, group],
-  );
+  const byId = useMemo(() => Object.fromEntries((data?.achievements || []).map((item) => [item.id, item])), [data]);
+
+  // Achievements the server knows about but no constellation places yet still get a home.
+  const skies = useMemo(() => {
+    const placedIds = new Set(CONSTELLATIONS.flatMap((sky) => Object.keys(sky.nodes)));
+    const stray = (data?.achievements || []).filter((item) => !placedIds.has(item.id));
+    if (!stray.length) return CONSTELLATIONS;
+    const nodes = {};
+    stray.forEach((item, index) => {
+      nodes[item.id] = [110 + (index % 5) * 160, 150 + Math.floor(index / 5) * 140];
+    });
+    return [...CONSTELLATIONS, { id: "wild", name: "The Wild Stars", blurb: "New skills.", groups: [], nodes, edges: [] }];
+  }, [data]);
+
+  const sky = skies.find((item) => item.id === skyId) || skies[0];
+  const skyItems = Object.keys(sky.nodes).map((id) => byId[id]).filter(Boolean);
+  const selected = byId[picked] && sky.nodes[picked] ? byId[picked] : skyItems.find((item) => item.done && !item.claimed) || skyItems.find((item) => !item.claimed) || skyItems[0];
   const ready = (data ? [...data.daily, data.bonus, ...data.achievements] : []).filter((item) => item.done && !item.claimed).length;
+  const unlockedTotal = (data?.achievements || []).filter((item) => item.claimed).length;
 
   if (!isConnected || !address) {
     return (
-      <Page>
-        <Card className="px-5 py-6 text-[13.5px] leading-6 text-[var(--muted)]">
-          Connect your wallet to play. Points and credits belong to the address you sign in with.
-        </Card>
+      <Page wide>
+        <div className="qv-scene qv-note">Connect your wallet to play. Points and credits belong to the address you sign in with.</div>
       </Page>
     );
   }
 
   if (!token) {
     return (
-      <Page>
-        <Card className="px-5 py-6 text-[13.5px] leading-6 text-[var(--muted)]">
+      <Page wide>
+        <div className="qv-scene qv-note">
           Sign in on the Ops tab first. Quests count what you do with your signed-in wallet, so there is nothing to track until you are in.
-        </Card>
+        </div>
       </Page>
     );
   }
 
   return (
-    <Page>
-      <Card className="mb-3 p-5">
-        {data ? (
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
-            <div className="min-w-[220px] flex-1">
-              <div className="text-[11px] text-[var(--faint)]">Level {level.index + 1}</div>
-              <div className="mt-1 flex items-baseline gap-3">
-                <span className="text-[30px] leading-none tracking-[-0.02em]">{level.current.name}</span>
-                <span className="text-[13px] tabular-nums text-[var(--muted)]">{data.points.toLocaleString()} points</span>
-              </div>
-              <div className="mt-3.5">
-                <Bar value={level.share} total={1} done />
-              </div>
-              <div className="mt-2 text-[11.5px] text-[var(--faint)]">
-                {level.next ? `${(level.next.at - data.points).toLocaleString()} points to ${level.next.name}` : "Top level reached"}
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="min-w-[96px] rounded-xl border border-[var(--stroke-soft)] bg-[var(--panel-soft)] px-4 py-3">
-                <div className="tabular-nums text-[24px] leading-none">{data.streak}</div>
-                <div className="mt-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--faint)]">day streak</div>
-              </div>
-              <div className="min-w-[96px] rounded-xl border border-[var(--stroke-soft)] bg-[var(--panel-soft)] px-4 py-3">
-                <div className="tabular-nums text-[24px] leading-none">{formatCredits(data.creditsEarned)}</div>
-                <div className="mt-1.5 text-[10px] uppercase tracking-[0.16em] text-[var(--faint)]">credits earned</div>
-              </div>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="text-[13px] leading-6 text-[var(--muted)]">{error}</div>
-        ) : (
-          <div className="space-y-3">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-1.5 w-full" />
-            <Skeleton className="h-3 w-40" />
-          </div>
-        )}
-      </Card>
+    <Page wide>
+      <div className="qv-scene">
+        <div className="qv-starfield" aria-hidden="true" />
 
-      <p className="mb-6 px-1 text-[12px] leading-5 text-[var(--muted)]">
-        Finish challenges, claim the points, and they land in your balance as Hamrin 1.0 credits ({perCredit.toLocaleString()} points = 1 credit). Earned credits do not reset.
-        {ready > 0 && <span className="text-[var(--accent)]"> {ready} ready to claim.</span>}
-      </p>
-
-      <Section title={Number.isFinite(left) ? `Today's challenges · new ones in ${clock(left)}` : "Today's challenges"}>
-        <div className="grid gap-3 md:grid-cols-3">
-          {data
-            ? data.daily.map((item) => (
-                <DailyCard key={item.id} item={item} perCredit={perCredit} busy={busy === "daily:" + item.id} onClaim={() => claim("daily", item.id)} />
-              ))
-            : [0, 1, 2].map((key) => <Skeleton key={key} className="h-[150px] w-full rounded-2xl" />)}
-        </div>
-        {data && (
-          <Card className={`mt-3 flex flex-wrap items-center gap-4 p-4 ${data.bonus.claimed ? "opacity-70" : ""}`}>
-            <Medal done={data.bonus.done} claimed={data.bonus.claimed}>
-              +
-            </Medal>
-            <div className="min-w-[200px] flex-1">
-              <div className="flex items-baseline justify-between gap-2">
-                <div className="text-[14px]">{data.bonus.title}</div>
-                <Reward points={data.bonus.points} perCredit={perCredit} />
-              </div>
-              <div className="mt-0.5 text-[12px] text-[var(--muted)]">{data.bonus.desc}</div>
-              <div className="mt-2.5 flex items-center gap-3">
-                <div className="flex-1">
-                  <Bar value={data.bonus.progress} total={data.bonus.target} done={data.bonus.done} />
+        {/* Skill level, like the level ring in a skill menu. */}
+        <header className="qv-hero">
+          {data ? (
+            <>
+              <Ring size={132} stroke={6} value={level.share} total={1} tone="bright">
+                <div className="qv-level-num">{level.index + 1}</div>
+                <div className="qv-level-cap">level</div>
+              </Ring>
+              <div className="qv-hero-main">
+                <div className="qv-title">{level.current.name}</div>
+                <div className="qv-sub">
+                  {data.points.toLocaleString()} perk points
+                  {level.next ? ` · ${(level.next.at - data.points).toLocaleString()} to ${level.next.name}` : " · top of the sky"}
                 </div>
-                <span className="text-[11px] tabular-nums text-[var(--faint)]">
-                  {data.bonus.progress}/{data.bonus.target}
-                </span>
+                <div className="qv-xp">
+                  <div style={{ width: `${level.share * 100}%` }} />
+                </div>
+              </div>
+              <div className="qv-stats">
+                <div>
+                  <b>{data.streak}</b>
+                  <span>day streak</span>
+                </div>
+                <div>
+                  <b>{formatCredits(data.creditsEarned)}</b>
+                  <span>credits earned</span>
+                </div>
+                <div>
+                  <b>
+                    {unlockedTotal}/{data.achievements.length}
+                  </b>
+                  <span>stars lit</span>
+                </div>
+              </div>
+            </>
+          ) : error ? (
+            <div className="qv-sub">{error}</div>
+          ) : (
+            <Skeleton className="h-[132px] w-full rounded-2xl" />
+          )}
+        </header>
+
+        <p className="qv-lead">
+          Light stars and finish trials to earn perk points. Unlock them and they become Hamrin 1.0 credits ({perCredit.toLocaleString()} points = 1 credit, they never reset).
+          {ready > 0 && <em> {ready} ready to unlock.</em>}
+        </p>
+
+        <section className="qv-section">
+          <div className="qv-section-head">
+            <h3>Today's trials</h3>
+            <span>{Number.isFinite(left) ? `new trials in ${clock(left)}` : ""}</span>
+          </div>
+          <div className="qv-trials">
+            {data
+              ? data.daily.map((item) => (
+                  <Trial key={item.id} item={item} perCredit={perCredit} busy={busy === "daily:" + item.id} onClaim={() => claim("daily", item.id)} />
+                ))
+              : [0, 1, 2].map((key) => <Skeleton key={key} className="h-[120px] w-full rounded-2xl" />)}
+          </div>
+          {data && (
+            <div className="mt-3">
+              <Trial wide item={data.bonus} perCredit={perCredit} busy={busy === "daily:daily-all"} onClaim={() => claim("daily", "daily-all")} />
+            </div>
+          )}
+        </section>
+
+        <section className="qv-section">
+          <div className="qv-section-head">
+            <h3>Constellations</h3>
+            <span>pick a star to read it</span>
+          </div>
+          <div className="qv-tabs" role="tablist">
+            {skies.map((item) => {
+              const own = Object.keys(item.nodes).map((id) => byId[id]).filter(Boolean);
+              const lit = own.filter((entry) => entry.claimed).length;
+              const waiting = own.some((entry) => entry.done && !entry.claimed);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={item.id === sky.id}
+                  className={`qv-tab ${item.id === sky.id ? "is-on" : ""}`}
+                  onClick={() => {
+                    setSkyId(item.id);
+                    setPicked("");
+                  }}
+                >
+                  <span>{item.name}</span>
+                  <small>
+                    {lit}/{own.length}
+                    {waiting && <i className="qv-dot" />}
+                  </small>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="qv-sky">
+            {data ? (
+              <Constellation sky={sky} byId={byId} selectedId={selected?.id} onSelect={setPicked} />
+            ) : (
+              <Skeleton className="h-[420px] w-full rounded-2xl" />
+            )}
+          </div>
+
+          {selected && (
+            <div className={`qv-info is-${stateOf(selected)}`}>
+              <div className="qv-info-main">
+                <div className="qv-info-name">{selected.title}</div>
+                <div className="qv-info-desc">{selected.desc}</div>
+                <div className="qv-info-bar">
+                  <div style={{ width: `${selected.target ? Math.min(100, (selected.progress / selected.target) * 100) : 0}%` }} />
+                </div>
+                <div className="qv-info-meta">
+                  <span className="qv-count">
+                    {selected.progress} / {selected.target}
+                  </span>
+                  <Reward points={selected.points} perCredit={perCredit} />
+                </div>
+              </div>
+              <div className="qv-info-act">
+                {selected.claimed ? (
+                  <span className="qv-done">Star lit</span>
+                ) : selected.done ? (
+                  <button type="button" className="qv-unlock qv-unlock--big" disabled={busy === "achievement:" + selected.id} onClick={() => claim("achievement", selected.id)}>
+                    {busy === "achievement:" + selected.id ? "…" : "Unlock"}
+                  </button>
+                ) : (
+                  <span className="qv-wait">In progress</span>
+                )}
               </div>
             </div>
-            <ClaimButton item={data.bonus} busy={busy === "daily:daily-all"} onClaim={() => claim("daily", "daily-all")} />
-          </Card>
-        )}
-      </Section>
-
-      <Section title="Achievements">
-        <Tabs tabs={GROUPS.map((item) => ({ id: item, label: item }))} value={group} onChange={setGroup} />
-        <div className="grid gap-2.5 md:grid-cols-2">
-          {data
-            ? shown.map((item) => (
-                <AchievementRow
-                  key={item.id}
-                  item={item}
-                  perCredit={perCredit}
-                  busy={busy === "achievement:" + item.id}
-                  onClaim={() => claim("achievement", item.id)}
-                />
-              ))
-            : [0, 1, 2, 3].map((key) => <Skeleton key={key} className="h-[88px] w-full rounded-2xl" />)}
-        </div>
-      </Section>
+          )}
+        </section>
+      </div>
     </Page>
   );
 }

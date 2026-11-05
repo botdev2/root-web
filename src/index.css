@@ -1194,8 +1194,8 @@ textarea {
   padding: 10px 14px 18px;
   color: var(--cr-ink);
   background:
-    radial-gradient(1200px 520px at 12% -10%, rgb(255 238 200 / 0.16), transparent 60%),
-    linear-gradient(180deg, #34475a 0%, #2a3a4b 62%, #4a3a2f 62.2%, #3b2e25 100%);
+    radial-gradient(1100px 640px at 50% 118%, rgb(255 190 80 / 0.45), transparent 70%),
+    linear-gradient(165deg, #2b0f3a 0%, #6a1458 38%, #c52f62 70%, #ff7a2f 100%);
   animation: epFade 0.5s ease both;
 }
 

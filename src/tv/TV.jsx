@@ -17,7 +17,6 @@ import { CLASS_ORDER, findClassroom } from "../classroom/episodes.js";
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 const MAX_EPISODE_MS = 14 * 60 * 1000;
-const STORE_KEY = "root-tv-next";
 const BOOT = Date.now();
 // Intro board, report card and the gap between them add this much to an episode.
 const FRAME_SECONDS = 28;
@@ -59,18 +58,11 @@ function param(name, fallback) {
   }
 }
 
+/** Every page load starts at Episode 1, unless ?start=N says otherwise. */
 function startIndex() {
-  const asked = param("start", 0);
-  if (asked >= 1 && asked <= CLASS_ORDER.length) return asked - 1;
-  try {
-    const stored = Number(window.localStorage.getItem(STORE_KEY));
-    if (Number.isInteger(stored) && stored >= 0 && stored < CLASS_ORDER.length) return stored;
-  } catch {
-    /* storage unavailable */
-  }
-  return 0;
+  const asked = param("start", 1);
+  return asked >= 1 && asked <= CLASS_ORDER.length ? Math.floor(asked) - 1 : 0;
 }
-
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, "0")}`;
 const hhmm = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 const dayLabel = (ms) => new Date(ms).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
@@ -325,11 +317,6 @@ export default function TV() {
     window.clearTimeout(watchdog.current);
     setIndex((current) => {
       const next = (current + 1) % CLASS_ORDER.length;
-      try {
-        window.localStorage.setItem(STORE_KEY, String(next));
-      } catch {
-        /* storage unavailable */
-      }
       return next;
     });
     setTotal(breakSeconds);

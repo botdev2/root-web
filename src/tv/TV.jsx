@@ -8,8 +8,8 @@ import { CLASS_ORDER, findClassroom } from "../classroom/episodes.js";
  *   https://chat.useroot.sh/tv
  * Options (query string):
  *   ?start=3     first episode to play (1-5)
- *   ?break=30    seconds between episodes
- *   ?first=8     seconds of break shown before the very first episode
+ *   ?break=60    seconds between episodes
+ *   ?first=20    seconds of break shown before the very first episode
  *   ?reload=6    hours of uptime after which the page refreshes itself (at a break)
  *   ?speed=8     play faster, for testing
  */
@@ -100,21 +100,6 @@ function Bug({ now }) {
   );
 }
 
-function Ticker({ items }) {
-  const line = items.join("   \u2022   ");
-  return (
-    <div className="tv-ticker">
-      <div className="tv-ticker-tag">PaLM TV</div>
-      <div className="tv-ticker-view">
-        <div className="tv-ticker-run">
-          <span>{line}</span>
-          <span aria-hidden="true">{line}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function Stinger({ kicker, title }) {
   return (
     <div className="tv-stinger">
@@ -189,6 +174,28 @@ function Guide({ airings, now }) {
   );
 }
 
+/** The set itself: bezel, speaker grilles, knobs, badge and a power light. The screen sits on top. */
+function TvSet() {
+  const slots = Array.from({ length: 14 });
+  return (
+    <div className="tv-set" aria-hidden="true">
+      <div className="tv-grille tv-grille--left">
+        {slots.map((_, i) => (
+          <i key={i} />
+        ))}
+      </div>
+      <div className="tv-grille tv-grille--right">
+        {slots.map((_, i) => (
+          <i key={i} />
+        ))}
+      </div>
+      <div className="tv-knob tv-knob--a" />
+      <div className="tv-knob tv-knob--b" />
+      <div className="tv-badge">PaLM</div>
+      <div className="tv-power" />
+    </div>
+  );
+}
 function BreakScreen({ episode, left, total, airings, now }) {
   const radius = 118;
   const circumference = 2 * Math.PI * radius;
@@ -253,8 +260,8 @@ export default function TV() {
   const [index, setIndex] = useState(startIndex);
   const [mode, setMode] = useState("break");
   const [play, setPlay] = useState(0);
-  const breakSeconds = Math.max(5, param("break", 30));
-  const firstBreak = Math.max(3, param("first", 8));
+  const breakSeconds = Math.max(5, param("break", 60));
+  const firstBreak = Math.max(3, param("first", 20));
   const [left, setLeft] = useState(firstBreak);
   const [total, setTotal] = useState(firstBreak);
   const [scale, setScale] = useState(1);
@@ -358,34 +365,19 @@ export default function TV() {
     return list;
   }, [index, now, left, breakSeconds]);
 
-  const upNext = mode === "break" ? episode : findClassroom(CLASS_ORDER[(index + 1) % CLASS_ORDER.length]);
-  const tickerItems = useMemo(
-    () => [
-      `Up next: Episode ${upNext.number}, ${upNext.title}`,
-      "ops.palmaierc.com: anonymous hosting, domains and git on one wallet",
-      FACTS[(index * 3) % FACTS.length],
-      "Try the harness at chat.useroot.sh",
-      FACTS[(index * 3 + 1) % FACTS.length],
-      "PaLM AI: Utility. Innovation. Revenue.",
-      FACTS[(index * 3 + 2) % FACTS.length],
-    ],
-    [upNext.number, upNext.title, index],
-  );
-
   return (
     <div className="tv-root">
-      <div
-        ref={setStageEl}
-        className="tv-stage"
-        style={{ width: STAGE_W, height: STAGE_H, transform: `translate(-50%, -50%) scale(${scale})` }}
-      >
-        {mode === "break" && <BreakScreen episode={episode} left={left} total={total} airings={airings} now={now} />}
-        {mode === "class" && stageEl && (
-          <Classroom key={`${episodeId}-${play}`} episodeId={episodeId} tv controls={{}} onEnd={finish} container={stageEl} />
-        )}
-        <Bug now={now} />
-        <Ticker key={`${upNext.number}-${index}`} items={tickerItems} />
-        {stinger && <Stinger key={stinger.key} kicker={stinger.kicker} title={stinger.title} />}
+      <div className="tv-stage" style={{ width: STAGE_W, height: STAGE_H, transform: `translate(-50%, -50%) scale(${scale})` }}>
+        <TvSet />
+        <div ref={setStageEl} className="tv-screen">
+          {mode === "break" && <BreakScreen episode={episode} left={left} total={total} airings={airings} now={now} />}
+          {mode === "class" && stageEl && (
+            <Classroom key={`${episodeId}-${play}`} episodeId={episodeId} tv controls={{}} onEnd={finish} container={stageEl} />
+          )}
+          <Bug now={now} />
+          {stinger && <Stinger key={stinger.key} kicker={stinger.kicker} title={stinger.title} />}
+          <div className="tv-glass" aria-hidden="true" />
+        </div>
       </div>
     </div>
   );

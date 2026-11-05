@@ -38,6 +38,8 @@ import UpdatesView from "./components/views/UpdatesView.jsx";
 import TelemetryView from "./components/views/TelemetryView.jsx";
 import HelpView from "./components/views/HelpView.jsx";
 import { findEpisode } from "./tour/episodes.js";
+import { findClassroom } from "./classroom/episodes.js";
+import Classroom from "./components/Classroom.jsx";
 import TemplatesView from "./components/views/TemplatesView.jsx";
 import BillingView from "./components/views/BillingView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
@@ -108,6 +110,7 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const flag = params.get("tour");
       const episode = params.get("episode");
+      if (episode && findClassroom(episode)) return { classroom: episode };
       if (episode && findEpisode(episode)) return { auto: false, episode };
       if (flag === "auto") return { auto: true };
       if (flag === "1" || flag === "true") return { auto: false };
@@ -127,7 +130,7 @@ export default function App() {
   });
   const theme = useMemo(() => findTheme(themeId), [themeId]);
   const tourLook = useRef(null);
-  const touring = !!tour;
+  const touring = !!tour && !tour.classroom;
 
   // The tour points at the stock layout, so playing it puts everything back where it started.
   useEffect(() => {
@@ -832,6 +835,10 @@ export default function App() {
     setView("home");
     setSessionId(null);
     setSessionTitle("New Agent");
+    if (typeof episode === "string" && findClassroom(episode)) {
+      setTour({ classroom: episode });
+      return;
+    }
     setTour({ auto: false, episode: typeof episode === "string" && findEpisode(episode) ? episode : "" });
   };
   if (!state) return null;
@@ -1099,7 +1106,27 @@ export default function App() {
       <HamrinIntro open={hamrinOpen && !tour} onClose={() => setHamrinOpen(false)} onTour={startTour} />
       <LayoutBar />
       <DockTargets />
-      {tour && (
+      {tour?.classroom && (
+        <Classroom
+          episodeId={tour.classroom}
+          controls={{ openView }}
+          onSwitch={(id) => setTour({ classroom: id })}
+          onClose={() => {
+            setTour(null);
+            try {
+              const url = new URL(window.location.href);
+              if (url.searchParams.has("episode") || url.searchParams.has("scene")) {
+                url.searchParams.delete("episode");
+                url.searchParams.delete("scene");
+                window.history.replaceState({}, "", url.toString());
+              }
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+      )}
+      {tour && !tour.classroom && (
         <Tour
           autoplay={tour.auto}
           episode={tour.episode || ""}

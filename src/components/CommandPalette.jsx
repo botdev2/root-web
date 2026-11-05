@@ -23,6 +23,10 @@ const HITS = [
   { id: "layout", label: "Arrange the interface", hint: "Drag items, hide them, dock panels" },
   { id: "tour", label: "Take the tour", hint: "A guided first repository and prompt (resets your layout)" },
   { id: "episode:ops-1", label: "Episode 1 - Introduction to Ops", hint: "Guided tutorial: ops.palmaierc.com and how it connects to the harness" },
+  { id: "episode:defi-2", label: "Episode 2 - Building Products in DeFi", hint: "Whiteboard class, about 5 minutes" },
+  { id: "episode:workflows-3", label: "Episode 3 - Workflows and Maintenance", hint: "Whiteboard class, about 5 minutes" },
+  { id: "episode:privacy-4", label: "Episode 4 - Privacy & Compliance Aspect", hint: "Whiteboard class, about 5 minutes" },
+  { id: "episode:revenue-5", label: "Episode 5 - Managing Revenue Streams", hint: "Whiteboard class, about 5 minutes" },
   { id: "help", label: "Help", hint: "How /root works" },
 ];
 

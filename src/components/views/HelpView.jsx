@@ -2,11 +2,16 @@ import { useMemo, useState } from "react";
 import { HELP } from "../../mock.js";
 import { Page, Card } from "../ui.jsx";
 import { findEpisode } from "../../tour/episodes.js";
+import { findClassroom } from "../../classroom/episodes.js";
+import { gradeOf, readProgress } from "../../classroom/progress.js";
 
 export default function HelpView({ onOpen, onTour, onEpisode }) {
   const [id, setId] = useState("welcome");
   const [query, setQuery] = useState("");
   const page = HELP.find((item) => item.id === id) || HELP[0];
+  const info = page.episode ? findClassroom(page.episode) || findEpisode(page.episode) : null;
+  const progress = useMemo(() => readProgress(), [id]);
+  const done = page.episode ? progress[page.episode] : null;
   const hits = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return HELP;
@@ -47,7 +52,8 @@ export default function HelpView({ onOpen, onTour, onEpisode }) {
                       id === item.id ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
                     }`}
                   >
-                    {item.title}
+                    <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                    {item.episode && progress[item.episode] && <span className="ml-1 text-[11px] text-[var(--accent)]">done</span>}
                   </button>
                 ))}
             </div>
@@ -71,10 +77,11 @@ export default function HelpView({ onOpen, onTour, onEpisode }) {
                 onClick={() => onEpisode(page.episode)}
                 className="h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] text-[var(--bg)]"
               >
-                Start Episode {findEpisode(page.episode)?.number}
+                {done ? "Replay" : "Start"} Episode {info?.number}
               </button>
               <span className="text-[12px] text-[var(--faint)]">
-                About {findEpisode(page.episode)?.minutes} minutes. Skip any time with Esc.
+                About {info?.minutes} minutes. Leave any time with Esc.
+                {done ? ` Last result: grade ${gradeOf(done.stars, done.total)}, ${done.stars}/${done.total} stars.` : ""}
               </span>
             </div>
           )}

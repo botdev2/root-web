@@ -6,6 +6,7 @@ import { useAppState } from "../AppState.jsx";
 import { buildScript } from "../tour/script.js";
 import { findEpisode } from "../tour/episodes.js";
 import { WIDGETS, WIDGET_STARS } from "./EpisodeWidgets.jsx";
+import { saveProgress } from "../classroom/progress.js";
 
 export const TOUR_SEEN_KEY = "root-web-tour-seen";
 
@@ -169,10 +170,13 @@ export default function Tour({ live, controls, onClose, autoplay = false, episod
       }
       markSeen();
       // An episode starts from Help, so it ends there unless the outro sends you on.
-      if (episode) controls.openView?.(dest || "help");
+      if (episode) {
+        if (finished) saveProgress(episodeId, stars.length, WIDGET_STARS.length);
+        controls.openView?.(dest || "help");
+      }
       onClose?.(!!finished);
     },
-    [onClose, episode],
+    [onClose, episode, episodeId, stars],
   );
 
   const makeCtx = (token) => {

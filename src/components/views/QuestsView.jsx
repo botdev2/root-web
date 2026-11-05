@@ -13,7 +13,7 @@ const LEVELS = [
   { name: "Canopy", at: 3200 },
 ];
 
-const TIER = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const TIER = { easy: "Easy", medium: "Medium", hard: "Hard", epic: "Epic" };
 
 // Each constellation is a skill tree: where its stars sit and which star leads to which.
 const SKY_W = 900;
@@ -28,6 +28,8 @@ const CONSTELLATIONS = [
       "first-words": [90, 310],
       chatterbox: [250, 230],
       centurion: [430, 110],
+      legend: [620, 70],
+      versatile: [830, 300],
       "ask-away": [370, 340],
       planner: [540, 250],
       "agent-smith": [720, 180],
@@ -36,6 +38,8 @@ const CONSTELLATIONS = [
     edges: [
       ["first-words", "chatterbox"],
       ["chatterbox", "centurion"],
+      ["centurion", "legend"],
+      ["agent-smith", "versatile"],
       ["chatterbox", "ask-away"],
       ["ask-away", "planner"],
       ["planner", "agent-smith"],
@@ -50,10 +54,14 @@ const CONSTELLATIONS = [
     nodes: {
       "prompt-smith": [190, 300],
       scout: [430, 170],
+      "prompt-master": [110, 150],
+      cartographer: [600, 90],
       explorer: [680, 290],
     },
     edges: [
       ["prompt-smith", "scout"],
+      ["prompt-smith", "prompt-master"],
+      ["scout", "cartographer"],
       ["scout", "explorer"],
     ],
   },
@@ -88,6 +96,8 @@ const CONSTELLATIONS = [
       "streak-7": [270, 250],
       "streak-14": [450, 170],
       "streak-30": [680, 100],
+      "streak-60": [830, 170],
+      "daily-30": [810, 380],
       "daily-1": [380, 370],
       "daily-7": [610, 300],
     },
@@ -95,6 +105,8 @@ const CONSTELLATIONS = [
       ["streak-3", "streak-7"],
       ["streak-7", "streak-14"],
       ["streak-14", "streak-30"],
+      ["streak-30", "streak-60"],
+      ["daily-7", "daily-30"],
       ["streak-7", "daily-1"],
       ["daily-1", "daily-7"],
     ],
@@ -174,7 +186,7 @@ function Reward({ points, perCredit }) {
 function Trial({ item, perCredit, busy, onClaim, wide = false }) {
   const state = stateOf(item);
   return (
-    <div className={`qv-trial is-${state} ${wide ? "qv-trial--wide" : ""}`}>
+    <div className={`qv-trial is-${state} ${wide ? "qv-trial--wide" : ""} ${item.tier === "epic" ? "qv-trial--epic" : ""}`}>
       <div className="qv-trial-head">
         <Ring size={58} stroke={4} value={item.progress} total={item.target} tone={state === "claimed" ? "bright" : "gold"}>
           <svg width="24" height="24" viewBox="-18 -18 36 36" aria-hidden="true">
@@ -182,7 +194,7 @@ function Trial({ item, perCredit, busy, onClaim, wide = false }) {
           </svg>
         </Ring>
         <div className="qv-trial-top">
-          <div className="qv-tier">{TIER[item.tier] || "Bonus"}</div>
+          <div className={`qv-tier qv-tier--${item.tier || "bonus"}`}>{TIER[item.tier] || "Bonus"}</div>
           <div className="qv-trial-title">{item.title}</div>
         </div>
       </div>
@@ -454,6 +466,12 @@ export default function QuestsView({ token = "", onRefresh }) {
             <h3>Today's trials</h3>
             <span>{Number.isFinite(left) ? `new trials in ${clock(left)}` : ""}</span>
           </div>
+          {data?.trials && (
+            <p className="qv-rank">
+              <b>{data.trials.name} trials</b> · goals ×{data.trials.goalMult} · rewards ×{data.trials.rewardMult}
+              {data.trials.epic ? " · an Epic trial is added every day" : ` · Epic trials unlock at ${LEVELS[3].name} (${data.trials.nextEpicAt} points)`}
+            </p>
+          )}
           <div className="qv-trials">
             {data
               ? data.daily.map((item) => (

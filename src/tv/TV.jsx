@@ -191,7 +191,6 @@ function TvSet() {
       </div>
       <div className="tv-knob tv-knob--a" />
       <div className="tv-knob tv-knob--b" />
-      <div className="tv-badge">PaLM</div>
       <div className="tv-power" />
     </div>
   );

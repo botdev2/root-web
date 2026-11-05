@@ -1372,7 +1372,6 @@ textarea {
 .tv-knob::after { content: ""; position: absolute; left: 50%; top: 6px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: #ffb627; }
 .tv-knob--a { top: 250px; transform: rotate(38deg); }
 .tv-knob--b { top: 360px; transform: rotate(-24deg); }
-.tv-badge { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); padding: 3px 26px; border-radius: 6px; background: linear-gradient(180deg, #e8e9ee, #8c8f99); color: #1b1d22; font-size: 24px; font-weight: 800; letter-spacing: 0.3em; text-indent: 0.3em; text-transform: uppercase; box-shadow: 0 1px 3px rgb(0 0 0 / 0.6); }
 .tv-power { position: absolute; right: 118px; bottom: 17px; width: 14px; height: 14px; border-radius: 50%; background: #ff3b4e; box-shadow: 0 0 10px 3px rgb(255 59 78 / 0.7); animation: tvPulse 3s ease-in-out infinite; }
 @keyframes tvPulse { 50% { opacity: 0.55; } }
 
@@ -1462,7 +1461,7 @@ textarea {
 .tv-break-top { display: flex; align-items: center; justify-content: center; gap: 100px; margin: 26px 0 22px; }
 .tv-break-clock { position: relative; display: grid; width: 290px; height: 290px; place-items: center; flex: none; }
 .tv-break-clock svg { position: absolute; inset: 0; }
-.tv-break-digits { font-size: 100px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.tv-break-digits { font-size: 64px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 .tv-break-sub { position: absolute; bottom: 62px; font-size: 18px; letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.8; }
 .tv-break-next { width: 980px; }
 .tv-break-label { font-size: 24px; font-weight: 800; letter-spacing: 0.32em; text-transform: uppercase; color: #ffe08a; }

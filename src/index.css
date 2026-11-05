@@ -1480,7 +1480,7 @@ textarea {
 .tv-guide-chan b { display: grid; flex: none; width: 34px; height: 34px; place-items: center; border-radius: 8px; background: #ffb627; color: #2b0f3a; font-size: 21px; }
 .tv-guide-chan span { overflow: hidden; text-overflow: ellipsis; }
 .tv-guide-chan--ruler { background: rgb(255 255 255 / 0.18); font-size: 18px; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(255 247 238 / 0.8); }
-.tv-guide-cells { position: relative; background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.12) 0, rgb(255 255 255 / 0.12) 1px, transparent 1px, transparent calc(100% / 7)); }
+.tv-guide-cells { position: relative; background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.12) 0, rgb(255 255 255 / 0.12) 1px, transparent 1px, transparent calc(100% / 12)); }
 .tv-guide-cells--ruler span { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding-left: 10px; font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tv-prog { position: absolute; top: 7px; bottom: 7px; display: flex; align-items: center; padding: 0 12px; overflow: hidden; border: 1px solid rgb(255 255 255 / 0.35); border-radius: 8px; background: rgb(255 255 255 / 0.2); font-size: 22px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tv-prog.is-next { border-color: #ffb627; background: #ffb627; color: #2b0f3a; font-weight: 800; }

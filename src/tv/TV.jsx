@@ -8,7 +8,7 @@ import { CLASS_ORDER, findClassroom } from "../classroom/episodes.js";
  *   https://chat.useroot.sh/tv
  * Options (query string):
  *   ?start=3     first episode to play (1-5)
- *   ?break=60    seconds between episodes
+ *   ?break=300   seconds between episodes
  *   ?first=20    seconds of break shown before the very first episode
  *   ?reload=6    hours of uptime after which the page refreshes itself (at a break)
  *   ?speed=8     play faster, for testing
@@ -21,7 +21,7 @@ const BOOT = Date.now();
 // Intro board, report card and the gap between them add this much to an episode.
 const FRAME_SECONDS = 28;
 // The guide shows this many minutes, in five minute columns.
-const GUIDE_MINUTES = 35;
+const GUIDE_MINUTES = 60;
 const MIN = 60 * 1000;
 
 const LOGO = "/brand/palmlogo_local.png";
@@ -66,7 +66,6 @@ function startIndex() {
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, "0")}`;
 const hhmm = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 const dayLabel = (ms) => new Date(ms).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
-const DASH = " \u2013 ";
 
 /** How long one airing lasts: the lesson plus its intro and report card. */
 function airingMs(ep, speed) {
@@ -149,8 +148,6 @@ function Guide({ airings, now }) {
                         style={{ left: `${left}%`, width: `${right - left}%` }}
                       >
                         {hhmm(slot.start)}
-                        {DASH}
-                        {hhmm(slot.end)}
                       </div>
                     );
                   })}
@@ -251,7 +248,7 @@ export default function TV() {
   const [index, setIndex] = useState(startIndex);
   const [mode, setMode] = useState("break");
   const [play, setPlay] = useState(0);
-  const breakSeconds = Math.max(5, param("break", 60));
+  const breakSeconds = Math.max(5, param("break", 300));
   const firstBreak = Math.max(3, param("first", 20));
   const [left, setLeft] = useState(firstBreak);
   const [total, setTotal] = useState(firstBreak);

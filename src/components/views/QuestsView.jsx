@@ -338,7 +338,7 @@ export default function QuestsView({ token = "", onRefresh }) {
       setData(result.quests || null);
       setError("");
     } catch (failure) {
-      setError(failure.message || "Quests did not load.");
+      setError(failure.message || "Achievements did not load.");
     }
   };
 
@@ -403,7 +403,7 @@ export default function QuestsView({ token = "", onRefresh }) {
     return (
       <Page wide>
         <div className="qv-scene qv-note">
-          Sign in on the Ops tab first. Quests count what you do with your signed-in wallet, so there is nothing to track until you are in.
+          Sign in on the Ops tab first. Achievements count what you do with your signed-in wallet, so there is nothing to track until you are in.
         </div>
       </Page>
     );

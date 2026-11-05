@@ -143,10 +143,10 @@ export const HELP = [
     id: "welcome",
     section: "Introduction",
     title: "Welcome to /root",
-    summary: "Agentic coding in the browser — chat, tools, git, notes, automations, and ship.",
+    summary: "Agentic coding in the browser — chat, tools, git, notes, achievements, and ship.",
     body: "/root is an agentic coding workspace. Chat, tools, git, notes, automations, and ship from the same chrome. A Root Account on useroot.sh unlocks the session.",
     bullets: [
-      "Sidebar: New Agent, Automations, Reasoning, Ops, Plugins, Notes",
+      "Sidebar: New Agent, Achievements, Reasoning, Ops, Plugins, Notes",
       "Composer: Agent / Ask / Plan, Auto-Prompt, model, Attach, Files, send",
       "Projects use GitHub remotes — github.com/you/…",
     ],
@@ -182,7 +182,7 @@ export const HELP = [
   {
     id: "quests",
     section: "Control",
-    title: "Quests",
+    title: "Achievements",
     summary: "Daily challenges and achievements that earn Hamrin credits.",
     body: "Three new challenges every day (four once you reach the Palm level), picked from what you actually do here: chatting, Auto-Prompt, web lookups, tabs, and Episodes. The higher your level, the bigger the goals and the better the pay. Finish one, press Unlock, and its points become Hamrin 1.0 credits. 2,000 points make 1 credit. Earned credits do not reset.",
     bullets: ["Claim each challenge once", "Finish all three for the Clean sweep bonus", "Daily streaks and achievements pay more", "Sign in on the Ops tab so progress can be counted"],

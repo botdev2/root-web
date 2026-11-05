@@ -556,7 +556,7 @@ export default function App() {
     }
     if (credit && credit.remaining <= 0) {
       notice(credit.windowAllowance <= 0
-        ? "The 0.5 welcome credits are used up. 1,000 $PALM held or staked = 1 credit per 14-day window. Daily challenges in Quests earn more."
+        ? "The 0.5 welcome credits are used up. 1,000 $PALM held or staked = 1 credit per 14-day window. Daily challenges in Achievements earn more."
         : "Hamrin credits for this 14-day window are used up. They reset on " + String(credit.resetsAt || "").slice(0, 10) + ".");
       return;
     }

@@ -7,12 +7,11 @@ const PAGE_SIZE = 8;
 const HITS = [
   { id: "home", label: "New Agent", hint: "Start a draft chat" },
   { id: "templates", label: "Create from Template", hint: "Scaffold a project" },
-  { id: "automations", label: "Automations", hint: "Schedules, editor, history" },
+  { id: "quests", label: "Achievements", hint: "Daily challenges, achievements, and credits you can earn" },
   { id: "reasoning", label: "Reasoning", hint: "Agent brain graph" },
   { id: "ops", label: "Ops", hint: "PALM Ops console" },
   { id: "plugins", label: "Plugins", hint: "Hosting, domains, and Ops Hub" },
   { id: "notes", label: "Notes", hint: "Daily goals" },
-  { id: "quests", label: "Quests", hint: "Daily challenges, achievements, and credits you can earn" },
   { id: "billing", label: "Billing", hint: "Credits and when they reset" },
   { id: "settings", label: "Settings · Appearance", hint: "Themes, PALM, wallpaper" },
   { id: "browse:theme", label: "Browse themes", hint: `${THEMES.length} looks, light and dark` },

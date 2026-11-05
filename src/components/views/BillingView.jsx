@@ -180,7 +180,7 @@ export default function BillingView({ credit, token = "", onRefresh }) {
             </Row>
           )}
           {credit?.bonus && credit.bonus.credits > 0 && (
-            <Row label="Quest credits" value="Earned from daily challenges and achievements. They do not reset, and they are spent last.">
+            <Row label="Achievement credits" value="Earned from daily challenges and achievements. They do not reset, and they are spent last.">
               <span className="tabular-nums text-[13px]">{formatCredits(credit.bonus.remaining)} left</span>
             </Row>
           )}

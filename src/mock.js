@@ -64,12 +64,12 @@ export const TEMPLATES = [
   { id: "ext", title: "Browser Extension", stack: "Vite · React", cat: "Web" },
   { id: "cli", title: "CLI Tool", stack: "Node · Commander", cat: "Backend" },
   { id: "pyapi", title: "Python API", stack: "FastAPI · Uvicorn", cat: "Backend" },
-  { id: "mobile", title: "Mobile App", stack: "Expo · React Native · PALM Farm", cat: "Mobile" },
+  { id: "mobile", title: "Mobile App", stack: "Expo · React Native", cat: "Mobile" },
 ];
 
 export const LEFT_OFF = {
   "my-mobile-app": {
-    sessionId: "farm",
+    sessionId: "mobile",
     sessionTitle: "Fixing expo-asset",
     body: "You were setting up a mobile app from the Expo / React Native template. The startup crash is fixed — a missing expo-asset package, then an install that added 8 packages.",
     todos: ["Open the preview", "Confirm the app loads in the browser"],
@@ -156,7 +156,7 @@ export const HELP = [
     section: "Introduction",
     title: "Quick start",
     summary: "From this tab to a useful first answer.",
-    body: "Click New Agent, type a question, press Enter on desktop or tap send on a phone. Without a project you get general Q&A. Import a GitHub project from Getting Started when you want file, git, Farm, or Ops tools.",
+    body: "Click New Agent, type a question, press Enter on desktop or tap send on a phone. Without a project you get general Q&A. Import a GitHub project from Getting Started when you want file, git, or Ops tools.",
     bullets: [
       "Green Agent is full coding (default). Blue Ask is read-only. Amber Plan writes a plan without edits.",
       "Getting Started is three steps: Skills, Projects, GitHub.",
@@ -178,14 +178,6 @@ export const HELP = [
     summary: "Mode, Auto-Prompt, model, attachments, and send.",
     body: "The composer is the same surface as the desktop harness. Auto-Prompt rewrites a loose ask into a brief. Attachments travel with the turn.",
     bullets: ["Enter sends on desktop; phones use the send button", "Shift+Enter is a new line", "The ring is a context meter"],
-  },
-  {
-    id: "farm",
-    section: "Workspace",
-    title: "PALM Farm",
-    summary: "Cloud Android phones for Expo and React Native — no local emulator packs.",
-    body: "Farm is a Chat widget. When the project looks mobile, the card appears on the canvas. Sign in, start a phone, push an APK.",
-    bullets: ["Not a sidebar tab", "farm.palmaierc.com · noVNC", "Skip Android Studio and Xcode"],
   },
   {
     id: "templates",
@@ -240,7 +232,7 @@ export const HELP = [
     section: "Ship",
     title: "Reasoning",
     summary: "Intake to Output — the agent brain.",
-    body: "Click a node to inspect it. Save brain stores the selection. Tools sit on Farm, Ops, git, and shell.",
+    body: "Click a node to inspect it. Save brain stores the selection. Tools sit on Ops, git, and shell.",
     bullets: ["Intake through Output, matching the desktop brain", "Optional stages toggle the path", "Play tour walks the default chain"],
   },
   {
@@ -256,7 +248,7 @@ export const HELP = [
     section: "Control",
     title: "Account",
     summary: "Access key, optional wallet, skills, profile.",
-    body: "Your Root Account lives on useroot.sh/account. The wallet tab stays hidden until you turn it on. Skills list Farm and Ops as already bridged.",
+    body: "Your Root Account lives on useroot.sh/account. The wallet tab stays hidden until you turn it on. Skills list Ops as already bridged.",
     bullets: ["Unlock at useroot.sh/account", "Wallet shows balances and staking", "Profile is display name and GitHub"],
   },
   {
@@ -289,6 +281,6 @@ export const REASONING_NODES = [
   { id: "intake", label: "Intake", hint: "Send, route, vision, Auto-Prompt", x: 8, y: 38 },
   { id: "autoprompt", label: "Auto-Prompt", hint: "Rewrite into a brief", x: 28, y: 18 },
   { id: "plan", label: "Plan", hint: "Tools and files", x: 48, y: 38 },
-  { id: "tools", label: "Tools", hint: "Farm, Ops, git, shell", x: 68, y: 18 },
+  { id: "tools", label: "Tools", hint: "Ops, git, shell", x: 68, y: 18 },
   { id: "output", label: "Output", hint: "Stream to chat", x: 86, y: 38 },
 ];

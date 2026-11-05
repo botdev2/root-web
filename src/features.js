@@ -37,7 +37,7 @@ export const TEMPLATES = [
   { id: "extension-vite-react-tw4", title: "Browser Extension", subtitle: "Manifest V3 popup scaffold", stack: "Vite · React · Tailwind CSS v4", cat: "Apps", folder: "my-extension", dev: "npm run build", goal: "Polish the popup so it looks install-ready." },
   { id: "cli-node-ts", title: "CLI Tool", subtitle: "Command-line app with TypeScript", stack: "Node · TypeScript", cat: "Apps", folder: "my-cli", dev: "npm run dev -- --help", goal: "Improve the welcome and help output." },
   { id: "python-fastapi", title: "Python API", subtitle: "FastAPI service with a sample route", stack: "Python · FastAPI · Uvicorn", cat: "Backend", folder: "my-python-api", dev: "uvicorn app.main:app --reload", goal: "Start the server and prove a sample route." },
-  { id: "mobile-expo-farm", title: "Mobile App", subtitle: "Expo app — test on PALM Farm", stack: "Expo · React Native · PALM Farm", cat: "Mobile", folder: "my-mobile-app", dev: "npx expo start", goal: "Brand the home screen, then open Farm. Skip local emulator packs." },
+  { id: "mobile-expo-farm", title: "Mobile App", subtitle: "Expo app with React Native", stack: "Expo · React Native", cat: "Mobile", folder: "my-mobile-app", dev: "npx expo start", goal: "Brand the home screen, then add a first real screen." },
 ];
 
 export const TEMPLATE_CATEGORIES = ["All", "Web", "Full stack", "Backend", "Apps", "Mobile"];
@@ -123,7 +123,7 @@ export const SEED_SITES = [
 
 export const SEED_FILES = {
   "my-mobile-app": {
-    "README.md": "# my-mobile-app\n\nExpo app. Preview on PALM Farm.\n",
+    "README.md": "# my-mobile-app\n\nExpo app.\n",
     "package.json": "{\n  \"name\": \"my-mobile-app\",\n  \"private\": true,\n  \"dependencies\": {\n    \"expo\": \"^54.0.0\"\n  }\n}\n",
     "app.json": "{\n  \"expo\": {\n    \"name\": \"my-mobile-app\",\n    \"slug\": \"my-mobile-app\"\n  }\n}\n",
     "src/App.tsx": "export default function App() {\n  return null;\n}\n",
@@ -174,6 +174,5 @@ export const DEFAULT_PREFS = {
 
 export const SEED_CHARTS = [
   { id: "onboarding", name: "onboarding", project: "my-mobile-app", nodes: ["Open", "Sign in", "First run"] },
-  { id: "farm-push", name: "farm-push", project: "my-mobile-app", nodes: ["Build", "Upload", "Cloud phone"] },
   { id: "ops-deploy", name: "ops-deploy", project: "landing", nodes: ["Build dist", "Sign", "Live domain"] },
 ];

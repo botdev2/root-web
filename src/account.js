@@ -20,7 +20,6 @@ const BUILTIN_SKILLS = [
   { id: "agent", title: "Agent", body: "Ask, Plan, and Agent on the open project.", builtIn: true, enabled: true },
   { id: "ops", title: "Ops", body: "Hosting, domains, and Ops Hub for this wallet.", builtIn: true, enabled: true },
   { id: "notes", title: "Notes", body: "Day clock, goals, and the day's markdown.", builtIn: true, enabled: true },
-  { id: "farm", title: "Farm", body: "Cloud Android phones for Expo and React Native.", builtIn: true, enabled: false },
 ];
 
 function readJson(key, fallback) {

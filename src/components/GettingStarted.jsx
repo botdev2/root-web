@@ -23,7 +23,7 @@ export default function GettingStarted({ onClose }) {
         {tab === "skills" && (
           <div>
             <p className="text-[13px] text-[var(--muted)]">
-              Bridge skills you already use — Farm, Ops, and chat tools — into this session.
+              Bridge skills you already use — Ops and chat tools — into this session.
             </p>
             <div className="mt-4 flex gap-2">
               <Primary

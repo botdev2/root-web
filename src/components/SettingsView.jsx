@@ -338,7 +338,7 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
         <Card>
           <Row label="Transport" value="HTTPS" />
           <Row label="Project name in header" value="Shown" />
-          <Row label="Outbound" value="Only when you ship or call Farm / Ops" />
+          <Row label="Outbound" value="Only when you ship or call Ops" />
         </Card>
       )}
 

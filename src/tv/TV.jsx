@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Classroom from "../components/Classroom.jsx";
 import { CLASS_ORDER, findClassroom } from "../classroom/episodes.js";
 
 /**
- * ROOT TV: a 24/7 channel that plays Episodes 1-5 back to back with a
+ * PaLM TV: a 24/7 channel that plays Episodes 1-5 back to back with a
  * 30 second break between them. Meant to be a browser source in OBS:
  *   https://chat.useroot.sh/tv
  * Options (query string):
@@ -11,6 +11,7 @@ import { CLASS_ORDER, findClassroom } from "../classroom/episodes.js";
  *   ?break=30    seconds between episodes
  *   ?first=8     seconds of break shown before the very first episode
  *   ?reload=6    hours of uptime after which the page refreshes itself (at a break)
+ *   ?speed=8     play faster, for testing
  */
 
 const STAGE_W = 1920;
@@ -18,6 +19,18 @@ const STAGE_H = 1080;
 const MAX_EPISODE_MS = 14 * 60 * 1000;
 const STORE_KEY = "root-tv-next";
 const BOOT = Date.now();
+// Intro board, report card and the gap between them add this much to an episode.
+const FRAME_SECONDS = 28;
+
+const LOGO = "/tv/palmlogo_local.png";
+const PARTNERS = [
+  { name: "0x Protocol", src: "/tv/0x-protocol.png" },
+  { name: "SKALE", src: "/tv/skale.png" },
+  { name: "Codex", src: "/tv/codex.png" },
+  { name: "Google AI", src: "/tv/google-ai.png" },
+  { name: "Relay", src: "/tv/relay.svg" },
+  { name: "Spectre AI", src: "/tv/spectre-ai.png" },
+];
 
 const FACTS = [
   "One wallet signature plus an authenticator code is the whole Ops account. No email, no password.",
@@ -56,8 +69,57 @@ function startIndex() {
 }
 
 const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.max(0, Math.floor(seconds % 60))).padStart(2, "0")}`;
+const hhmm = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-function BreakScreen({ episode, left, total, order }) {
+function Logo({ className = "" }) {
+  return <span className={`tv-logo ${className}`} style={{ backgroundImage: `url(${LOGO})` }} role="img" aria-label="PaLM AI" />;
+}
+
+/** Channel bug: logo and LIVE tag on the left, local time on the right. Always on air. */
+function Bug({ now }) {
+  return (
+    <>
+      <div className="tv-bug">
+        <Logo />
+        <span className="tv-live">
+          <i /> LIVE
+        </span>
+      </div>
+      <div className="tv-clock">
+        <b>{hhmm(now)}</b>
+        <span>on air</span>
+      </div>
+    </>
+  );
+}
+
+function Ticker({ items }) {
+  const line = items.join("   \u2022   ");
+  return (
+    <div className="tv-ticker">
+      <div className="tv-ticker-tag">PaLM TV</div>
+      <div className="tv-ticker-view">
+        <div className="tv-ticker-run">
+          <span>{line}</span>
+          <span aria-hidden="true">{line}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stinger({ kicker, title }) {
+  return (
+    <div className="tv-stinger">
+      <div className="tv-stinger-sweep" />
+      <Logo className="tv-logo--xl" />
+      <div className="tv-stinger-kicker">{kicker}</div>
+      <div className="tv-stinger-title">{title}</div>
+    </div>
+  );
+}
+
+function BreakScreen({ episode, left, total, schedule }) {
   const [fact, setFact] = useState(() => Math.floor(Math.random() * FACTS.length));
   useEffect(() => {
     const timer = window.setInterval(() => setFact((value) => (value + 1) % FACTS.length), 7000);
@@ -67,28 +129,21 @@ function BreakScreen({ episode, left, total, order }) {
   const radius = 150;
   const circumference = 2 * Math.PI * radius;
   const fraction = Math.max(0, Math.min(1, left / total));
-  const scenes = episode.scenes.map((scene) => scene.title);
 
   return (
     <div className="tv-break">
-      <div className="tv-break-top">
-        <div className="tv-bug">
-          <i /> ROOT TV
-        </div>
-        <div className="tv-break-kicker">be right back</div>
-        <div className="tv-break-url">chat.useroot.sh</div>
-      </div>
+      <div className="tv-break-kicker">be right back</div>
 
       <div className="tv-break-main">
         <div className="tv-break-clock">
           <svg width="360" height="360" viewBox="0 0 360 360" aria-hidden="true">
-            <circle cx="180" cy="180" r={radius} fill="none" stroke="rgba(236,232,223,0.14)" strokeWidth="14" />
+            <circle cx="180" cy="180" r={radius} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="14" />
             <circle
               cx="180"
               cy="180"
               r={radius}
               fill="none"
-              stroke="#d4414e"
+              stroke="#ffd166"
               strokeWidth="14"
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -107,31 +162,37 @@ function BreakScreen({ episode, left, total, order }) {
           <div className="tv-break-title">{episode.title}</div>
           <p className="tv-break-blurb">{episode.blurb}</p>
           <ol className="tv-break-scenes">
-            {scenes.map((title, index) => (
-              <li key={title} style={{ animationDelay: `${0.25 + index * 0.18}s` }}>
+            {episode.scenes.map((scene, index) => (
+              <li key={scene.title} style={{ animationDelay: `${0.25 + index * 0.18}s` }}>
                 <span>{index + 1}</span>
-                {title}
+                {scene.title}
               </li>
             ))}
           </ol>
         </div>
       </div>
 
-      <div className="tv-break-bottom">
-        <div className="tv-break-fact" key={fact}>
-          {FACTS[fact]}
-        </div>
-        <div className="tv-break-schedule">
-          {order.map((id) => {
-            const item = findClassroom(id);
-            return (
-              <div key={id} className={`tv-chip ${id === episode.id ? "is-next" : ""}`}>
-                <b>{item.number}</b>
-                <span>{item.title}</span>
-              </div>
-            );
-          })}
-        </div>
+      <div className="tv-break-fact" key={fact}>
+        {FACTS[fact]}
+      </div>
+
+      <div className="tv-guide">
+        <div className="tv-guide-tag">TV guide</div>
+        {schedule.map((slot, index) => (
+          <div key={slot.key} className={`tv-guide-slot ${index === 0 ? "is-next" : ""}`}>
+            <b>{hhmm(slot.at)}</b>
+            <span>
+              Ep {slot.ep.number} · {slot.ep.title}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="tv-partners">
+        <span>with</span>
+        {PARTNERS.map((partner) => (
+          <img key={partner.name} src={partner.src} alt={partner.name} />
+        ))}
       </div>
     </div>
   );
@@ -147,6 +208,8 @@ export default function TV() {
   const [total, setTotal] = useState(firstBreak);
   const [scale, setScale] = useState(1);
   const [stageEl, setStageEl] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  const [stinger, setStinger] = useState({ key: "boot", kicker: "welcome to", title: "PaLM TV" });
   const watchdog = useRef(0);
 
   const episodeId = CLASS_ORDER[index];
@@ -161,12 +224,23 @@ export default function TV() {
   }, []);
 
   useEffect(() => {
-    document.title = "ROOT TV";
+    document.title = "PaLM TV";
     document.documentElement.classList.add("tv-html");
-    return () => document.documentElement.classList.remove("tv-html");
+    const timer = window.setInterval(() => setNow(Date.now()), 5000);
+    return () => {
+      window.clearInterval(timer);
+      document.documentElement.classList.remove("tv-html");
+    };
   }, []);
 
-  // Break countdown, then roll the next class.
+  // Station idents last a couple of seconds, then get out of the way.
+  useEffect(() => {
+    if (!stinger) return undefined;
+    const timer = window.setTimeout(() => setStinger(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [stinger]);
+
+  // Break countdown.
   useEffect(() => {
     if (mode !== "break") return undefined;
     const timer = window.setInterval(() => setLeft((value) => Math.max(0, value - 1)), 1000);
@@ -183,10 +257,11 @@ export default function TV() {
         return;
       }
       setPlay((count) => count + 1);
+      setStinger({ key: `ep-${index}-${Date.now()}`, kicker: `now playing  \u00b7  episode ${findClassroom(CLASS_ORDER[index]).number}`, title: findClassroom(CLASS_ORDER[index]).title });
       setMode("class");
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [mode, left]);
+  }, [mode, left, index]);
 
   const finish = useCallback(() => {
     window.clearTimeout(watchdog.current);
@@ -212,6 +287,34 @@ export default function TV() {
     return () => window.clearTimeout(watchdog.current);
   }, [mode, play, finish]);
 
+  // What is on next, and when. While a class is running the next slot starts after it ends.
+  const schedule = useMemo(() => {
+    const slots = [];
+    const speed = Math.max(1, param("speed", 1));
+    let at = mode === "break" ? now + left * 1000 : now + (episode.minutes * 60 + FRAME_SECONDS) * 1000 / speed + breakSeconds * 1000;
+    for (let i = 0; i < 4; i += 1) {
+      const slotIndex = (mode === "break" ? index + i : index + 1 + i) % CLASS_ORDER.length;
+      const ep = findClassroom(CLASS_ORDER[slotIndex]);
+      slots.push({ key: `${slotIndex}-${i}`, ep, at });
+      at += ((ep.minutes * 60 + FRAME_SECONDS) * 1000) / speed + breakSeconds * 1000;
+    }
+    return slots;
+  }, [mode, index, now, left, episode.minutes, breakSeconds]);
+
+  const upNext = mode === "break" ? episode : schedule[0].ep;
+  const tickerItems = useMemo(
+    () => [
+      `Up next: Episode ${upNext.number}, ${upNext.title}`,
+      "ops.palmaierc.com: anonymous hosting, domains and git on one wallet",
+      FACTS[(index * 3) % FACTS.length],
+      "Try the harness at chat.useroot.sh",
+      FACTS[(index * 3 + 1) % FACTS.length],
+      "PaLM AI: Utility. Innovation. Revenue.",
+      FACTS[(index * 3 + 2) % FACTS.length],
+    ],
+    [upNext.number, upNext.title, index],
+  );
+
   return (
     <div className="tv-root">
       <div
@@ -219,10 +322,13 @@ export default function TV() {
         className="tv-stage"
         style={{ width: STAGE_W, height: STAGE_H, transform: `translate(-50%, -50%) scale(${scale})` }}
       >
-        {mode === "break" && <BreakScreen episode={episode} left={left} total={total} order={CLASS_ORDER} />}
+        {mode === "break" && <BreakScreen episode={episode} left={left} total={total} schedule={schedule} />}
         {mode === "class" && stageEl && (
           <Classroom key={`${episodeId}-${play}`} episodeId={episodeId} tv controls={{}} onEnd={finish} container={stageEl} />
         )}
+        <Bug now={now} />
+        <Ticker key={`${upNext.number}-${index}`} items={tickerItems} />
+        {stinger && <Stinger key={stinger.key} kicker={stinger.kicker} title={stinger.title} />}
       </div>
     </div>
   );

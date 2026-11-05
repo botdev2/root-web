@@ -473,9 +473,7 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch, tv =
     <div className={`cr-root ${tv ? "cr-root--tv" : ""}`} role="dialog" aria-label={`${ep.label}`}>
       <header className="cr-top">
         {tv ? (
-          <div className="tv-bug">
-            <i /> ROOT TV
-          </div>
+          <div className="tv-spacer" aria-hidden="true" />
         ) : (
           <button type="button" className="cr-btn h-8 rounded-lg px-3 text-[12.5px]" onClick={() => exit()}>
             Leave class

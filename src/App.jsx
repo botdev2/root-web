@@ -37,6 +37,7 @@ import AccountView from "./components/views/AccountView.jsx";
 import UpdatesView from "./components/views/UpdatesView.jsx";
 import TelemetryView from "./components/views/TelemetryView.jsx";
 import HelpView from "./components/views/HelpView.jsx";
+import { findEpisode } from "./tour/episodes.js";
 import TemplatesView from "./components/views/TemplatesView.jsx";
 import BillingView from "./components/views/BillingView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
@@ -104,7 +105,10 @@ export default function App() {
   const [editorFile, setEditorFile] = useState("README.md");
   const [tour, setTour] = useState(() => {
     try {
-      const flag = new URLSearchParams(window.location.search).get("tour");
+      const params = new URLSearchParams(window.location.search);
+      const flag = params.get("tour");
+      const episode = params.get("episode");
+      if (episode && findEpisode(episode)) return { auto: false, episode };
       if (flag === "auto") return { auto: true };
       if (flag === "1" || flag === "true") return { auto: false };
     } catch {
@@ -115,7 +119,7 @@ export default function App() {
   const [lastCommit, setLastCommit] = useState(null);
   const [hamrinOpen, setHamrinOpen] = useState(() => {
     try {
-      if (new URLSearchParams(window.location.search).has("tour")) return false;
+      const search = new URLSearchParams(window.location.search); if (search.has("tour") || search.has("episode")) return false;
     } catch {
       /* ignore */
     }
@@ -819,7 +823,7 @@ export default function App() {
   };
 
   const showComposer = CHAT_VIEWS.has(view);
-  const startTour = () => {
+  const startTour = (episode) => {
     setPaletteOpen(false);
     setConnectOpen(false);
     setUnlockOpen(false);
@@ -828,7 +832,7 @@ export default function App() {
     setView("home");
     setSessionId(null);
     setSessionTitle("New Agent");
-    setTour({ auto: false });
+    setTour({ auto: false, episode: typeof episode === "string" && findEpisode(episode) ? episode : "" });
   };
   if (!state) return null;
 
@@ -983,7 +987,7 @@ export default function App() {
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}
-                {view === "help" && <HelpView onOpen={openView} onTour={startTour} />}
+                {view === "help" && <HelpView onOpen={openView} onTour={() => startTour()} onEpisode={startTour} />}
                 {view === "templates" && (
                   <TemplatesView
                     onCreate={async (item) => {
@@ -1098,6 +1102,7 @@ export default function App() {
       {tour && (
         <Tour
           autoplay={tour.auto}
+          episode={tour.episode || ""}
           live={{
             isConnected: !!(isConnected && address),
             opsToken,
@@ -1110,6 +1115,7 @@ export default function App() {
           controls={{
             setNavOpen,
             setFilesOpen,
+            openView,
             newChat: () => {
               setView("home");
               setSessionId(null);
@@ -1151,6 +1157,10 @@ export default function App() {
             }
             if (id === "tour") {
               startTour();
+              return;
+            }
+            if (id.startsWith("episode:")) {
+              startTour(id.slice(8));
               return;
             }
             if (id === "layout") {

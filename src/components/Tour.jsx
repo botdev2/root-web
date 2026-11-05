@@ -4,6 +4,8 @@ import { useAppKitState } from "@reown/appkit/react";
 import portrait from "../assets/avatar.png";
 import { useAppState } from "../AppState.jsx";
 import { buildScript } from "../tour/script.js";
+import { findEpisode } from "../tour/episodes.js";
+import { WIDGETS, WIDGET_STARS } from "./EpisodeWidgets.jsx";
 
 export const TOUR_SEEN_KEY = "root-web-tour-seen";
 
@@ -107,10 +109,13 @@ function useViewport() {
   return size;
 }
 
-export default function Tour({ live, controls, onClose, autoplay = false }) {
+export default function Tour({ live, controls, onClose, autoplay = false, episode: episodeId = "" }) {
   const { setMode } = useAppState();
   const { open: walletOpen } = useAppKitState();
-  const script = useMemo(() => buildScript(), []);
+  const episode = useMemo(() => findEpisode(episodeId), [episodeId]);
+  const script = useMemo(() => (episode ? episode.build() : buildScript()), [episode]);
+  const [stars, setStars] = useState([]);
+  const award = useCallback((id) => setStars((prev) => (prev.includes(id) ? prev : [...prev, id])), []);
   const liveRef = useRef(live);
   liveRef.current = live;
   const flags = useRef({ startedAt: Date.now(), sawSending: false, sawWaiting: false, blocked: "", repoName: "", waitStart: 0 }).current;
@@ -148,6 +153,7 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
   }, [live.sending, flags]);
 
   const markSeen = () => {
+    if (episode) return;
     try {
       localStorage.setItem(TOUR_SEEN_KEY, "1");
     } catch {
@@ -156,15 +162,17 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
   };
 
   const exit = useCallback(
-    (finished) => {
+    (finished, dest) => {
       run.current += 1;
       if (document.querySelector("[data-add-project]")) {
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
       }
       markSeen();
+      // An episode starts from Help, so it ends there unless the outro sends you on.
+      if (episode) controls.openView?.(dest || "help");
       onClose?.(!!finished);
     },
-    [onClose],
+    [onClose, episode],
   );
 
   const makeCtx = (token) => {
@@ -315,7 +323,7 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
 
   const back = () => {
     if (busy || phase !== "steps") return;
-    const limit = script.findIndex((item) => item.id === "repo-open");
+    const limit = episode ? script.length : script.findIndex((item) => item.id === "repo-open");
     if (index > limit) return;
     const previous = settle(script, index, -1);
     if (previous >= 0) enterStep(previous);
@@ -323,6 +331,8 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
 
   useEffect(() => {
     const onKey = (event) => {
+      const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(event.target?.tagName || "");
+      if (typing && event.key !== "Escape") return;
       if (event.key === "Escape") {
         event.preventDefault();
         exit(false);
@@ -425,7 +435,9 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
   const lastIndex = settle(script, index) >= script.length;
   const ctaLabel = val(step.cta, live, flags) || (lastIndex ? "Finish" : "Next");
   const progress = Math.round((index / Math.max(1, script.length - 1)) * 100);
-  const backLimit = script.findIndex((item) => item.id === "repo-open");
+  const backLimit = episode ? script.length : script.findIndex((item) => item.id === "repo-open");
+  const meta = episode?.meta;
+  const Widget = step.widget ? WIDGETS[step.widget] : null;
   const shown = typedDone ? body : body.slice(0, typed);
   const waitedFor = flags.waitStart ? Math.max(0, Math.round((Date.now() - flags.waitStart) / 1000)) : 0;
 
@@ -460,18 +472,18 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
             <div className="tour-sweep" />
             <div className="tour-stage">
               <img src="/palm.png" alt="" className="tour-logo" />
-              <div className="tour-word">/root</div>
+              <div className="tour-word">{meta ? meta.word : "/root"}</div>
               <div className="tour-kicker" style={{ marginTop: 20, animationDelay: "2.7s" }}>
-                PALM Ops × Root
+                {meta ? meta.kicker : "PALM Ops × Root"}
               </div>
               <p className="tour-line" style={{ animationDelay: "3.2s", marginTop: 12 }}>
-                Build in a decentralized, anonymous way.
+                {meta ? meta.lines[0] : "Build in a decentralized, anonymous way."}
               </p>
               <p className="tour-line" style={{ animationDelay: "4.3s", marginTop: 6 }}>
-                No account, no email, no name. Your wallet is the only key.
+                {meta ? meta.lines[1] : "No account, no email, no name. Your wallet is the only key."}
               </p>
               <button type="button" className="tour-begin" style={{ animationDelay: "5.6s" }} onClick={begin}>
-                Take the guided tour
+                {meta ? meta.begin : "Take the guided tour"}
               </button>
             </div>
             <button type="button" className="tour-skip" onClick={() => exit(false)}>
@@ -489,24 +501,50 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
             <Petals />
             <div className="tour-sweep" />
             <div className="tour-stage">
-              <div className="tour-kicker">{committed ? "First commit" : "That's the tour"}</div>
-              <div className="tour-big">Good luck.</div>
+              <div className="tour-kicker">{meta ? meta.outroKicker : committed ? "First commit" : "That's the tour"}</div>
+              <div className="tour-big">{meta ? meta.outroBig : "Good luck."}</div>
               <p className="tour-line" style={{ animationDelay: "2.2s" }}>
-                {committed
-                  ? "Your first file is committed to the PALM Ops Hub, signed by a wallet and nobody else. Nobody asked who you are. Keep it that way."
-                  : "A wallet, a repository, a prompt. That's all it takes. No account, no name. Go build something."}
+                {meta
+                  ? meta.outroLine(stars.length, WIDGET_STARS.length)
+                  : committed
+                    ? "Your first file is committed to the PALM Ops Hub, signed by a wallet and nobody else. Nobody asked who you are. Keep it that way."
+                    : "A wallet, a repository, a prompt. That's all it takes. No account, no name. Go build something."}
               </p>
-              <button
-                type="button"
-                className="tour-begin"
-                style={{ animationDelay: "3.2s" }}
-                onClick={() => {
-                  setLeaving(true);
-                  window.setTimeout(() => exit(true), 800);
-                }}
-              >
-                Keep building
-              </button>
+              {meta && (
+                <ul className="ep-stars" style={{ animationDelay: "2.7s" }}>
+                  {WIDGET_STARS.map((item) => (
+                    <li key={item.id} className={stars.includes(item.id) ? "is-on" : ""}>
+                      <span aria-hidden="true">★</span> {item.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  className="tour-begin"
+                  style={{ animationDelay: "3.2s" }}
+                  onClick={() => {
+                    setLeaving(true);
+                    window.setTimeout(() => exit(true, meta ? "help" : undefined), 800);
+                  }}
+                >
+                  {meta ? "Back to Help" : "Keep building"}
+                </button>
+                {meta && (
+                  <button
+                    type="button"
+                    className="tour-begin"
+                    style={{ animationDelay: "3.5s" }}
+                    onClick={() => {
+                      setLeaving(true);
+                      window.setTimeout(() => exit(true, "ops"), 800);
+                    }}
+                  >
+                    Open Ops
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </>
@@ -547,6 +585,7 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
                     {shown}
                     {!typedDone && <span className="tour-caret" />}
                   </p>
+                  {Widget && <Widget key={step.id} award={award} done={stars.includes(step.widget)} />}
                 </div>
 
                 {waiting && (
@@ -572,6 +611,7 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
                       Back
                     </button>
                   )}
+                  {!episode && (
                   <button
                     type="button"
                     onClick={() => setAuto((value) => !value)}
@@ -582,6 +622,7 @@ export default function Tour({ live, controls, onClose, autoplay = false }) {
                   >
                     Autoplay{auto ? " · on" : ""}
                   </button>
+                  )}
                   <span className="flex-1" />
                   {!(step.wait && !step.act) || waitDone ? (
                     <button

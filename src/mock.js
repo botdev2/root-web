@@ -90,6 +90,22 @@ export const LEFT_OFF = {
 
 export const HELP = [
   {
+    id: "episode-ops-1",
+    section: "Guided Tutorials",
+    title: "Episode 1 - Introduction to Ops",
+    summary: "An interactive tour of ops.palmaierc.com and how it connects to the harness. About 5 minutes.",
+    body: "Walk through everything Ops offers: hosting, domains, and Ops Hub, all on one wallet with no account. See it on the real console, play three short games for stars, and watch how the harness commits into the Hub, builds on Ops, and goes live.",
+    bullets: [
+      "The big idea: what Ops is, and the road from wallet to domain",
+      "The console: sign-in with a wallet and an authenticator, no email",
+      "Hosting: publish from GitHub, build packs, flat plans after 48 free hours",
+      "Domains: a live search, Ops as registrant, pay in USDC",
+      "Ops Hub: git owned by an address",
+      "The harness connection: sidebar projects are Hub repos, and the agent commits into them",
+    ],
+    episode: "ops-1",
+  },
+  {
     id: "welcome",
     section: "Introduction",
     title: "Welcome to /root",

@@ -281,7 +281,7 @@ export default function OpsView({ token: boundToken = "", onToken }) {
 
   return (
     <Page wide>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div data-tour="ops-links" className="mb-4 flex flex-wrap gap-2">
         {OPS_LINKS.map((link) => (
           <a
             key={link.href}
@@ -295,7 +295,7 @@ export default function OpsView({ token: boundToken = "", onToken }) {
         ))}
       </div>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div data-tour="ops-cards" className="mb-6 grid gap-3 sm:grid-cols-3">
         <Card className="p-4">
           <div className="text-[11px] text-[var(--faint)]">Hosting</div>
           <div className={`mt-1 text-[18px] ${health?.ok ? "text-[var(--green)]" : "text-[var(--rose)]"}`}>
@@ -317,6 +317,7 @@ export default function OpsView({ token: boundToken = "", onToken }) {
 
       {accountError && <p className="mb-4 text-[13px] text-[var(--rose)]">{accountError}</p>}
 
+      <div data-tour="ops-account">
       <Section title="Account">
         <Card>
           <Row label="Ops session" value={token ? "Signed in on this page" : "Signature, then the authenticator code"}>
@@ -353,7 +354,9 @@ export default function OpsView({ token: boundToken = "", onToken }) {
           )}
         </Card>
       </Section>
+      </div>
 
+      <div data-tour="ops-sites">
       <Section title="Your sites">
         {waiting("apps") ? (
           <RowSkeleton rows={2} />
@@ -407,6 +410,9 @@ export default function OpsView({ token: boundToken = "", onToken }) {
         )}
       </Section>
 
+      </div>
+
+      <div data-tour="ops-publish">
       <Section title="Publish a GitHub repository">
         <Card className="space-y-3 p-4">
           <p className="text-[12.5px] leading-5 text-[var(--muted)]">
@@ -453,19 +459,22 @@ export default function OpsView({ token: boundToken = "", onToken }) {
         </Card>
       </Section>
 
+      </div>
+
+      <div data-tour="ops-domains">
       <Section title="Domains">
         <Card className="mb-2 space-y-3 p-4">
           <div className="flex flex-wrap items-end gap-2">
             <div className="min-w-[220px] flex-1">
-              <Field label="Search" value={query} onChange={setQuery} placeholder="name or name.com" />
+              <Field tour="ops-domain-input" label="Search" value={query} onChange={setQuery} placeholder="name or name.com" />
             </div>
-            <Ghost onClick={runSearch}>{searching ? "Searching…" : "Search"}</Ghost>
+            <Ghost tour="ops-domain-search" onClick={runSearch}>{searching ? "Searching…" : "Search"}</Ghost>
             <a href={OPS_LINKS[1].href} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center text-[12.5px] underline">
               Register on Ops
             </a>
           </div>
           {search && (
-            <div className="space-y-1">
+            <div data-tour="ops-domain-results" className="space-y-1">
               {(search.results || []).map((item) => (
                 <div key={item.domain} className="flex items-center justify-between gap-3 text-[13px]">
                   <span>{item.domain}</span>
@@ -494,6 +503,9 @@ export default function OpsView({ token: boundToken = "", onToken }) {
         )}
       </Section>
 
+      </div>
+
+      <div data-tour="ops-hub">
       <Section title="Ops Hub">
         {waiting("repos") && <RowSkeleton rows={3} />}
         {token && loaded.repos && repoList.length === 0 && <Card className="px-4 py-3 text-[13px] text-[var(--muted)]">No repositories for this address yet.</Card>}
@@ -501,6 +513,7 @@ export default function OpsView({ token: boundToken = "", onToken }) {
         <RepoList title="Yours" items={yours} />
         <RepoList title="Shared" items={shared} />
       </Section>
+      </div>
 
     </Page>
   );

@@ -22,6 +22,7 @@ const HITS = [
   { id: "hamrin", label: "Meet Hamrin 1.0", hint: "The model behind /root" },
   { id: "layout", label: "Arrange the interface", hint: "Drag items, hide them, dock panels" },
   { id: "tour", label: "Take the tour", hint: "A guided first repository and prompt (resets your layout)" },
+  { id: "episode:ops-1", label: "Episode 1 - Introduction to Ops", hint: "Guided tutorial: ops.palmaierc.com and how it connects to the harness" },
   { id: "help", label: "Help", hint: "How /root works" },
 ];
 

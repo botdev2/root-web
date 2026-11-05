@@ -68,10 +68,11 @@ export function Toggle({ on, onClick }) {
   );
 }
 
-export function Ghost({ children, onClick, active }) {
+export function Ghost({ children, onClick, active, tour }) {
   return (
     <button
       type="button"
+      data-tour={tour}
       onClick={onClick}
       className={`h-9 rounded-lg border px-3 text-[12.5px] ${
         active ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--stroke)] hover:bg-[var(--hover)]"
@@ -82,10 +83,11 @@ export function Ghost({ children, onClick, active }) {
   );
 }
 
-export function Primary({ children, onClick }) {
+export function Primary({ children, onClick, tour }) {
   return (
     <button
       type="button"
+      data-tour={tour}
       onClick={onClick}
       className="h-9 rounded-lg bg-[var(--accent)] px-3.5 text-[12.5px] text-[var(--bg)]"
     >
@@ -94,12 +96,13 @@ export function Primary({ children, onClick }) {
   );
 }
 
-export function Field({ label, value, onChange, placeholder, type = "text" }) {
+export function Field({ label, value, onChange, placeholder, type = "text", tour }) {
   return (
     <label className="block">
       {label && <div className="mb-1.5 text-[11px] text-[var(--faint)]">{label}</div>}
       <input
         type={type}
+        data-tour={tour}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange?.(event.target.value)}

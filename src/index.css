@@ -1140,3 +1140,31 @@ textarea {
 .lay-btn:disabled { opacity: 0.45; }
 .lay-btn-main { border-color: var(--accent); background: var(--accent); color: var(--bg); }
 .lay-btn-main:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+
+/* ---- Guided episodes ------------------------------------------------ */
+.ep-fade { animation: epFade 0.45s var(--tour-ease, ease) both; }
+@keyframes epFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.ep-shake { animation: epShake 0.35s ease; }
+@keyframes epShake { 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+
+.ep-nudge { display: inline-block; animation: epNudge 1.8s ease-in-out infinite; }
+@keyframes epNudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+
+.ep-track { position: relative; height: 2px; margin: 4px 4px 10px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--stroke) 80%, transparent); }
+.ep-track i { position: absolute; top: 0; left: -30%; width: 30%; height: 100%; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: epPacket 2.4s linear infinite; }
+@keyframes epPacket { to { left: 100%; } }
+
+.ep-star { font-size: 16px; line-height: 1; color: var(--stroke); transition: color 0.3s, transform 0.3s; }
+.ep-star.is-on { color: var(--amber, #e8b04a); transform: scale(1.25) rotate(12deg); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--amber, #e8b04a) 70%, transparent)); }
+
+.ep-range { accent-color: var(--accent); height: 20px; }
+
+.ep-stars { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px; margin: 22px 0 22px; padding: 0; list-style: none; font-size: clamp(13px, 1.6vw, 16px); color: rgb(252 240 243 / 0.45); opacity: 0; animation: epFade 0.7s ease forwards; }
+.ep-stars li.is-on { color: rgb(252 240 243 / 0.95); }
+.ep-stars li span { color: rgb(252 240 243 / 0.3); }
+.ep-stars li.is-on span { color: var(--amber, #e8b04a); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ep-track i, .ep-nudge, .ep-shake, .ep-fade { animation: none; }
+}

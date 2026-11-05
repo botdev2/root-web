@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { HELP } from "../../mock.js";
 import { Page, Card } from "../ui.jsx";
+import { findEpisode } from "../../tour/episodes.js";
 
-export default function HelpView({ onOpen, onTour }) {
+export default function HelpView({ onOpen, onTour, onEpisode }) {
   const [id, setId] = useState("welcome");
   const [query, setQuery] = useState("");
   const page = HELP.find((item) => item.id === id) || HELP[0];
@@ -63,6 +64,20 @@ export default function HelpView({ onOpen, onTour }) {
               <li key={bullet}>{bullet}</li>
             ))}
           </ul>
+          {page.episode && onEpisode && (
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => onEpisode(page.episode)}
+                className="h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] text-[var(--bg)]"
+              >
+                Start Episode {findEpisode(page.episode)?.number}
+              </button>
+              <span className="text-[12px] text-[var(--faint)]">
+                About {findEpisode(page.episode)?.minutes} minutes. Skip any time with Esc.
+              </span>
+            </div>
+          )}
           {page.id === "control" && (
             <button type="button" onClick={() => onOpen?.("settings")} className="mt-5 text-[13px] text-[var(--accent)]">
               Open Settings →

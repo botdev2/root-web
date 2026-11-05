@@ -11,6 +11,7 @@ const NAV = [
   { id: "ops", label: "Ops" },
   { id: "plugins", label: "Plugins" },
   { id: "notes", label: "Notes" },
+  { id: "quests", label: "Quests" },
   { id: "billing", label: "Billing" },
 ];
 

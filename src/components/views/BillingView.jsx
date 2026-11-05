@@ -179,6 +179,11 @@ export default function BillingView({ credit, token = "", onRefresh }) {
               <span className="tabular-nums text-[13px]">{formatCredits(welcome.remaining)} left</span>
             </Row>
           )}
+          {credit?.bonus && credit.bonus.credits > 0 && (
+            <Row label="Quest credits" value="Earned from daily challenges and achievements. They do not reset, and they are spent last.">
+              <span className="tabular-nums text-[13px]">{formatCredits(credit.bonus.remaining)} left</span>
+            </Row>
+          )}
           <Row label="Used this window" value="Counted against Hamrin 1.0 as tokens">
             <span className="tabular-nums text-[13px]">{credit ? `${windowTokensUsed.toLocaleString()} tokens` : "…"}</span>
           </Row>

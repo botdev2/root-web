@@ -12,6 +12,7 @@ const HEADERS = {
   ops: { title: "PALM Ops", subtitle: "Hosting, domains, and Ops Hub" },
   plugins: { title: "Plugins", subtitle: "Hosting, domains, and Ops Hub" },
   notes: { title: "Notes", subtitle: "Daily goals and markdown" },
+  quests: { title: "Quests", subtitle: "Daily challenges and achievements that earn Hamrin credits" },
   billing: { title: "Billing", subtitle: "Credits, $PALM, and when they reset" },
   settings: { title: "Settings", subtitle: "Appearance, models, privacy" },
   templates: { title: "Create from Template", subtitle: "Scaffold a project, then refine with Auto-Prompt" },

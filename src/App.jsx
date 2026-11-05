@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
-import { archiveConversation, listConversations, loadConversation, readCredits, removeConversation, sendTurn } from "./glmChat.js";
+import { archiveConversation, listConversations, loadConversation, readCredits, removeConversation, reportQuestEvent, sendTurn } from "./glmChat.js";
 import { readCache, writeCache } from "./opsCache.js";
 import { MAX_REPOS, claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
@@ -42,6 +42,7 @@ import { findClassroom } from "./classroom/episodes.js";
 import Classroom from "./components/Classroom.jsx";
 import TemplatesView from "./components/views/TemplatesView.jsx";
 import BillingView from "./components/views/BillingView.jsx";
+import QuestsView from "./components/views/QuestsView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
 import PluginsView from "./components/views/PluginsView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
@@ -245,6 +246,12 @@ export default function App() {
       cancelled = true;
     };
   }, [isConnected, address, opsToken]);
+
+  // Opening a tab counts toward the daily challenges. The service ignores repeats and unknown tabs.
+  useEffect(() => {
+    if (!opsToken || !address) return;
+    reportQuestEvent("view:" + view);
+  }, [view, opsToken, address]);
 
   const refreshCredits = async () => {
     if (!opsToken || !address) return;
@@ -549,7 +556,7 @@ export default function App() {
     }
     if (credit && credit.remaining <= 0) {
       notice(credit.windowAllowance <= 0
-        ? "The 0.5 welcome credits are used up. 1,000 $PALM held or staked = 1 credit per 14-day window."
+        ? "The 0.5 welcome credits are used up. 1,000 $PALM held or staked = 1 credit per 14-day window. Daily challenges in Quests earn more."
         : "Hamrin credits for this 14-day window are used up. They reset on " + String(credit.resetsAt || "").slice(0, 10) + ".");
       return;
     }
@@ -990,6 +997,7 @@ export default function App() {
                 {view === "ops" && <OpsView token={opsToken} onToken={setOpsToken} />}
                 {view === "notes" && <NotesView />}
                 {view === "billing" && <BillingView credit={credit} token={opsToken} onRefresh={refreshCredits} />}
+                {view === "quests" && <QuestsView token={opsToken} onRefresh={refreshCredits} />}
                 {view === "plugins" && <PluginsView token={opsToken} onToken={setOpsToken} />}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}

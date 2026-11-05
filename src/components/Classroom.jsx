@@ -5,6 +5,7 @@ import { COLORS, Op, opDuration } from "../classroom/draw.jsx";
 import { WIDGETS, WIDGET_DEMOS } from "../classroom/widgets.jsx";
 import { CLASS_ORDER, findClassroom, starsOf } from "../classroom/episodes.js";
 import { gradeOf, saveProgress } from "../classroom/progress.js";
+import { reportQuestEvent } from "../glmChat.js";
 
 const CPS = 14; // characters the teacher "says" per second
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -386,7 +387,11 @@ export default function Classroom({ episodeId, controls, onClose, onSwitch, tv =
     setAsk(null);
     setWidget(null);
     setErasing(false);
-    if (!tv) saveProgress(ep.id, earnedRef.current.length, stars.length);
+    if (!tv) {
+      saveProgress(ep.id, earnedRef.current.length, stars.length);
+      reportQuestEvent("episode:" + ep.id);
+      reportQuestEvent("episode_any");
+    }
     const grade = gradeOf(earnedRef.current.length, stars.length);
     typeLine(
       tv

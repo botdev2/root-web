@@ -74,6 +74,29 @@ export function readCredits(address) {
   return call("/v1/credits", { address });
 }
 
+export function readQuests(address) {
+  return call("/v1/quests", { address });
+}
+
+export function claimQuest(address, kind, id) {
+  return call("/v1/quests/claim", { address, method: "POST", body: { kind, id } });
+}
+
+const reported = new Set();
+
+/** Tell the Quests service about something done on this page. Quiet if signed out, once per day per event. */
+export function reportQuestEvent(event) {
+  try {
+    const session = JSON.parse(localStorage.getItem("root-web-ops-session") || "null");
+    if (!session?.token || !session?.address) return;
+    const stamp = new Date().toISOString().slice(0, 10) + ":" + session.address + ":" + event;
+    if (reported.has(stamp)) return;
+    reported.add(stamp);
+    call("/v1/quests/event", { address: session.address, method: "POST", body: { event } }).catch(() => reported.delete(stamp));
+  } catch {
+    /* storage unavailable */
+  }
+}
 export const PALM_PER_CREDIT = 1000;
 
 export function formatCredits(value) {

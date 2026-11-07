@@ -12,7 +12,7 @@ const TIER = { easy: "Easy", medium: "Medium", hard: "Hard", epic: "Expert", bon
 const TIER_DOTS = { easy: 1, medium: 2, hard: 3, epic: 4, bonus: 0 };
 
 // Plain names for what the server calls its achievements.
-const TITLE = {
+export const TITLE = {
   "first-words": "First message",
   chatterbox: "25 messages",
   centurion: "100 messages",
@@ -62,7 +62,7 @@ const GLYPHS = {
   star: "M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 16.8 6.4 20l1.3-6.2L3 9.5l6.3-.7L12 3z",
 };
 
-function Glyph({ name, size = 18 }) {
+export function Glyph({ name, size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={GLYPHS[name] || GLYPHS.star} />
@@ -70,7 +70,7 @@ function Glyph({ name, size = 18 }) {
   );
 }
 
-function iconFor(item) {
+export function iconFor(item) {
   const id = item.id || "";
   if (id === "legend") return "trophy";
   if (id === "versatile" || id === "planner") return "layers";

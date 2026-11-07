@@ -29,6 +29,7 @@ import FilesInspector from "./components/FilesInspector.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
 import GettingStarted from "./components/GettingStarted.jsx";
 import Toast from "./components/Toast.jsx";
+import AchievementToasts from "./components/AchievementToasts.jsx";
 import AutomationsView from "./components/views/AutomationsView.jsx";
 import ReasoningView from "./components/views/ReasoningView.jsx";
 import OpsView from "./components/views/OpsView.jsx";
@@ -1216,6 +1217,16 @@ export default function App() {
       )}
       {connectOpen && <GettingStarted onClose={() => setConnectOpen(false)} />}
       <Toast />
+      <AchievementToasts
+        address={address}
+        token={opsToken}
+        refreshKey={credit}
+        onOpen={() => openView("quests")}
+        onClaimed={(item) => {
+          notice?.(`+${item.points} points claimed.`);
+          refreshCredits();
+        }}
+      />
       <WalletSync />
       {unlockOpen && <SignupOverlay onClose={() => setUnlockOpen(false)} />}
     </div>

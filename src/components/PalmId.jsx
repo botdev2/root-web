@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import portrait from "../assets/avatar.png";
 import { formatCredits, readQuests } from "../glmChat.js";
-import { readProfile } from "../account.js";
+import { readProfile, writeProfile } from "../account.js";
 import { levelOf } from "./views/QuestsView.jsx";
 
 // The whole open passport is drawn at this size, then scaled to fit. Both pages are the same size.
@@ -28,8 +28,79 @@ const LOOKS = [
   { status: "Founder", cover: "#150b19", metal: ["#fff6d0", "#e0b857", "#a07418"], guil: 0.1, duo: ["#1e1015", "#f8e7d0"], pearl: 1, shine: true },
 ];
 
-// Holdings decide how the passport looks: $PALM held plus staked, with the tier names from LOOKS.
+// Holdings decide the tier: $PALM held plus staked, with the tier names from LOOKS.
 const TIER_AT = [0, 1000, 10000, 100000, 1000000, 5000000];
+const PERKS = [
+  "Welcome credits",
+  "1 credit every 14 days",
+  "10 credits every 14 days",
+  "100 credits every 14 days",
+  "1,000 credits every 14 days",
+  "5,000 credits every 14 days",
+];
+const FINISH = ["Steel foil", "Bronze foil and the DEV2 seal", "Rose-gold foil", "Gold foil and a warm photo", "A slow foil shimmer", "The pearl seal"];
+
+// Customisation. Everything here is unlocked by how far the passport has come (min = look level).
+const COVERS = [
+  { id: "auto", label: "Tier default", min: 1 },
+  { id: "graphite", label: "Graphite", color: "#1d1e24", min: 1 },
+  { id: "plum", label: "Plum", color: "#2b1830", min: 2 },
+  { id: "midnight", label: "Midnight", color: "#0f1a30", min: 2 },
+  { id: "forest", label: "Forest", color: "#10261f", min: 3 },
+  { id: "oxblood", label: "Oxblood", color: "#2c1017", min: 4 },
+];
+const FOILS = [
+  { id: "auto", label: "Tier default", min: 1 },
+  { id: "1", label: "Steel", min: 1 },
+  { id: "2", label: "Bronze", min: 2 },
+  { id: "3", label: "Rose gold", min: 3 },
+  { id: "4", label: "Gold", min: 4 },
+  { id: "6", label: "Royal gold", min: 6 },
+];
+const SETTINGS_KEY = "root-web-passport:";
+
+function readSettings(address) {
+  try {
+    return { cover: "auto", foil: "auto", photo: "", ...(JSON.parse(localStorage.getItem(SETTINGS_KEY + String(address || "").toLowerCase()) || "{}")) };
+  } catch {
+    return { cover: "auto", foil: "auto", photo: "" };
+  }
+}
+
+function writeSettings(address, value) {
+  try {
+    localStorage.setItem(SETTINGS_KEY + String(address || "").toLowerCase(), JSON.stringify(value));
+  } catch {
+    /* storage full or blocked: keep the in-memory choice */
+  }
+}
+
+/** Shrinks an uploaded picture so it fits comfortably in local storage. */
+function shrinkPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      const w = 292;
+      const h = 372;
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      const ratio = Math.max(w / image.width, h / image.height);
+      const dw = image.width * ratio;
+      const dh = image.height * ratio;
+      ctx.drawImage(image, (w - dw) / 2, (h - dh) * 0.3, dw, dh);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("That file is not a picture."));
+    };
+    image.src = url;
+  });
+}
 
 function tierOf(total) {
   let index = 0;
@@ -169,7 +240,7 @@ function Seal({ size, color, rotate }) {
 }
 
 /** The holder's photo: drained of colour and posterised so it reads as an ID print. */
-function Photo({ look, level }) {
+function Photo({ look, level, src }) {
   const [dark, light] = look.duo;
   const hex = (value) => [1, 3, 5].map((i) => parseInt(value.slice(i, i + 2), 16) / 255);
   const [dr, dg, db] = hex(dark);
@@ -195,7 +266,7 @@ function Photo({ look, level }) {
           <feColorMatrix type="matrix" values={`${row(dr, lr)}  ${row(dg, lg)}  ${row(db, lb)}  0 0 0 1 0`} />
         </filter>
       </svg>
-      <img src={portrait} alt="" width="146" height="186" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", filter: `url(#${id})` }} />
+      <img src={src || portrait} alt="" width="146" height="186" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", filter: `url(#${id})` }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px)", mixBlendMode: "overlay" }} />
       <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 24px rgb(20 8 20 / 0.45)" }} />
     </div>
@@ -249,15 +320,48 @@ function FrontCover({ look, address, onConnect }) {
   );
 }
 
-/** The inside of the front cover: the sunset-oasis artwork across the whole page. */
-function InsideCover({ look }) {
+/** The inside of the front cover: the sunset-oasis artwork, with the tier ladder laid over it. */
+function InsideCover({ look, total, tier }) {
+  const next = tier < TIER_AT.length - 1 ? tier + 1 : null;
+  const from = TIER_AT[tier];
+  const share = next ? Math.min(1, Math.max(0, (total - from) / (TIER_AT[next] - from))) : 1;
+  const soft = "rgb(255 244 224 / 0.62)";
   return (
     <div style={frameStyle(look, "16px 6px 6px 16px")}>
-      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "12px 3px 3px 12px", overflow: "hidden", background: "#c0306a" }}>
+      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "12px 3px 3px 12px", overflow: "hidden", background: "#c0306a", color: "#fff6e8" }}>
         <img src="/brand/passport-oasis.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "23% 50%" }} />
         <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 90px rgb(40 8 40 / 0.35)" }} />
-        <div style={{ position: "absolute", inset: 14, borderRadius: 4, border: "1px solid rgb(255 244 224 / 0.45)" }} />
         <div style={{ position: "absolute", right: 0, top: 0, width: 70, height: PH, background: "linear-gradient(270deg, rgb(20 4 24 / 0.45), transparent)" }} />
+        <div style={{ position: "absolute", left: 26, right: 26, top: 24, bottom: 24, borderRadius: 14, background: "linear-gradient(180deg, rgb(22 7 30 / 0.5), rgb(22 7 30 / 0.34))", border: "1px solid rgb(255 244 224 / 0.28)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", padding: "22px 26px", boxSizing: "border-box" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+            <div style={{ fontSize: 21, fontWeight: 700 }}>Tier progress</div>
+            <div style={{ fontSize: 13, color: soft }}>{shortAmount(total)} $PALM</div>
+          </div>
+          <div style={{ marginTop: 14, height: 5, borderRadius: 3, background: "rgb(255 244 224 / 0.18)", overflow: "hidden" }}>
+            <div style={{ width: `${share * 100}%`, height: "100%", borderRadius: 3, backgroundImage: foilFill(LOOKS[Math.min(5, tier + 1)]) }} />
+          </div>
+          <div style={{ marginTop: 8, fontSize: 12.5, color: soft }}>
+            {next ? `${shortAmount(Math.max(0, TIER_AT[next] - total))} $PALM more to reach ${LOOKS[next].status}` : "You are at the top tier."}
+          </div>
+          <div style={{ position: "relative", marginTop: 18 }}>
+            <div style={{ position: "absolute", left: 6, top: 24, height: 240, width: 1, background: "rgb(255 244 224 / 0.22)" }} />
+            <div style={{ position: "absolute", left: 6, top: 24, height: tier * 48, width: 1, background: look.metal[0] }} />
+            {LOOKS.map((item, index) => {
+              const reached = index <= tier;
+              const current = index === tier;
+              return (
+                <div key={item.status} style={{ position: "relative", display: "flex", alignItems: "center", gap: 16, height: 48, opacity: reached ? 1 : 0.62, background: current ? "rgb(255 244 224 / 0.1)" : "transparent", borderRadius: 10, margin: "0 -8px", padding: "0 8px" }}>
+                  <div style={{ width: 13, height: 13, borderRadius: "50%", flex: "none", boxSizing: "border-box", border: `2px solid ${reached ? item.metal[0] : "rgb(255 244 224 / 0.4)"}`, background: reached ? item.metal[1] : "transparent", boxShadow: current ? `0 0 0 4px ${item.metal[1]}40` : "none" }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>{item.status}</div>
+                    <div style={{ fontSize: 11.5, color: soft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{PERKS[index]} · {FINISH[index]}</div>
+                  </div>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, color: reached ? item.metal[0] : soft }}>{index === 0 ? "Any" : shortAmount(TIER_AT[index]) + "+"}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -331,11 +435,68 @@ export default function PalmId({ address, credit, onConnect }) {
   const total = address ? held + staked : 0;
   const tier = tierOf(total);
   const shown = Math.max(level.number, tier + 1);
-  const look = LOOKS[shown - 1];
+  const base = LOOKS[shown - 1];
+  const tierName = LOOKS[tier].status;
   const nextTier = tier < TIER_AT.length - 1 ? tier + 1 : null;
-  const profile = useMemo(() => (address ? readProfile(address) : { name: "" }), [address]);
+  const [settings, setSettings] = useState(() => readSettings(address));
+  const [name, setName] = useState("");
+  const [note, setNote] = useState("");
+  const [custom, setCustom] = useState(false);
+  const fileInput = useRef(null);
+  const noteTimer = useRef(0);
+
+  useEffect(() => {
+    setSettings(readSettings(address));
+    setName(address ? (readProfile(address)?.name || "") : "");
+  }, [address]);
+
+  const cover = COVERS.find((item) => item.id === settings.cover && item.min <= shown);
+  const foil = FOILS.find((item) => item.id === settings.foil && item.min <= shown && item.id !== "auto");
+  const look = {
+    ...base,
+    cover: cover?.color || base.cover,
+    metal: foil ? LOOKS[Number(foil.id) - 1].metal : base.metal,
+  };
   const issued = useMemo(() => issuedOn(address), [address]);
-  const holder = (profile?.name || "").trim() || "$PALM HOLDER";
+  const holder = name.trim() || "$PALM HOLDER";
+
+  const flash = (text) => {
+    setNote(text);
+    window.clearTimeout(noteTimer.current);
+    noteTimer.current = window.setTimeout(() => setNote(""), 2600);
+  };
+  const change = (patch) => {
+    const merged = { ...settings, ...patch };
+    setSettings(merged);
+    writeSettings(address, merged);
+  };
+  const saveName = () => {
+    if (!address) return;
+    const profile = readProfile(address) || {};
+    if ((profile.name || "") !== name.trim()) {
+      writeProfile(address, { ...profile, name });
+      flash("Name saved");
+    }
+  };
+  const copy = async (text, done) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      flash(done);
+    } catch {
+      flash("Copy is blocked in this browser");
+    }
+  };
+  const upload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      change({ photo: await shrinkPhoto(file) });
+      flash("Photo updated");
+    } catch (error) {
+      flash(error.message || "Could not use that photo");
+    }
+  };
   const number = "PALM" + String(address ? (hash(address.toLowerCase()) % 9000) + 1000 : 0).padStart(4, "0");
   const date = new Date(issued + "T00:00:00");
   const issueText = Number.isNaN(date.getTime()) ? "NOV 2026" : `${MONTH[date.getMonth()]} ${date.getFullYear()}`;
@@ -348,6 +509,138 @@ export default function PalmId({ address, credit, onConnect }) {
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const ease = reduce ? "none" : `transform ${OPEN_MS}ms cubic-bezier(0.65, 0, 0.25, 1)`;
   const metal = look.metal;
+  const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
+
+  // Draws the data page onto a canvas and downloads it as a PNG.
+  const saveImage = async () => {
+    try {
+      await document.fonts?.load?.('700 26px "PALM"');
+      const scaleUp = 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = PW * scaleUp;
+      canvas.height = PH * scaleUp;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(scaleUp, scaleUp);
+      const round = (x, y, w, h, r) => {
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
+      };
+      const paper = ctx.createLinearGradient(0, 0, PW, PH);
+      paper.addColorStop(0, "#f8f3eb");
+      paper.addColorStop(1, "#efe7db");
+      round(0, 0, PW, PH, 14);
+      ctx.fillStyle = paper;
+      ctx.fill();
+      const foilLine = ctx.createLinearGradient(0, 0, PW, PH);
+      foilLine.addColorStop(0, metal[0]);
+      foilLine.addColorStop(0.5, metal[1]);
+      foilLine.addColorStop(1, metal[2]);
+      round(2, 2, PW - 4, PH - 4, 12);
+      ctx.strokeStyle = foilLine;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      const font = (size, weight = 400) => `${weight} ${size}px ${PALM_FONT}`;
+      const text = (value, x, y, size, color, weight = 400, align = "left") => {
+        ctx.font = font(size, weight);
+        ctx.fillStyle = color;
+        ctx.textAlign = align;
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(value, x, y);
+      };
+      text("PALM ID", 34, 52, 26, INK, 700);
+      text("Holder passport \u00b7 Decentralized citizen", 34, 74, 12, MUTED);
+      ctx.fillStyle = HAIR;
+      ctx.fillRect(34, 84, PW - 68, 1);
+      if (typeof ctx.filter === "string") {
+        const picture = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = settings.photo || portrait;
+        });
+        if (picture) {
+          ctx.save();
+          round(37, 109, 146, 186, 3);
+          ctx.clip();
+          ctx.filter = "grayscale(1) contrast(1.35) sepia(0.4)";
+          const ratio = Math.max(146 / picture.width, 186 / picture.height);
+          ctx.drawImage(picture, 37 + (146 - picture.width * ratio) / 2, 109 - (picture.height * ratio - 186) * 0.12, picture.width * ratio, picture.height * ratio);
+          ctx.restore();
+          round(36, 108, 148, 188, 3);
+          ctx.strokeStyle = metal[1];
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+      const fields = [
+        ["Name", holder.toUpperCase(), 226, 106],
+        ["Tier", tierName.toUpperCase(), 380, 106],
+        ["$PALM held", shortAmount(held), 226, 168],
+        ["$PALM staked", shortAmount(staked), 380, 168],
+        ["Passport no.", number, 226, 230],
+        ["Issued", issueText, 380, 230],
+      ];
+      fields.forEach(([label, value, x, y]) => {
+        text(label, x, y + 11, 11, MUTED);
+        text(value, x, y + 34, 17, INK, 600);
+      });
+      ctx.fillStyle = HAIR;
+      ctx.fillRect(226, 156, PW - 260, 1);
+      ctx.fillRect(226, 218, PW - 260, 1);
+      ctx.fillRect(34, 322, PW - 68, 1);
+      text("Credits", 34, 346, 11, MUTED);
+      text(left, 34, 386, 38, INK, 700);
+      text(`${earned} earned`, 34, 408, 12, MUTED);
+      text("Level", 250, 346, 11, MUTED);
+      text(String(level.number), 250, 376, 26, INK, 700);
+      text("Wallet", 34, 436, 11, MUTED);
+      text(address || "", 34, 454, 12.5, INK);
+      ctx.fillStyle = "rgb(255 255 255 / 0.42)";
+      ctx.fillRect(4, PH - 62, PW - 8, 58);
+      text(mrz("P<PALM<<" + clean(holder)), 34, PH - 36, 15, INK);
+      text(mrz(`${number}<<${clean(tierName)}<<${issueMrz}`), 34, PH - 13, 15, INK);
+      if (shown >= 2) {
+        ctx.save();
+        ctx.translate(451, 381);
+        ctx.rotate(-0.14);
+        ctx.strokeStyle = "#4a2a6a";
+        ctx.globalAlpha = 0.85;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, 0, 57, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.arc(0, 0, 31, 0, Math.PI * 2);
+        ctx.stroke();
+        text("DEV2", 0, 8, 25, "#4a2a6a", 700, "center");
+        ctx.restore();
+      }
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("no image");
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${number}.png`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+      flash("Saved as an image");
+    } catch {
+      flash("Could not save the image");
+    }
+  };
+
+  const chip = (active, locked) => ({
+    height: 30,
+    padding: "0 12px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: locked ? "not-allowed" : "pointer",
+    opacity: locked ? 0.4 : 1,
+    color: active ? "var(--ink)" : "var(--muted)",
+    background: active ? "var(--hover)" : "transparent",
+    border: "1px solid " + (active ? "var(--accent)" : "var(--stroke)"),
+  });
 
   return (
     <div className="mb-4">
@@ -386,11 +679,11 @@ export default function PalmId({ address, credit, onConnect }) {
                       <div style={{ position: "absolute", left: 34, right: 34, top: 84, height: 1, backgroundImage: `linear-gradient(90deg, ${metal[2]}, ${metal[1]}, transparent)`, opacity: 0.7 }} />
 
                       <div style={{ position: "absolute", left: 34, top: 106, padding: 3, background: "#fffdf8", boxShadow: `0 0 0 1px ${metal[1]}, 0 8px 18px rgb(42 22 51 / 0.22)` }}>
-                        <Photo look={look} level={shown} />
+                        <Photo look={look} level={shown} src={settings.photo} />
                       </div>
 
                       <Field label="Name" value={holder.toUpperCase()} x={226} y={106} size={holder.length > 12 ? 15 : 17} />
-                      <Field label="Tier" value={look.status.toUpperCase()} x={380} y={106} size={look.status.length > 10 ? 15 : 17} />
+                      <Field label="Tier" value={tierName.toUpperCase()} x={380} y={106} size={tierName.length > 10 ? 15 : 17} />
                       <Field label="$PALM held" value={shortAmount(held)} x={226} y={168} />
                       <Field label="$PALM staked" value={shortAmount(staked)} x={380} y={168} />
                       <Field label="Passport no." value={number} x={226} y={230} />
@@ -432,7 +725,7 @@ export default function PalmId({ address, credit, onConnect }) {
                             {mrz("P<PALM<<" + clean(holder))}
                           </text>
                           <text x="34" y="47" fontSize="15" fontFamily={PALM_FONT} fill={INK} opacity="0.7">
-                            {mrz(`${number}<<${clean(look.status)}<<${issueMrz}<<${shortAmount(total).replace(/[^0-9A-Z]/gi, "")}`)}
+                            {mrz(`${number}<<${clean(tierName)}<<${issueMrz}`)}
                           </text>
                         </svg>
                       </div>
@@ -450,7 +743,7 @@ export default function PalmId({ address, credit, onConnect }) {
                 <FrontCover look={look} address={address} onConnect={onConnect} />
               </div>
               <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
-                <InsideCover look={look} />
+                <InsideCover look={look} total={total} tier={tier} />
               </div>
             </div>
           </div>
@@ -459,13 +752,80 @@ export default function PalmId({ address, credit, onConnect }) {
       <p className="mx-auto mt-3 max-w-[760px] text-[12px] leading-5 text-[var(--muted)]">
         {address ? (
           <>
-            {look.status} tier, from {shortAmount(total)} $PALM held and staked. The passport gets richer as you hold or stake more, and as you earn points in Achievements.
-            {nextTier ? ` Reach ${shortAmount(TIER_AT[nextTier])} $PALM for ${LOOKS[nextTier].status}.` : ""} Click it to close or open.
+            {tierName} tier, from {shortAmount(total)} $PALM held and staked.
+            {nextTier ? ` ${shortAmount(TIER_AT[nextTier] - total)} more reaches ${LOOKS[nextTier].status}.` : ""} The passport finish also grows with your Achievements level. Click it to close or open.
           </>
         ) : (
           "A PALM ID is issued to a wallet address, so it stays shut until you connect one."
         )}
       </p>
+
+      {address && (
+        <div className="mx-auto mt-3 max-w-[760px]">
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" style={chip(false)} onClick={() => copy(address, "Wallet address copied")}>Copy address</button>
+            <button type="button" style={chip(false)} onClick={() => copy(`PALM ID ${number} \u00b7 ${tierName} \u00b7 ${shortAddress}\n${address}`, "ID details copied")}>Share ID</button>
+            <button type="button" style={chip(false)} onClick={saveImage}>Save as image</button>
+            <button type="button" style={chip(custom)} onClick={() => setCustom((value) => !value)}>{custom ? "Done" : "Customize"}</button>
+            <span className="text-[12px] text-[var(--muted)]" aria-live="polite">{note}</span>
+          </div>
+
+          {custom && (
+            <div className="mt-3 grid gap-4 rounded-[14px] border border-[var(--stroke-soft)] bg-[var(--panel-soft)] p-4 text-[12px] text-[var(--muted)] sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block">Name on the passport</span>
+                <input
+                  value={name}
+                  maxLength={24}
+                  onChange={(event) => setName(event.target.value)}
+                  onBlur={saveName}
+                  onKeyDown={(event) => event.key === "Enter" && event.currentTarget.blur()}
+                  placeholder="$PALM HOLDER"
+                  className="h-9 w-full rounded-[10px] border border-[var(--stroke)] bg-transparent px-3 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                />
+              </label>
+              <div>
+                <span className="mb-1.5 block">Photo</span>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" style={chip(false)} onClick={() => fileInput.current?.click()}>Upload photo</button>
+                  {settings.photo && <button type="button" style={chip(false)} onClick={() => change({ photo: "" })}>Use avatar</button>}
+                  <input ref={fileInput} type="file" accept="image/*" hidden onChange={upload} />
+                </div>
+                <span className="mt-1.5 block text-[11px] text-[var(--faint)]">Printed in black and white, and only stored in this browser.</span>
+              </div>
+              <div>
+                <span className="mb-1.5 block">Cover</span>
+                <div className="flex flex-wrap gap-2">
+                  {COVERS.map((item) => {
+                    const locked = item.min > shown;
+                    return (
+                      <button key={item.id} type="button" disabled={locked} title={locked ? `${LOOKS[item.min - 1].status} look unlocks this` : item.label} style={chip(settings.cover === item.id, locked)} onClick={() => change({ cover: item.id })}>
+                        {item.color && <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: item.color, border: "1px solid var(--stroke)", marginRight: 6 }} />}
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <span className="mb-1.5 block">Foil</span>
+                <div className="flex flex-wrap gap-2">
+                  {FOILS.map((item) => {
+                    const locked = item.min > shown;
+                    const swatch = item.id === "auto" ? null : LOOKS[Number(item.id) - 1].metal;
+                    return (
+                      <button key={item.id} type="button" disabled={locked} title={locked ? `${LOOKS[item.min - 1].status} look unlocks this` : item.label} style={chip(settings.foil === item.id, locked)} onClick={() => change({ foil: item.id })}>
+                        {swatch && <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", backgroundImage: foilFill({ metal: swatch }), marginRight: 6 }} />}
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

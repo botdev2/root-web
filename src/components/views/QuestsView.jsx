@@ -2,124 +2,108 @@ import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useAppState } from "../../AppState.jsx";
 import { claimQuest, formatCredits, readQuests } from "../../glmChat.js";
-import { Page, Skeleton } from "../ui.jsx";
+import { Card, Page, Skeleton } from "../ui.jsx";
 
-const LEVELS = [
-  { name: "Seed", at: 0 },
-  { name: "Sprout", at: 150 },
-  { name: "Sapling", at: 400 },
-  { name: "Palm", at: 900 },
-  { name: "Grove", at: 1800 },
-  { name: "Canopy", at: 3200 },
+// Points needed to reach each level. Must match the server.
+const LEVEL_AT = [0, 150, 400, 900, 1800, 3200];
+const EXPERT_LEVEL = 4;
+
+const TIER = { easy: "Easy", medium: "Medium", hard: "Hard", epic: "Expert", bonus: "All done" };
+const TIER_DOTS = { easy: 1, medium: 2, hard: 3, epic: 4, bonus: 0 };
+
+// Plain names for what the server calls its achievements.
+const TITLE = {
+  "first-words": "First message",
+  chatterbox: "25 messages",
+  centurion: "100 messages",
+  legend: "500 messages",
+  versatile: "Every mode",
+  "ask-away": "Ask mode",
+  planner: "Plan mode",
+  "agent-smith": "Agent mode",
+  collector: "5 chats",
+  "prompt-smith": "Auto-Prompt x5",
+  "prompt-master": "Auto-Prompt x25",
+  scout: "Web lookups x5",
+  cartographer: "Web lookups x25",
+  explorer: "Open every tab",
+  graduate: "All episodes",
+  "streak-3": "3-day streak",
+  "streak-7": "7-day streak",
+  "streak-14": "14-day streak",
+  "streak-30": "30-day streak",
+  "streak-60": "60-day streak",
+  "daily-1": "Finish all daily",
+  "daily-7": "7 full days",
+  "daily-30": "30 full days",
+  "daily-all": "Finish all of today",
+};
+
+const GROUPS = [
+  { label: "Chat", match: ["Chat"] },
+  { label: "Tools", match: ["Tools", "Explore"] },
+  { label: "Learn", match: ["Learn"] },
+  { label: "Streaks", match: ["Streaks"] },
 ];
 
-const TIER = { easy: "Easy", medium: "Medium", hard: "Hard", epic: "Epic" };
+const GLYPHS = {
+  chat: "M4 5h16v11H9l-5 4V5z",
+  bolt: "M13 3L5 13h6l-1 8 8-10h-6l1-8z",
+  globe: "M12 3a9 9 0 100 18 9 9 0 000-18z M3 12h18 M12 3c3 3.5 3 14.5 0 18 M12 3c-3 3.5-3 14.5 0 18",
+  book: "M5 4h10a3 3 0 013 3v13H8a3 3 0 01-3-3V4z M5 17a3 3 0 013-3h10",
+  flame: "M12 3c1 4 5 5.5 5 10a5 5 0 01-10 0c0-2 1-3 2-4 .3 1.2 1 2 2 2 0-3-.5-5 1-8z",
+  compass: "M12 3a9 9 0 100 18 9 9 0 000-18z M15.5 8.5l-2 5-5 2 2-5z",
+  trophy: "M8 4h8v5a4 4 0 01-8 0V4z M8 6H5a3 3 0 003 4 M16 6h3a3 3 0 01-3 4 M12 13v4 M9 20h6 M10 17h4",
+  layers: "M12 3l9 5-9 5-9-5 9-5z M3 13l9 5 9-5",
+  cap: "M2 9l10-5 10 5-10 5-10-5z M6 11v5c3 2.5 9 2.5 12 0v-5",
+  calendar: "M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4",
+  plus: "M4 4h16v16H4z M12 8v8 M8 12h8",
+  check: "M5 12.5l4.5 4.5L19 7.5",
+  star: "M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 16.8 6.4 20l1.3-6.2L3 9.5l6.3-.7L12 3z",
+};
 
-// Each constellation is a skill tree: where its stars sit and which star leads to which.
-const SKY_W = 900;
-const SKY_H = 470;
-const CONSTELLATIONS = [
-  {
-    id: "speaker",
-    name: "The Speaker",
-    blurb: "Talk to Hamrin.",
-    groups: ["Chat"],
-    nodes: {
-      "first-words": [90, 310],
-      chatterbox: [250, 230],
-      centurion: [430, 110],
-      legend: [620, 70],
-      versatile: [830, 300],
-      "ask-away": [370, 340],
-      planner: [540, 250],
-      "agent-smith": [720, 180],
-      collector: [680, 370],
-    },
-    edges: [
-      ["first-words", "chatterbox"],
-      ["chatterbox", "centurion"],
-      ["centurion", "legend"],
-      ["agent-smith", "versatile"],
-      ["chatterbox", "ask-away"],
-      ["ask-away", "planner"],
-      ["planner", "agent-smith"],
-      ["planner", "collector"],
-    ],
-  },
-  {
-    id: "artisan",
-    name: "The Artisan",
-    blurb: "Tools and tabs.",
-    groups: ["Tools", "Explore"],
-    nodes: {
-      "prompt-smith": [190, 300],
-      scout: [430, 170],
-      "prompt-master": [110, 150],
-      cartographer: [600, 90],
-      explorer: [680, 290],
-    },
-    edges: [
-      ["prompt-smith", "scout"],
-      ["prompt-smith", "prompt-master"],
-      ["scout", "cartographer"],
-      ["scout", "explorer"],
-    ],
-  },
-  {
-    id: "scholar",
-    name: "The Scholar",
-    blurb: "Class is in session.",
-    groups: ["Learn"],
-    nodes: {
-      "class-ops-1": [90, 300],
-      "class-defi-2": [250, 215],
-      "class-workflows-3": [420, 300],
-      "class-privacy-4": [590, 215],
-      "class-revenue-5": [760, 300],
-      graduate: [425, 95],
-    },
-    edges: [
-      ["class-ops-1", "class-defi-2"],
-      ["class-defi-2", "class-workflows-3"],
-      ["class-workflows-3", "class-privacy-4"],
-      ["class-privacy-4", "class-revenue-5"],
-      ["class-workflows-3", "graduate"],
-    ],
-  },
-  {
-    id: "flame",
-    name: "The Flame",
-    blurb: "Come back every day.",
-    groups: ["Streaks"],
-    nodes: {
-      "streak-3": [110, 340],
-      "streak-7": [270, 250],
-      "streak-14": [450, 170],
-      "streak-30": [680, 100],
-      "streak-60": [830, 170],
-      "daily-30": [810, 380],
-      "daily-1": [380, 370],
-      "daily-7": [610, 300],
-    },
-    edges: [
-      ["streak-3", "streak-7"],
-      ["streak-7", "streak-14"],
-      ["streak-14", "streak-30"],
-      ["streak-30", "streak-60"],
-      ["daily-7", "daily-30"],
-      ["streak-7", "daily-1"],
-      ["daily-1", "daily-7"],
-    ],
-  },
-];
+function Glyph({ name, size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={GLYPHS[name] || GLYPHS.star} />
+    </svg>
+  );
+}
+
+function iconFor(item) {
+  const id = item.id || "";
+  if (id === "legend") return "trophy";
+  if (id === "versatile" || id === "planner") return "layers";
+  if (id === "collector") return "plus";
+  if (id === "explorer") return "compass";
+  if (id === "graduate") return "cap";
+  if (id.startsWith("class-")) return "book";
+  if (id.startsWith("streak-")) return "flame";
+  if (id.startsWith("daily-")) return "calendar";
+  if (id.startsWith("prompt-")) return "bolt";
+  if (id === "scout" || id === "cartographer") return "globe";
+  if (id === "agent-smith") return "bolt";
+  if (id === "first-words" || id === "chatterbox" || id === "centurion" || id === "ask-away") return "chat";
+  // Daily challenges have no fixed ids, so read what they ask for.
+  const text = `${item.title} ${item.desc}`;
+  if (/episode|class/i.test(text)) return "book";
+  if (/web|look/i.test(text)) return "globe";
+  if (/auto-prompt/i.test(text)) return "bolt";
+  if (/open|tab/i.test(text)) return "compass";
+  if (/mode/i.test(text)) return "layers";
+  if (/chat/i.test(text) && /begin|new/i.test(text)) return "plus";
+  if (/message/i.test(text)) return "chat";
+  if (item.tier === "bonus") return "trophy";
+  return "star";
+}
 
 function levelOf(points) {
   let index = 0;
-  for (let i = 0; i < LEVELS.length; i += 1) if (points >= LEVELS[i].at) index = i;
-  const current = LEVELS[index];
-  const next = LEVELS[index + 1] || null;
-  const share = next ? (points - current.at) / (next.at - current.at) : 1;
-  return { index, current, next, share: Math.max(0, Math.min(1, share)) };
+  for (let i = 0; i < LEVEL_AT.length; i += 1) if (points >= LEVEL_AT[i]) index = i;
+  const floor = LEVEL_AT[index];
+  const ceiling = LEVEL_AT[index + 1];
+  const share = ceiling ? (points - floor) / (ceiling - floor) : 1;
+  return { number: index + 1, next: ceiling ?? null, share: Math.max(0, Math.min(1, share)) };
 }
 
 function clock(ms) {
@@ -131,189 +115,103 @@ function clock(ms) {
 function stateOf(item) {
   if (item.claimed) return "claimed";
   if (item.done) return "ready";
-  if (item.progress > 0) return "progress";
-  return "locked";
+  return "open";
 }
 
-// A few hundred tiny stars, the same every time.
-function scatter(seed, count) {
-  let value = seed;
-  const next = () => {
-    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
-    return value / 4294967296;
-  };
-  return Array.from({ length: count }, () => ({ x: next() * SKY_W, y: next() * SKY_H, r: 0.5 + next() * 1.3, d: next() * 6 }));
-}
-
-const STARDUST = scatter(7, 70);
-const STAR_PATH = "M0,-15 L3.6,-3.6 L15,0 L3.6,3.6 L0,15 L-3.6,3.6 L-15,0 L-3.6,-3.6 Z";
-
-/** A ring that fills as you get closer. Skill level or challenge, same idea. */
-function Ring({ size, stroke, value, total, children, tone = "gold" }) {
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const share = total > 0 ? Math.min(1, value / total) : 0;
+function Bar({ value, total }) {
+  const share = total > 0 ? Math.min(100, (value / total) * 100) : 0;
   return (
-    <div className="qv-ring" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          className={`qv-ring-arc qv-ring-arc--${tone}`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - share)}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-      <div className="qv-ring-body">{children}</div>
+    <div className="h-1 overflow-hidden rounded-full bg-[var(--stroke-soft)]">
+      <div className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-500" style={{ width: `${share}%` }} />
     </div>
   );
 }
 
-function Reward({ points, perCredit }) {
+function Dots({ tier }) {
+  const lit = TIER_DOTS[tier] ?? 0;
+  if (!lit) return null;
   return (
-    <span className="qv-reward">
-      +{points} pts <i>·</i> +{formatCredits(points / perCredit)} cr
+    <span className="flex items-center gap-[3px]" aria-hidden="true">
+      {[1, 2, 3, 4].map((n) => (
+        <span key={n} className={`h-1.5 w-1.5 rounded-full ${n <= lit ? "bg-[var(--accent)]" : "bg-[var(--stroke)]"}`} />
+      ))}
     </span>
   );
 }
 
-function Trial({ item, perCredit, busy, onClaim, wide = false }) {
+function Item({ item, perCredit, busy, onClaim, showTier = false }) {
   const state = stateOf(item);
+  const title = TITLE[item.id] || item.title;
   return (
-    <div className={`qv-trial is-${state} ${wide ? "qv-trial--wide" : ""} ${item.tier === "epic" ? "qv-trial--epic" : ""}`}>
-      <div className="qv-trial-head">
-        <Ring size={58} stroke={4} value={item.progress} total={item.target} tone={state === "claimed" ? "bright" : "gold"}>
-          <svg width="24" height="24" viewBox="-18 -18 36 36" aria-hidden="true">
-            <path d={STAR_PATH} className="qv-trial-star" />
-          </svg>
-        </Ring>
-        <div className="qv-trial-top">
-          <div className={`qv-tier qv-tier--${item.tier || "bonus"}`}>{TIER[item.tier] || "Bonus"}</div>
-          <div className="qv-trial-title">{item.title}</div>
+    <Card className={`flex flex-col gap-3 p-4 ${state === "ready" ? "border-[var(--accent)]!" : ""} ${state === "claimed" ? "opacity-70" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+            state === "claimed"
+              ? "bg-[var(--accent)] text-[var(--bg)]"
+              : state === "ready"
+                ? "bg-[var(--panel-soft)] text-[var(--accent)]"
+                : "bg-[var(--panel-soft)] text-[var(--muted)]"
+          }`}
+        >
+          <Glyph name={state === "claimed" ? "check" : iconFor(item)} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="truncate text-[13px]">{title}</div>
+            {showTier && <Dots tier={item.tier || "bonus"} />}
+          </div>
+          <div className="mt-0.5 text-[11.5px] leading-[1.45] text-[var(--muted)]">{item.desc}</div>
         </div>
       </div>
-      <div className="qv-trial-desc">{item.desc}</div>
-      <div className="qv-trial-foot">
-        <span className="qv-count">
-          {item.progress} / {item.target}
-        </span>
-        <Reward points={item.points} perCredit={perCredit} />
+      <div className="mt-auto flex flex-col gap-2">
+        <Bar value={item.progress} total={item.target} />
+        <div className="flex items-center justify-between gap-2 text-[11px]">
+          <span className="tabular-nums text-[var(--muted)]">
+            {Math.min(item.progress, item.target)} / {item.target}
+            {showTier && <span className="ml-2 text-[var(--faint)]">{TIER[item.tier || "bonus"]}</span>}
+          </span>
+          {state === "ready" ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onClaim}
+              className="h-7 rounded-md bg-[var(--accent)] px-3 text-[12px] text-[var(--bg)] disabled:opacity-60"
+            >
+              {busy ? "…" : `Claim +${item.points}`}
+            </button>
+          ) : (
+            <span className="tabular-nums text-[var(--faint)]">
+              {state === "claimed" ? "Claimed · " : ""}+{item.points} pts · {formatCredits(item.points / perCredit)} cr
+            </span>
+          )}
+        </div>
       </div>
-      <div className="qv-trial-act">
-        {state === "claimed" ? (
-          <span className="qv-done">Unlocked</span>
-        ) : state === "ready" ? (
-          <button type="button" className="qv-unlock" disabled={busy} onClick={onClaim}>
-            {busy ? "…" : "Unlock"}
-          </button>
-        ) : (
-          <span className="qv-wait">In progress</span>
-        )}
+    </Card>
+  );
+}
+
+function Stat({ icon, label, value }) {
+  return (
+    <Card className="flex items-center gap-3 p-4">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--panel-soft)] text-[var(--accent)]">
+        <Glyph name={icon} />
       </div>
+      <div>
+        <div className="tabular-nums text-[20px] leading-none">{value}</div>
+        <div className="mt-1 text-[11px] text-[var(--faint)]">{label}</div>
+      </div>
+    </Card>
+  );
+}
+
+function Head({ title, right }) {
+  return (
+    <div className="mb-2 flex items-center justify-between text-[12px] text-[var(--faint)]">
+      <span>{title}</span>
+      <span className="tabular-nums">{right}</span>
     </div>
   );
-}
-
-function Constellation({ sky, byId, selectedId, onSelect }) {
-  const placed = Object.entries(sky.nodes).filter(([id]) => byId[id]);
-  const dust = useMemo(() => scatter(hashOf(sky.id), 26), [sky.id]);
-  return (
-    <svg className="qv-svg" viewBox={`0 0 ${SKY_W} ${SKY_H}`} role="group" aria-label={sky.name}>
-      <defs>
-        <filter id="qv-glow" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      {STARDUST.map((dot, index) => (
-        <circle key={"d" + index} cx={dot.x} cy={dot.y} r={dot.r} className="qv-dust" style={{ animationDelay: `${dot.d}s` }} />
-      ))}
-      {dust.map((dot, index) => (
-        <circle key={"e" + index} cx={dot.x} cy={dot.y} r={dot.r + 0.6} className="qv-dust qv-dust--bright" style={{ animationDelay: `${dot.d}s` }} />
-      ))}
-
-      {sky.edges.map(([from, to]) => {
-        const a = sky.nodes[from];
-        const b = sky.nodes[to];
-        if (!a || !b || !byId[from] || !byId[to]) return null;
-        const lit = byId[from].claimed && byId[to].claimed;
-        const open = byId[from].claimed && !byId[to].claimed;
-        return (
-          <line
-            key={from + to}
-            x1={a[0]}
-            y1={a[1]}
-            x2={b[0]}
-            y2={b[1]}
-            className={`qv-line ${lit ? "is-lit" : open ? "is-open" : ""}`}
-          />
-        );
-      })}
-
-      {placed.map(([id, [x, y]]) => {
-        const item = byId[id];
-        const state = stateOf(item);
-        const radius = 24;
-        const circumference = 2 * Math.PI * radius;
-        const share = item.target > 0 ? Math.min(1, item.progress / item.target) : 0;
-        const selected = selectedId === id;
-        return (
-          <g
-            key={id}
-            transform={`translate(${x} ${y})`}
-            className={`qv-node is-${state} ${selected ? "is-selected" : ""}`}
-            role="button"
-            tabIndex={0}
-            aria-label={`${item.title}, ${state}`}
-            onClick={() => onSelect(id)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onSelect(id);
-              }
-            }}
-          >
-            <circle r="38" fill="transparent" />
-            {selected && <circle r="34" className="qv-select" />}
-            <circle r={radius} fill="rgba(8,10,28,0.7)" className="qv-node-disc" />
-            <circle r={radius} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="2" />
-            <circle
-              r={radius}
-              fill="none"
-              className="qv-node-arc"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - (state === "claimed" || state === "ready" ? 1 : share))}
-              transform="rotate(-90)"
-            />
-            <path d={STAR_PATH} className="qv-star" filter={state === "claimed" || state === "ready" ? "url(#qv-glow)" : undefined} />
-            <text y="50" textAnchor="middle" className="qv-node-label">
-              {item.title}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-function hashOf(text) {
-  let value = 2166136261;
-  for (let i = 0; i < text.length; i += 1) {
-    value ^= text.charCodeAt(i);
-    value = Math.imul(value, 16777619) >>> 0;
-  }
-  return value >>> 0;
 }
 
 export default function QuestsView({ token = "", onRefresh }) {
@@ -322,8 +220,6 @@ export default function QuestsView({ token = "", onRefresh }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
-  const [skyId, setSkyId] = useState(CONSTELLATIONS[0].id);
-  const [picked, setPicked] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -359,7 +255,7 @@ export default function QuestsView({ token = "", onRefresh }) {
       const result = await claimQuest(address, kind, id);
       setData(result.quests || data);
       const won = result.awarded;
-      if (won) notice?.(`${won.title}: +${won.points} points, +${formatCredits(won.credits)} credits for Hamrin.`);
+      if (won) notice?.(`+${won.points} points, +${formatCredits(won.credits)} credits for Hamrin.`);
       onRefresh?.();
     } catch (failure) {
       notice?.(failure.message || "That could not be claimed.");
@@ -371,30 +267,17 @@ export default function QuestsView({ token = "", onRefresh }) {
 
   const level = useMemo(() => levelOf(data?.points || 0), [data?.points]);
   const perCredit = data?.pointsPerCredit || 2000;
-  const byId = useMemo(() => Object.fromEntries((data?.achievements || []).map((item) => [item.id, item])), [data]);
-
-  // Achievements the server knows about but no constellation places yet still get a home.
-  const skies = useMemo(() => {
-    const placedIds = new Set(CONSTELLATIONS.flatMap((sky) => Object.keys(sky.nodes)));
-    const stray = (data?.achievements || []).filter((item) => !placedIds.has(item.id));
-    if (!stray.length) return CONSTELLATIONS;
-    const nodes = {};
-    stray.forEach((item, index) => {
-      nodes[item.id] = [110 + (index % 5) * 160, 150 + Math.floor(index / 5) * 140];
-    });
-    return [...CONSTELLATIONS, { id: "wild", name: "The Wild Stars", blurb: "New skills.", groups: [], nodes, edges: [] }];
-  }, [data]);
-
-  const sky = skies.find((item) => item.id === skyId) || skies[0];
-  const skyItems = Object.keys(sky.nodes).map((id) => byId[id]).filter(Boolean);
-  const selected = byId[picked] && sky.nodes[picked] ? byId[picked] : skyItems.find((item) => item.done && !item.claimed) || skyItems.find((item) => !item.claimed) || skyItems[0];
-  const ready = (data ? [...data.daily, data.bonus, ...data.achievements] : []).filter((item) => item.done && !item.claimed).length;
-  const unlockedTotal = (data?.achievements || []).filter((item) => item.claimed).length;
+  const achievements = data?.achievements || [];
+  const ready = (data ? [...data.daily, data.bonus, ...achievements] : []).filter((item) => item.done && !item.claimed).length;
+  const claimedTotal = achievements.filter((item) => item.claimed).length;
+  const unknown = achievements.filter((item) => !GROUPS.some((group) => group.match.includes(item.group)));
 
   if (!isConnected || !address) {
     return (
       <Page wide>
-        <div className="qv-scene qv-note">Connect your wallet to play. Points and credits belong to the address you sign in with.</div>
+        <Card className="px-5 py-6 text-[13.5px] leading-6 text-[var(--muted)]">
+          Connect your wallet to earn credits. Points and credits belong to the address you sign in with.
+        </Card>
       </Page>
     );
   }
@@ -402,160 +285,95 @@ export default function QuestsView({ token = "", onRefresh }) {
   if (!token) {
     return (
       <Page wide>
-        <div className="qv-scene qv-note">
+        <Card className="px-5 py-6 text-[13.5px] leading-6 text-[var(--muted)]">
           Sign in on the Ops tab first. Achievements count what you do with your signed-in wallet, so there is nothing to track until you are in.
-        </div>
+        </Card>
       </Page>
     );
   }
 
   return (
     <Page wide>
-      <div className="qv-scene">
-        <div className="qv-starfield" aria-hidden="true" />
-
-        {/* Skill level, like the level ring in a skill menu. */}
-        <header className="qv-hero">
+      <div className="grid gap-3 md:grid-cols-[2fr_1fr_1fr_1fr]">
+        <Card className="p-5">
           {data ? (
             <>
-              <Ring size={132} stroke={6} value={level.share} total={1} tone="bright">
-                <div className="qv-level-num">{level.index + 1}</div>
-                <div className="qv-level-cap">level</div>
-              </Ring>
-              <div className="qv-hero-main">
-                <div className="qv-title">{level.current.name}</div>
-                <div className="qv-sub">
-                  {data.points.toLocaleString()} perk points
-                  {level.next ? ` · ${(level.next.at - data.points).toLocaleString()} to ${level.next.name}` : " · top of the sky"}
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--panel-soft)] text-[var(--accent)]">
+                  <Glyph name="trophy" size={20} />
                 </div>
-                <div className="qv-xp">
-                  <div style={{ width: `${level.share * 100}%` }} />
+                <div>
+                  <div className="text-[11px] text-[var(--faint)]">Level</div>
+                  <div className="tabular-nums text-[28px] leading-none tracking-[-0.02em]">{level.number}</div>
+                </div>
+                <div className="ml-auto text-right text-[11.5px] leading-5 text-[var(--muted)]">
+                  <div className="tabular-nums">{data.points.toLocaleString()} points</div>
+                  <div className="tabular-nums text-[var(--faint)]">
+                    {level.next ? `${(level.next - data.points).toLocaleString()} to level ${level.number + 1}` : "Top level"}
+                  </div>
                 </div>
               </div>
-              <div className="qv-stats">
-                <div>
-                  <b>{data.streak}</b>
-                  <span>day streak</span>
-                </div>
-                <div>
-                  <b>{formatCredits(data.creditsEarned)}</b>
-                  <span>credits earned</span>
-                </div>
-                <div>
-                  <b>
-                    {unlockedTotal}/{data.achievements.length}
-                  </b>
-                  <span>stars lit</span>
-                </div>
+              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[var(--stroke-soft)]">
+                <div className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-700" style={{ width: `${level.share * 100}%` }} />
               </div>
             </>
           ) : error ? (
-            <div className="qv-sub">{error}</div>
+            <div className="text-[13px] text-[var(--muted)]">{error}</div>
           ) : (
-            <Skeleton className="h-[132px] w-full rounded-2xl" />
-          )}
-        </header>
-
-        <p className="qv-lead">
-          Light stars and finish trials to earn perk points. Unlock them and they become Hamrin 1.0 credits ({perCredit.toLocaleString()} points = 1 credit, they never reset).
-          {ready > 0 && <em> {ready} ready to unlock.</em>}
-        </p>
-
-        <section className="qv-section">
-          <div className="qv-section-head">
-            <h3>Today's trials</h3>
-            <span>{Number.isFinite(left) ? `new trials in ${clock(left)}` : ""}</span>
-          </div>
-          {data?.trials && (
-            <p className="qv-rank">
-              <b>{data.trials.name} trials</b> · goals ×{data.trials.goalMult} · rewards ×{data.trials.rewardMult}
-              {data.trials.epic ? " · an Epic trial is added every day" : ` · Epic trials unlock at ${LEVELS[3].name} (${data.trials.nextEpicAt} points)`}
-            </p>
-          )}
-          <div className="qv-trials">
-            {data
-              ? data.daily.map((item) => (
-                  <Trial key={item.id} item={item} perCredit={perCredit} busy={busy === "daily:" + item.id} onClaim={() => claim("daily", item.id)} />
-                ))
-              : [0, 1, 2].map((key) => <Skeleton key={key} className="h-[120px] w-full rounded-2xl" />)}
-          </div>
-          {data && (
-            <div className="mt-3">
-              <Trial wide item={data.bonus} perCredit={perCredit} busy={busy === "daily:daily-all"} onClaim={() => claim("daily", "daily-all")} />
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-40" />
+              <Skeleton className="h-1.5 w-full" />
             </div>
           )}
-        </section>
-
-        <section className="qv-section">
-          <div className="qv-section-head">
-            <h3>Constellations</h3>
-            <span>pick a star to read it</span>
-          </div>
-          <div className="qv-tabs" role="tablist">
-            {skies.map((item) => {
-              const own = Object.keys(item.nodes).map((id) => byId[id]).filter(Boolean);
-              const lit = own.filter((entry) => entry.claimed).length;
-              const waiting = own.some((entry) => entry.done && !entry.claimed);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={item.id === sky.id}
-                  className={`qv-tab ${item.id === sky.id ? "is-on" : ""}`}
-                  onClick={() => {
-                    setSkyId(item.id);
-                    setPicked("");
-                  }}
-                >
-                  <span>{item.name}</span>
-                  <small>
-                    {lit}/{own.length}
-                    {waiting && <i className="qv-dot" />}
-                  </small>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="qv-sky">
-            {data ? (
-              <Constellation sky={sky} byId={byId} selectedId={selected?.id} onSelect={setPicked} />
-            ) : (
-              <Skeleton className="h-[420px] w-full rounded-2xl" />
-            )}
-          </div>
-
-          {selected && (
-            <div className={`qv-info is-${stateOf(selected)}`}>
-              <div className="qv-info-main">
-                <div className="qv-info-name">{selected.title}</div>
-                <div className="qv-info-desc">{selected.desc}</div>
-                <div className="qv-info-bar">
-                  <div style={{ width: `${selected.target ? Math.min(100, (selected.progress / selected.target) * 100) : 0}%` }} />
-                </div>
-                <div className="qv-info-meta">
-                  <span className="qv-count">
-                    {selected.progress} / {selected.target}
-                  </span>
-                  <Reward points={selected.points} perCredit={perCredit} />
-                </div>
-              </div>
-              <div className="qv-info-act">
-                {selected.claimed ? (
-                  <span className="qv-done">Star lit</span>
-                ) : selected.done ? (
-                  <button type="button" className="qv-unlock qv-unlock--big" disabled={busy === "achievement:" + selected.id} onClick={() => claim("achievement", selected.id)}>
-                    {busy === "achievement:" + selected.id ? "…" : "Unlock"}
-                  </button>
-                ) : (
-                  <span className="qv-wait">In progress</span>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
+        </Card>
+        <Stat icon="flame" label="Day streak" value={data ? data.streak : "…"} />
+        <Stat icon="bolt" label="Credits earned" value={data ? formatCredits(data.creditsEarned) : "…"} />
+        <Stat icon="check" label="Achievements" value={data ? `${claimedTotal}/${achievements.length}` : "…"} />
       </div>
+
+      <p className="mb-6 mt-3 text-[12px] leading-5 text-[var(--muted)]">
+        Finish challenges to earn points, then claim them. {perCredit.toLocaleString()} points become 1 Hamrin 1.0 credit, and earned credits never reset.
+        {ready > 0 && <span className="text-[var(--accent)]"> {ready} ready to claim.</span>}
+      </p>
+
+      <section className="mb-7">
+        <Head title="Today" right={Number.isFinite(left) ? `New challenges in ${clock(left)}` : ""} />
+        {data?.trials && (
+          <p className="-mt-1 mb-2 text-[11.5px] text-[var(--faint)]">
+            Level {data.trials.level + 1} difficulty: goals x{data.trials.goalMult}, rewards x{data.trials.rewardMult}
+            {data.trials.epic ? ". The Expert challenge is included." : `. An Expert challenge is added at level ${EXPERT_LEVEL}.`}
+          </p>
+        )}
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {data ? (
+            <>
+              {data.daily.map((item) => (
+                <Item key={item.id} item={item} showTier perCredit={perCredit} busy={busy === "daily:" + item.id} onClaim={() => claim("daily", item.id)} />
+              ))}
+              <Item item={{ ...data.bonus, tier: "bonus" }} showTier perCredit={perCredit} busy={busy === "daily:daily-all"} onClaim={() => claim("daily", "daily-all")} />
+            </>
+          ) : (
+            [0, 1, 2].map((key) => <Skeleton key={key} className="h-[128px] w-full rounded-2xl" />)
+          )}
+        </div>
+      </section>
+
+      {data &&
+        [...GROUPS, ...(unknown.length ? [{ label: "More", match: unknown.map((item) => item.group) }] : [])].map((group) => {
+          const items = achievements.filter((item) => group.match.includes(item.group));
+          if (!items.length) return null;
+          const got = items.filter((item) => item.claimed).length;
+          return (
+            <section key={group.label} className="mb-7">
+              <Head title={group.label} right={`${got}/${items.length}`} />
+              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((item) => (
+                  <Item key={item.id} item={item} perCredit={perCredit} busy={busy === "achievement:" + item.id} onClaim={() => claim("achievement", item.id)} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
     </Page>
   );
 }

@@ -97,7 +97,7 @@ export function iconFor(item) {
   return "star";
 }
 
-function levelOf(points) {
+export function levelOf(points) {
   let index = 0;
   for (let i = 0; i < LEVEL_AT.length; i += 1) if (points >= LEVEL_AT[i]) index = i;
   const floor = LEVEL_AT[index];

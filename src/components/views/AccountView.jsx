@@ -20,6 +20,7 @@ import {
 } from "../../account.js";
 import { formatCredits, PALM_PER_CREDIT, readCredits } from "../../glmChat.js";
 import { Page, Card, Tabs, Row, Field, Ghost, Primary, Toggle, Section } from "../ui.jsx";
+import PalmId from "../PalmId.jsx";
 
 export default function AccountView() {
   const { notice } = useAppState();
@@ -95,6 +96,8 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
       ? `${formatCredits(credit.remaining)} of ${formatCredits(credit.allowance)} · ${rate.toLocaleString()} $PALM = 1 credit · resets ${String(credit.resetsAt || "").slice(0, 10)}`
       : "Sign in to read this window";
   return (
+    <>
+    <PalmId address={isConnected ? address : ""} credit={credit} />
     <Card>
       <Row label="Status" value={isConnected ? "Wallet connected" : "Guest — browsing"} />
       <Row label="Web version" value="This harness. Lifetime unlock lives on the same wallet." />
@@ -118,6 +121,7 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
         Unlock at useroot.sh/account. Flash sale · $19.99 + VAT · or 20 USDC / 1,000 $PALM. Hamrin 1.0 uses credits from $PALM held or staked — {rate.toLocaleString()} $PALM = 1 credit — and that window resets every 14 days.
       </div>
     </Card>
+    </>
   );
 }
 

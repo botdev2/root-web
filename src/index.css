@@ -1491,3 +1491,7 @@ textarea {
 .tv-partners { display: flex; align-items: center; gap: 44px; margin-top: auto; padding-top: 10px; opacity: 0.9; }
 .tv-partners span { font-size: 18px; letter-spacing: 0.3em; text-transform: uppercase; opacity: 0.7; }
 .tv-partners img { height: 34px; max-width: 170px; object-fit: contain; }
+
+/* ---- PALM ID card ---- */
+@keyframes pid-foil { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+@keyframes pid-sheen { 0%, 100% { background-position: 130% 0; } 50% { background-position: -30% 0; } }

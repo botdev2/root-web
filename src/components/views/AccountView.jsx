@@ -97,7 +97,7 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
       : "Sign in to read this window";
   return (
     <>
-    <PalmId address={isConnected ? address : ""} credit={credit} />
+    <PalmId address={isConnected ? address : ""} credit={credit} onConnect={onConnect} />
     <Card>
       <Row label="Status" value={isConnected ? "Wallet connected" : "Guest — browsing"} />
       <Row label="Web version" value="This harness. Lifetime unlock lives on the same wallet." />

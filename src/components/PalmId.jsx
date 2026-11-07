@@ -72,87 +72,26 @@ function scatter(seed, count, w, h) {
   return Array.from({ length: count }, () => ({ x: next() * w, y: next() * h, r: 0.6 + next() * 1.4, o: 0.4 + next() * 0.6 }));
 }
 
-/** A palm tree silhouette: a leaning trunk and a crown of fronds. */
-function PalmTree({ x, y, height, lean = 0, flip = false }) {
-  const top = { x: lean, y: -height };
-  const fronds = [
-    [-70, -10, -34, -34],
-    [-58, 14, -26, -6],
-    [-40, 34, -12, 14],
-    [70, -10, 34, -34],
-    [58, 14, 26, -6],
-    [40, 34, 12, 14],
-    [0, -34, 0, -16],
-  ];
-  return (
-    <g transform={`translate(${x} ${y}) scale(${flip ? -1 : 1} 1)`} fill="#1b0830">
-      <path d={`M-5 0 Q${lean * 0.2} ${-height * 0.5} ${top.x - 2} ${top.y} L${top.x + 3} ${top.y} Q${lean * 0.2 + 6} ${-height * 0.5} 5 0Z`} />
-      <g transform={`translate(${top.x} ${top.y})`}>
-        {fronds.map(([dx, dy, cx, cy], index) => (
-          <path key={index} d={`M0 0 Q${cx} ${cy - 10} ${dx} ${dy + 20} Q${cx * 0.6} ${cy + 8} 0 6Z`} />
-        ))}
-      </g>
-    </g>
-  );
-}
-
+/** The inside of the passport cover: a crop of the PALM passport artwork, which already carries the slogan and the chip. */
 function Cover({ look }) {
-  const stars = useMemo(() => scatter(11, look.stars, SPINE, 250), [look.stars]);
+  const stars = useMemo(() => scatter(11, look.stars, SPINE, 200), [look.stars]);
   return (
-    <svg width={SPINE} height={IH} viewBox={`0 0 ${SPINE} ${IH}`} style={{ position: "absolute", left: 0, top: 0, filter: `saturate(${0.25 + look.sky * 0.75})` }} aria-hidden="true">
-      <defs>
-        <linearGradient id="pid-dusk" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1d0a38" />
-          <stop offset="0.35" stopColor="#6b1d78" />
-          <stop offset="0.58" stopColor="#d6406a" />
-          <stop offset="0.7" stopColor="#ff9a4a" />
-          <stop offset="0.7" stopColor="#2c0f45" />
-          <stop offset="1" stopColor="#14061f" />
-        </linearGradient>
-        <linearGradient id="pid-sun" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffe08a" />
-          <stop offset="1" stopColor="#ff9f4a" />
-        </linearGradient>
-        <linearGradient id="pid-refl" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ff9a4a" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#ff9a4a" stopOpacity="0" />
-        </linearGradient>
-        <clipPath id="pid-halfsun">
-          <rect x="0" y="0" width={SPINE} height="356" />
-        </clipPath>
-        <filter id="pid-grain" x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" />
-          <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.28 0" />
-        </filter>
-      </defs>
-      <rect width={SPINE} height={IH} fill="url(#pid-dusk)" />
-      {stars.map((star, index) => (
-        <circle key={index} cx={star.x} cy={star.y} r={star.r} fill="#fff" opacity={star.o} />
-      ))}
-      {/* the sun, with a palm mark cut into it */}
-      <g clipPath="url(#pid-halfsun)">
-        <circle cx={SPINE / 2} cy="356" r="84" fill="url(#pid-sun)" />
-        <g transform={`translate(${SPINE / 2} 356)`} fill="#b0307a" opacity="0.92">
-          <path d="M0 0 C-20 -44 -62 -58 -90 -46 C-58 -36 -22 -20 0 0Z" />
-          <path d="M0 0 C20 -44 62 -58 90 -46 C58 -36 22 -20 0 0Z" />
-          <path d="M0 0 C-6 -26 -8 -50 0 -70 C8 -50 6 -26 0 0Z" />
-        </g>
-      </g>
-      {/* water */}
-      <rect x={SPINE / 2 - 90} y="356" width="180" height="90" fill="url(#pid-refl)" />
-      {Array.from({ length: 11 }, (_, index) => (
-        <rect key={index} x={SPINE / 2 - 80 + (index % 3) * 14} y={364 + index * 8} width={160 - index * 10 - (index % 3) * 28} height="1.6" rx="0.8" fill="#ffd27a" opacity={0.5 - index * 0.035} />
-      ))}
-      {/* palms */}
-      <PalmTree x={58} y={366} height={290} lean={-16} />
-      <PalmTree x={116} y={366} height={170} lean={12} />
-      <PalmTree x={SPINE - 54} y={366} height={310} lean={18} flip />
-      <PalmTree x={SPINE - 118} y={366} height={150} lean={-10} flip />
-      <rect width={SPINE} height={IH} filter="url(#pid-grain)" opacity="0.5" />
-    </svg>
+    <>
+      <img
+        src="/brand/passport-cover.jpg"
+        alt=""
+        style={{ position: "absolute", left: 0, top: 0, width: SPINE, height: IH, objectFit: "cover", objectPosition: "50% 70%", filter: `saturate(${0.2 + look.sky * 0.9}) brightness(${0.8 + look.sky * 0.2})` }}
+      />
+      {look.stars > 0 && (
+        <svg width={SPINE} height={IH} style={{ position: "absolute", left: 0, top: 0 }} aria-hidden="true">
+          {stars.map((star, index) => (
+            <circle key={index} cx={star.x} cy={star.y} r={star.r} fill="#fff" opacity={star.o * 0.8} />
+          ))}
+        </svg>
+      )}
+    </>
   );
 }
-
 function Guilloche({ opacity }) {
   const lines = useMemo(() => {
     const out = [];
@@ -196,7 +135,7 @@ function Field({ label, value, x, y, width = 176, size = 17 }) {
   );
 }
 
-function Stamp({ size, color, rotate, text, sub, fontSize = 9.5, spacing = 1.1 }) {
+function Stamp({ size, color, rotate, text, center, centerSize = 24, fontSize = 9.5, spacing = 1.1 }) {
   const id = "pid-arc-" + size + text.length;
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" style={{ transform: `rotate(${rotate}deg)`, fontFamily: PALM_FONT }}>
@@ -210,17 +149,9 @@ function Stamp({ size, color, rotate, text, sub, fontSize = 9.5, spacing = 1.1 }
           {text}
         </textPath>
       </text>
-      <g transform="translate(60 56)" fill={color}>
-        <path d="M0 8 C-4 -2 -14 -8 -22 -6 C-14 -2 -8 2 -4 8Z" />
-        <path d="M0 8 C4 -2 14 -8 22 -6 C14 -2 8 2 4 8Z" />
-        <path d="M0 10 C-2 -6 -2 -14 0 -20 C2 -14 2 -6 0 10Z" />
-        <rect x="-1.5" y="6" width="3" height="16" rx="1.5" />
-      </g>
-      {sub && (
-        <text x="60" y="94" textAnchor="middle" fill={color} fontSize="9" fontWeight="700" letterSpacing="1.6" fontFamily="inherit">
-          {sub}
-        </text>
-      )}
+      <text x="60" y="60" textAnchor="middle" dominantBaseline="central" fill={color} fontSize={centerSize} fontWeight="800" letterSpacing="1" fontFamily="inherit">
+        {center}
+      </text>
     </svg>
   );
 }
@@ -332,17 +263,6 @@ export default function PalmId({ address, credit }) {
             <div style={{ position: "relative", width: IW, height: IH, borderRadius: 20, overflow: "hidden", background: "#14061f" }}>
               {/* left page: the inside of the cover */}
               <Cover look={look} />
-              <div style={{ position: "absolute", left: 0, top: 0, width: SPINE, height: IH, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: 38, gap: 18 }}>
-                <div style={{ textAlign: "center", fontSize: 15, letterSpacing: "0.34em", lineHeight: 1.9, color: "rgb(255 238 225 / 0.88)", textShadow: "0 1px 8px rgb(20 4 40 / 0.6)" }}>
-                  <div>UTILITY.</div>
-                  <div>INNOVATION.</div>
-                  <div>REVENUE.</div>
-                </div>
-                <div style={{ width: 38, height: 26, borderRadius: 4, background: "linear-gradient(135deg, #f6dd9a, #b8862d)", boxShadow: "inset 0 0 0 1.5px rgb(120 80 10 / 0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: 20, height: 14, borderRadius: 2, border: "1.5px solid rgb(120 80 10 / 0.6)" }} />
-                </div>
-              </div>
-
               {/* right page: the data page */}
               <div
                 style={{
@@ -365,16 +285,7 @@ export default function PalmId({ address, credit }) {
                 {look.shine && <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.55) 50%, transparent 65%)", backgroundSize: "250% 100%", animation: "pid-sheen 5s ease-in-out infinite", pointerEvents: "none", zIndex: 4 }} />}
 
                 {/* header */}
-                <div style={{ position: "absolute", left: 32, top: 24, display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 50, height: 50, borderRadius: 12, background: "#5a2a72", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 8px rgb(60 20 80 / 0.35)" }}>
-                    <img src="/palm.png" alt="" width="34" height="34" />
-                  </div>
-                  <div style={{ lineHeight: 1, color: "#5a2a72" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>PaLM</div>
-                    <div style={{ marginTop: 3, fontSize: 24, fontWeight: 800 }}>AI</div>
-                  </div>
-                </div>
-                <div style={{ position: "absolute", left: 236, top: 24, right: 120 }}>
+                <div style={{ position: "absolute", left: 34, top: 30, right: 120 }}>
                   <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "0.26em", color: INK }}>PALM ID</div>
                   <div style={{ marginTop: 5, fontSize: 11, letterSpacing: "0.32em", color: SOFT }}>HOLDER PASSPORT</div>
                   <div style={{ marginTop: 2, fontSize: 10, letterSpacing: "0.32em", color: SOFT }}>DECENTRALIZED CITIZEN</div>
@@ -436,7 +347,7 @@ export default function PalmId({ address, credit }) {
                 {/* the main stamp arrives at level 2 */}
                 {level.number >= 2 && (
                   <div style={{ position: "absolute", left: 458, top: 296, opacity: 0.9, mixBlendMode: "multiply" }}>
-                    <Stamp size={140} color="#7a2f96" rotate={-9} text="PALM APPROVED * DECENTRALIZED CITIZEN *" />
+                    <Stamp size={140} color="#7a2f96" rotate={-9} text="APPROVED * DECENTRALIZED CITIZEN *" center="DEV2" centerSize={27} />
                   </div>
                 )}
 
@@ -445,7 +356,7 @@ export default function PalmId({ address, credit }) {
                   {[2, 3, 4, 5, 6].map((n) =>
                     level.number >= n ? (
                       <div key={n} style={{ mixBlendMode: "multiply" }}>
-                        <Stamp size={34} color={["#7a2f96", "#c0306a", "#b8862d", "#2f7a8c", "#4a2fa0"][n - 2]} rotate={[-10, 8, -6, 12, -4][n - 2]} text="PALM ID * PALM ID * PALM *" fontSize={11} spacing={3} sub={`LV ${n}`} />
+                        <Stamp size={34} color={["#7a2f96", "#c0306a", "#b8862d", "#2f7a8c", "#4a2fa0"][n - 2]} rotate={[-10, 8, -6, 12, -4][n - 2]} text="PALM ID * PALM ID * PALM *" fontSize={11} spacing={3} center={`LV ${n}`} centerSize={22} />
                       </div>
                     ) : (
                       <div key={n} style={{ width: 34, height: 34, borderRadius: "50%", border: "1.5px dashed rgb(90 42 114 / 0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "rgb(90 42 114 / 0.45)" }}>

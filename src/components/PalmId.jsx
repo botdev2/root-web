@@ -7,27 +7,28 @@ import { levelOf } from "./views/QuestsView.jsx";
 // The whole open passport is drawn at this size, then scaled to fit. Both pages are the same size.
 const W = 1100;
 const H = 520;
-const FR = 6;
+const FR = 4;
 const HALF = W / 2;
 const PW = HALF - FR * 2;
 const PH = H - FR * 2;
 
-const INK = "#3b1650";
-const SOFT = "#7d5a8e";
+const INK = "#2a1633";
+const MUTED = "#8a7b86";
+const HAIR = "rgb(42 22 51 / 0.12)";
 const PALM_FONT = '"PALM", "Segoe UI", system-ui, sans-serif';
-const OPEN_MS = 1600;
+const OPEN_MS = 1700;
 
-// What the passport looks like at each level. Higher level, richer passport.
+// What the passport looks like at each level. The metal gets richer as you level up.
 const LOOKS = [
-  { status: "Visitor", cover: "#4a4452", emboss: ["#e4e1ea", "#9c97a6"], paper: ["#eeedf1", "#e4e1e8"], foil: null, holo: 0.2, guil: 0.08, duo: ["#141414", "#e9e9e9"], sky: 0.3, stars: 0 },
-  { status: "Resident", cover: "#5a2a72", emboss: ["#efe2f5", "#a98bb8"], paper: ["#f3e9f2", "#eaddee"], foil: null, holo: 0.5, guil: 0.12, duo: ["#1e0a30", "#ead6f2"], sky: 0.5, stars: 0 },
-  { status: "Citizen", cover: "#8c2a7a", emboss: ["#fff1b8", "#c9962f"], paper: ["#f8ebf4", "#eed8f0"], foil: ["#e1bde8", "#b78bc8"], holo: 0.85, guil: 0.16, duo: ["#260a3a", "#f7d3e8"], sky: 0.8, stars: 14 },
-  { status: "Holder", cover: "#8c2a7a", emboss: ["#fff1b8", "#c9962f"], paper: ["#fbecf3", "#f0d5ee"], foil: ["#f6e3a1", "#b8862d"], holo: 1, guil: 0.2, duo: ["#2a0a32", "#ffdcc4"], sky: 1, stars: 24 },
-  { status: "Diamond Hands", cover: "#8c2a7a", emboss: ["#fff1b8", "#c9962f"], paper: ["#fdeef4", "#f2d2ef"], foil: ["#fff1b8", "#b8862d"], holo: 1, guil: 0.24, duo: ["#2a0a32", "#ffdcc4"], sky: 1, stars: 36, shine: true },
-  { status: "Founder", cover: "#8c2a7a", emboss: ["#fff6cf", "#c9962f"], paper: ["#fff0f6", "#f5cfef"], foil: ["#fff6cf", "#c9962f"], holo: 1, guil: 0.28, duo: ["#2a0a32", "#ffdcc4"], sky: 1, stars: 52, shine: true },
+  { status: "Visitor", cover: "#1f1d26", metal: ["#e3e5ea", "#a4a8b3", "#767b87"], guil: 0.05, duo: ["#16161a", "#e9e9ec"], pearl: 0.3 },
+  { status: "Resident", cover: "#2b1830", metal: ["#f6d6b4", "#c48a56", "#8c5a32"], guil: 0.06, duo: ["#1a1216", "#eee4d8"], pearl: 0.35 },
+  { status: "Citizen", cover: "#2e1228", metal: ["#fae0d4", "#cf9588", "#a56a5e"], guil: 0.07, duo: ["#1c1216", "#f0e4d8"], pearl: 0.6 },
+  { status: "Holder", cover: "#1b1020", metal: ["#fbeab4", "#d0a748", "#9a6f1c"], guil: 0.08, duo: ["#1e1015", "#f4e4cf"], pearl: 0.7 },
+  { status: "Diamond Hands", cover: "#1b1020", metal: ["#fff3c4", "#d9b04f", "#9a6f1c"], guil: 0.09, duo: ["#1e1015", "#f6e5cf"], pearl: 0.85, shine: true },
+  { status: "Founder", cover: "#150b19", metal: ["#fff6d0", "#e0b857", "#a07418"], guil: 0.1, duo: ["#1e1015", "#f8e7d0"], pearl: 1, shine: true },
 ];
 
-const UNLOCKS = ["", "the first visa stamp and a plum photo", "a pink photo and a lilac border", "a warm photo and a gold border", "a foil shimmer", "a sky full of stars"];
+const UNLOCKS = ["", "bronze foil and the DEV2 seal", "rose-gold foil", "gold foil and a warmer photo", "a slow foil shimmer", "the pearl seal"];
 
 function hash(text) {
   let value = 2166136261;
@@ -38,7 +39,7 @@ function hash(text) {
   return value >>> 0;
 }
 
-function mrz(text, length = 40) {
+function mrz(text, length = 34) {
   return (text + "<".repeat(length)).slice(0, length);
 }
 
@@ -61,39 +62,43 @@ function issuedOn(address) {
 
 const MONTH = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-function scatter(seed, count, w, h) {
-  let value = seed;
-  const next = () => {
-    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
-    return value / 4294967296;
-  };
-  return Array.from({ length: count }, () => ({ x: next() * w, y: next() * h, r: 0.6 + next() * 1.4, o: 0.4 + next() * 0.6 }));
-}
+const foilFill = (look) => `linear-gradient(135deg, ${look.metal[0]}, ${look.metal[1]} 45%, ${look.metal[2]} 70%, ${look.metal[0]})`;
 
 function frameStyle(look, radius) {
-  const foil = look.foil;
   return {
     position: "absolute",
     inset: 0,
     padding: FR,
     borderRadius: radius,
     backgroundColor: look.cover,
-    backgroundImage: foil ? `linear-gradient(135deg, ${foil[0]}, ${foil[1]}, ${foil[0]}, ${foil[1]})` : "none",
+    backgroundImage: foilFill(look),
     backgroundSize: "300% 300%",
-    animation: look.shine ? "pid-foil 6s linear infinite" : undefined,
-    boxShadow: "0 22px 48px rgb(30 8 50 / 0.4), 0 3px 8px rgb(30 8 50 / 0.3)",
+    animation: look.shine ? "pid-foil 8s linear infinite" : undefined,
+    boxShadow: "0 34px 60px -14px rgb(8 3 16 / 0.55), 0 8px 18px rgb(8 3 16 / 0.35)",
     backfaceVisibility: "hidden",
     WebkitBackfaceVisibility: "hidden",
   };
 }
 
+const maskPalm = {
+  WebkitMaskImage: "url(/brand/palm-mark.png)",
+  maskImage: "url(/brand/palm-mark.png)",
+  WebkitMaskSize: "contain",
+  maskSize: "contain",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "center",
+  maskPosition: "center",
+};
+
+/** Fine engraved waves, like the security print on a banknote. */
 function Guilloche({ opacity }) {
   const lines = useMemo(() => {
     const out = [];
-    for (let k = 0; k < 26; k += 1) {
+    for (let k = 0; k < 34; k += 1) {
       let d = "";
-      for (let x = 0; x <= PW; x += 8) {
-        const y = 250 + Math.sin(x / 46 + k * 0.32) * (60 + k * 3) + Math.sin(x / 19 - k * 0.2) * 10;
+      for (let x = 0; x <= PW; x += 6) {
+        const y = 260 + Math.sin(x / 52 + k * 0.28) * (50 + k * 3.4) + Math.sin(x / 17 - k * 0.2) * 7;
         d += `${x === 0 ? "M" : "L"}${x} ${y.toFixed(1)} `;
       }
       out.push(d);
@@ -103,55 +108,45 @@ function Guilloche({ opacity }) {
   return (
     <svg width={PW} height={PH} style={{ position: "absolute", left: 0, top: 0 }} aria-hidden="true">
       {lines.map((d, index) => (
-        <path key={index} d={d} fill="none" stroke="#9a4fb0" strokeWidth="0.8" opacity={opacity} />
-      ))}
-      {[34, 54, 74, 94, 114].map((r) => (
-        <circle key={r} cx={PW - 110} cy="320" r={r} fill="none" stroke="#9a4fb0" strokeWidth="0.8" opacity={opacity * 0.9} />
+        <path key={index} d={d} fill="none" stroke="#8c7440" strokeWidth="0.6" opacity={opacity} />
       ))}
     </svg>
   );
 }
 
-function Leaf({ x, y, rotate, scale = 1, opacity }) {
-  return (
-    <g transform={`translate(${x} ${y}) rotate(${rotate}) scale(${scale})`} opacity={opacity}>
-      <path d="M0 0 C30 -50 100 -70 150 -52 C110 -32 55 -10 0 0Z" fill="#a24fb0" />
-      <path d="M0 0 C25 -20 70 -38 150 -52" stroke="#6d2f86" strokeWidth="1.5" fill="none" opacity="0.6" />
-    </g>
-  );
-}
-
-function Field({ label, value, x, y, width = 140, size = 18 }) {
+function Field({ label, value, x, y, width = 140, size = 17 }) {
   return (
     <div style={{ position: "absolute", left: x, top: y, width }}>
-      <div style={{ fontSize: 12, color: SOFT }}>{label}</div>
-      <div style={{ marginTop: 3, fontSize: size, fontWeight: 700, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+      <div style={{ fontSize: 11, color: MUTED }}>{label}</div>
+      <div style={{ marginTop: 4, fontSize: size, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
     </div>
   );
 }
 
-function Stamp({ size, color, rotate, text, center, centerSize = 24, fontSize = 12 }) {
-  const id = "pid-arc-" + size + text.length;
+/** The DEV2 seal, pressed in ink. */
+function Seal({ size, color, rotate }) {
+  const text = "APPROVED  \u2022  DECENTRALIZED CITIZEN  \u2022";
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" style={{ transform: `rotate(${rotate}deg)`, fontFamily: PALM_FONT }}>
       <defs>
-        <path id={id} d="M60 60 m-44 0 a44 44 0 1 1 88 0 a44 44 0 1 1 -88 0" />
+        <path id="pid-seal-arc" d="M60 60 m-45 0 a45 45 0 1 1 90 0 a45 45 0 1 1 -90 0" />
       </defs>
-      <circle cx="60" cy="60" r="56" fill="none" stroke={color} strokeWidth="3" />
-      <circle cx="60" cy="60" r="31" fill="none" stroke={color} strokeWidth="1.5" />
-      <text fill={color} fontSize={fontSize} fontWeight="700" fontFamily="inherit">
-        <textPath href={"#" + id} startOffset="0">
+      <circle cx="60" cy="60" r="57" fill="none" stroke={color} strokeWidth="1.6" />
+      <circle cx="60" cy="60" r="53" fill="none" stroke={color} strokeWidth="0.6" />
+      <circle cx="60" cy="60" r="31" fill="none" stroke={color} strokeWidth="1" />
+      <text fill={color} fontSize="11.5" fontWeight="600" fontFamily="inherit">
+        <textPath href="#pid-seal-arc">
           {text}
         </textPath>
       </text>
-      <text x="60" y="60" textAnchor="middle" dominantBaseline="central" fill={color} fontSize={centerSize} fontWeight="800" fontFamily="inherit">
-        {center}
+      <text x="60" y="60" textAnchor="middle" dominantBaseline="central" fill={color} fontSize="25" fontWeight="700" fontFamily="inherit">
+        DEV2
       </text>
     </svg>
   );
 }
 
-/** The holder's photo, posterised into two inks so it reads as an ID print and not as a character. */
+/** The holder's photo: drained of colour and posterised so it reads as an ID print. */
 function Photo({ look, level }) {
   const [dark, light] = look.duo;
   const hex = (value) => [1, 3, 5].map((i) => parseInt(value.slice(i, i + 2), 16) / 255);
@@ -160,78 +155,71 @@ function Photo({ look, level }) {
   const row = (d, l) => `${((l - d) * 0.299).toFixed(4)} ${((l - d) * 0.587).toFixed(4)} ${((l - d) * 0.114).toFixed(4)} 0 ${d.toFixed(4)}`;
   const id = "pid-duo-" + level;
   return (
-    <div style={{ position: "relative", width: 160, height: 204, borderRadius: 12, overflow: "hidden", isolation: "isolate", background: dark }}>
+    <div style={{ position: "relative", width: 146, height: 186, borderRadius: 3, overflow: "hidden", isolation: "isolate", background: dark }}>
       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
         <filter id={id} colorInterpolationFilters="sRGB" x="0" y="0" width="100%" height="100%">
-          <feGaussianBlur stdDeviation="0.9" />
+          <feGaussianBlur stdDeviation="1.1" />
           <feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0" />
           <feComponentTransfer>
-            <feFuncR type="linear" slope="1.5" intercept="-0.22" />
-            <feFuncG type="linear" slope="1.5" intercept="-0.22" />
-            <feFuncB type="linear" slope="1.5" intercept="-0.22" />
+            <feFuncR type="linear" slope="1.45" intercept="-0.2" />
+            <feFuncG type="linear" slope="1.45" intercept="-0.2" />
+            <feFuncB type="linear" slope="1.45" intercept="-0.2" />
           </feComponentTransfer>
           <feComponentTransfer>
-            <feFuncR type="discrete" tableValues="0 0.2 0.4 0.6 0.8 1" />
-            <feFuncG type="discrete" tableValues="0 0.2 0.4 0.6 0.8 1" />
-            <feFuncB type="discrete" tableValues="0 0.2 0.4 0.6 0.8 1" />
+            <feFuncR type="discrete" tableValues="0 0.14 0.28 0.42 0.57 0.71 0.85 1" />
+            <feFuncG type="discrete" tableValues="0 0.14 0.28 0.42 0.57 0.71 0.85 1" />
+            <feFuncB type="discrete" tableValues="0 0.14 0.28 0.42 0.57 0.71 0.85 1" />
           </feComponentTransfer>
           <feColorMatrix type="matrix" values={`${row(dr, lr)}  ${row(dg, lg)}  ${row(db, lb)}  0 0 0 1 0`} />
         </filter>
       </svg>
-      <img src={portrait} alt="" width="160" height="204" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", filter: `url(#${id})` }} />
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 3px)", mixBlendMode: "overlay" }} />
-      <svg width="160" height="204" style={{ position: "absolute", inset: 0, mixBlendMode: "overlay" }} aria-hidden="true">
-        {Array.from({ length: 8 }, (_, index) => (
-          <text key={index} x={-20 + (index % 2) * 18} y={20 + index * 26} fontSize="9" fill="#fff" opacity="0.32" fontFamily={PALM_FONT}>
-            PALM PALM PALM PALM PALM PALM PALM PALM
-          </text>
-        ))}
-      </svg>
-      <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 26px rgb(20 6 40 / 0.5)", borderRadius: 12 }} />
+      <img src={portrait} alt="" width="146" height="186" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", filter: `url(#${id})` }} />
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px)", mixBlendMode: "overlay" }} />
+      <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 24px rgb(20 8 20 / 0.45)" }} />
     </div>
   );
 }
 
-/** The outside of the passport: leather, a gold palm, and the name. */
+/** The outside of the passport: dark leather with a foil palm and name. */
 function FrontCover({ look, address, onConnect }) {
-  const [light, dark] = look.emboss;
-  const gold = { backgroundImage: `linear-gradient(135deg, ${light}, ${dark})` };
+  const foil = { backgroundImage: foilFill(look) };
   return (
-    <div style={frameStyle(look, "6px 26px 26px 6px")}>
-      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 20px 20px 3px", overflow: "hidden", backgroundImage: `linear-gradient(150deg, rgb(255 255 255 / 0.16), transparent 40%), radial-gradient(120% 90% at 30% 20%, ${look.cover}, #14061f)` }}>
-        <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: "overlay", opacity: 0.55 }} aria-hidden="true">
+    <div style={frameStyle(look, "6px 16px 16px 6px")}>
+      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", backgroundImage: `radial-gradient(120% 90% at 30% 15%, rgb(255 255 255 / 0.1), transparent 55%), linear-gradient(160deg, ${look.cover}, #0c0610)` }}>
+        <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: "overlay", opacity: 0.6 }} aria-hidden="true">
           <filter id="pid-leather" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="9" />
-            <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="9" />
+            <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0" />
           </filter>
           <rect width={PW} height={PH} filter="url(#pid-leather)" />
         </svg>
-        <div style={{ position: "absolute", inset: 22, borderRadius: 10, border: "1.5px solid", borderImage: `linear-gradient(135deg, ${light}, ${dark}) 1`, opacity: 0.55 }} />
-        <div style={{ position: "absolute", left: PW / 2 - 70, top: 96, width: 140, height: 140, ...gold, WebkitMaskImage: "url(/palm.png)", maskImage: "url(/palm.png)", WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center", filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.5))" }} />
-        <div style={{ position: "absolute", left: 0, right: 0, top: 262, textAlign: "center" }}>
-          <div style={{ display: "inline-block", fontSize: 36, fontWeight: 800, color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...gold, filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.5))" }}>PALM ID</div>
-          <div style={{ marginTop: 8, fontSize: 11, color: light, opacity: 0.8 }}>DECENTRALIZED CITIZEN</div>
+        <div style={{ position: "absolute", inset: 20, borderRadius: 6, border: "1px solid", borderColor: look.metal[1], opacity: 0.4 }} />
+        <div style={{ position: "absolute", left: PW / 2 - 62, top: 130, width: 124, height: 85, ...foil, ...maskPalm, filter: "drop-shadow(0 -1px 0 rgb(255 255 255 / 0.25)) drop-shadow(0 2px 3px rgb(0 0 0 / 0.6))" }} />
+        <div style={{ position: "absolute", left: 0, right: 0, top: 252, textAlign: "center" }}>
+          <div style={{ display: "inline-block", fontSize: 30, fontWeight: 700, color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.55))" }}>PALM ID</div>
+          <div style={{ marginTop: 6, fontSize: 12, color: look.metal[1], opacity: 0.85 }}>Decentralized Citizen</div>
         </div>
-        <div style={{ position: "absolute", left: PW / 2 - 19, bottom: 52, width: 38, height: 26, borderRadius: 5, ...gold, boxShadow: "inset 0 0 0 1.5px rgb(90 55 8 / 0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 18, height: 12, borderRadius: 2, border: "1.5px solid rgb(90 55 8 / 0.6)" }} />
-        </div>
+        <svg width="34" height="24" viewBox="0 0 34 24" style={{ position: "absolute", left: PW / 2 - 17, bottom: 56 }} aria-hidden="true">
+          <rect x="1" y="1" width="32" height="22" rx="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.8" />
+          <circle cx="17" cy="12" r="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.8" />
+        </svg>
         {!address && (
-          <div style={{ position: "absolute", left: 40, right: 40, top: 344, textAlign: "center" }}>
-            <div style={{ fontSize: 12, lineHeight: 1.6, color: "rgb(255 255 255 / 0.86)" }}>A PALM ID is issued to a wallet. Connect one to open yours.</div>
+          <div style={{ position: "absolute", left: 56, right: 56, top: 336, textAlign: "center" }}>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: "rgb(255 255 255 / 0.7)" }}>A PALM ID is issued to a wallet. Connect one to open yours.</div>
             <button
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
                 onConnect?.();
               }}
-              style={{ marginTop: 12, height: 34, padding: "0 18px", borderRadius: 8, border: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "#2a0a32", ...gold }}
+              style={{ marginTop: 12, height: 34, padding: "0 20px", borderRadius: 999, background: "transparent", border: `1px solid ${look.metal[1]}`, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: look.metal[0] }}
             >
               Connect wallet
             </button>
           </div>
         )}
-        <div style={{ position: "absolute", right: 0, top: 0, width: 28, height: PH, background: "linear-gradient(270deg, rgb(255 255 255 / 0.1), transparent)" }} />
-        <div style={{ position: "absolute", left: 0, top: 0, width: 40, height: PH, background: "linear-gradient(90deg, rgb(0 0 0 / 0.45), transparent)" }} />
+        <div style={{ position: "absolute", left: 0, top: 0, width: 44, height: PH, background: "linear-gradient(90deg, rgb(0 0 0 / 0.5), transparent)" }} />
+        <div style={{ position: "absolute", right: 0, top: 0, width: 30, height: PH, background: "linear-gradient(270deg, rgb(255 255 255 / 0.07), transparent)" }} />
       </div>
     </div>
   );
@@ -239,29 +227,19 @@ function FrontCover({ look, address, onConnect }) {
 
 /** The inside of the front cover: the sunset-oasis artwork across the whole page. */
 function InsideCover({ look }) {
-  const stars = useMemo(() => scatter(11, look.stars, PW, 220), [look.stars]);
   return (
-    <div style={frameStyle(look, "26px 6px 6px 26px")}>
-      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "20px 3px 3px 20px", overflow: "hidden", background: "#c0306a" }}>
-        <img
-          src="/brand/passport-oasis.jpg"
-          alt=""
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "23% 50%", filter: `saturate(${0.55 + look.sky * 0.45})` }}
-        />
-        {look.stars > 0 && (
-          <svg width={PW} height={PH} style={{ position: "absolute", left: 0, top: 0 }} aria-hidden="true">
-            {stars.map((star, index) => (
-              <circle key={index} cx={star.x} cy={star.y} r={star.r} fill="#fff" opacity={star.o * 0.85} />
-            ))}
-          </svg>
-        )}
-        <div style={{ position: "absolute", right: 0, top: 0, width: 56, height: PH, background: "linear-gradient(270deg, rgb(10 2 20 / 0.4), transparent)" }} />
+    <div style={frameStyle(look, "16px 6px 6px 16px")}>
+      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "12px 3px 3px 12px", overflow: "hidden", background: "#c0306a" }}>
+        <img src="/brand/passport-oasis.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "23% 50%" }} />
+        <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 90px rgb(40 8 40 / 0.35)" }} />
+        <div style={{ position: "absolute", inset: 14, borderRadius: 4, border: "1px solid rgb(255 244 224 / 0.45)" }} />
+        <div style={{ position: "absolute", right: 0, top: 0, width: 70, height: PH, background: "linear-gradient(270deg, rgb(20 4 24 / 0.45), transparent)" }} />
       </div>
     </div>
   );
 }
 
-/** An open PALM ID passport. It needs a wallet, reads credits and level from the account, and the more you do, the better it looks. */
+/** An open PALM ID passport. It needs a wallet, reads credits and level from the account, and the more you do, the richer it looks. */
 export default function PalmId({ address, credit, onConnect }) {
   const [quests, setQuests] = useState(null);
   const [width, setWidth] = useState(W);
@@ -336,9 +314,10 @@ export default function PalmId({ address, credit, onConnect }) {
   const earned = quests ? formatCredits(quests.creditsEarned) : "0";
   const scale = Math.min(1, width / W);
   const next = level.number < LOOKS.length ? level.number + 1 : null;
+  const toNext = level.next ? Math.max(0, level.next - points) : 0;
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const ease = reduce ? "none" : `transform ${OPEN_MS}ms cubic-bezier(0.65, 0, 0.25, 1)`;
-  const wallet = address || "";
+  const metal = look.metal;
 
   return (
     <div className="mb-4">
@@ -347,107 +326,82 @@ export default function PalmId({ address, credit, onConnect }) {
           {/* closed, the passport sits in the middle; opening slides it back to the right as the cover swings left */}
           <div
             onClick={() => address && setOpen((value) => !value)}
-            style={{ position: "relative", width: W, height: H, perspective: 2600, transform: `translateX(${open ? 0 : -HALF / 2}px)`, transition: ease, cursor: address ? "pointer" : "default", fontFamily: PALM_FONT }}
+            style={{ position: "relative", width: W, height: H, perspective: 2800, transform: `translateX(${open ? 0 : -HALF / 2}px)`, transition: ease, cursor: address ? "pointer" : "default", fontFamily: PALM_FONT }}
           >
             {/* right page: the data page */}
             <div style={{ position: "absolute", left: HALF, top: 0, width: HALF, height: H }}>
-              <div style={frameStyle(look, "6px 26px 26px 6px")}>
-                <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 20px 20px 3px", overflow: "hidden", background: `linear-gradient(120deg, ${look.paper[0]}, ${look.paper[1]})`, color: INK }}>
-                  <Guilloche opacity={look.guil} />
-                  <svg width={PW} height={PH} style={{ position: "absolute", inset: 0 }} aria-hidden="true">
-                    <Leaf x={PW - 24} y={90} rotate={-150} scale={1.3} opacity={look.guil * 1.6} />
-                    <Leaf x={PW - 24} y={90} rotate={-120} scale={1.1} opacity={look.guil * 1.6} />
-                    <Leaf x={PW - 14} y={400} rotate={-170} scale={1.2} opacity={look.guil * 1.6} />
+              <div style={frameStyle(look, "6px 16px 16px 6px")}>
+                <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", background: "linear-gradient(135deg, #f8f3eb, #efe7db)", color: INK }}>
+                  <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: "multiply", opacity: 0.35 }} aria-hidden="true">
+                    <filter id="pid-paper" x="0" y="0" width="100%" height="100%">
+                      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="3" />
+                      <feColorMatrix values="0 0 0 0 0.5  0 0 0 0 0.42  0 0 0 0 0.3  0 0 0 0.35 0" />
+                    </filter>
+                    <rect width={PW} height={PH} filter="url(#pid-paper)" />
                   </svg>
-                  {look.shine && <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.55) 50%, transparent 65%)", backgroundSize: "250% 100%", animation: "pid-sheen 5s ease-in-out infinite", pointerEvents: "none", zIndex: 4 }} />}
+                  <Guilloche opacity={look.guil} />
+                  {look.shine && <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 0.6) 50%, transparent 62%)", backgroundSize: "260% 100%", animation: "pid-sheen 7s ease-in-out infinite", pointerEvents: "none", zIndex: 4 }} />}
 
                   {address && (
                     <>
-                      <div style={{ position: "absolute", left: 34, top: 20, right: 110 }}>
-                        <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.1, color: INK }}>PALM ID</div>
-                        <div style={{ marginTop: 3, fontSize: 13, lineHeight: 1.2, color: SOFT }}>HOLDER PASSPORT</div>
-                        <div style={{ marginTop: 1, fontSize: 12, lineHeight: 1.2, color: SOFT }}>DECENTRALIZED CITIZEN</div>
+                      <div style={{ position: "absolute", left: 34, top: 26 }}>
+                        <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.1 }}>PALM ID</div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: MUTED }}>Holder passport · Decentralized citizen</div>
                       </div>
-                      <div
-                        style={{
-                          position: "absolute",
-                          right: 28,
-                          top: 24,
-                          width: 58,
-                          height: 58,
-                          borderRadius: 11,
-                          opacity: look.holo,
-                          backgroundImage: "linear-gradient(135deg, #6fd3ff 0%, #b18cff 30%, #ff8bd0 55%, #ffd36f 80%, #8cffd0 100%)",
-                          backgroundSize: "200% 200%",
-                          animation: look.shine ? "pid-foil 4s linear infinite" : undefined,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 0.65), 0 3px 8px rgb(60 20 80 / 0.25)",
-                        }}
-                      >
-                        <img src="/palm.png" alt="" width="38" height="38" style={{ opacity: 0.92 }} />
+                      {/* pearl security seal */}
+                      <div style={{ position: "absolute", right: 32, top: 22, width: 48, height: 48, borderRadius: "50%", opacity: look.pearl, backgroundImage: "conic-gradient(from 30deg, #f6f1f8, #d3e3ee, #f2dfe8, #e5ecd2, #f6f1f8)", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 0.8), 0 0 0 1px rgb(42 22 51 / 0.14), 0 3px 8px rgb(42 22 51 / 0.18)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                        <div style={{ width: 28, height: 20, background: "rgb(42 22 51 / 0.6)", ...maskPalm }} />
+                        {look.shine && <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.8) 50%, transparent 65%)", backgroundSize: "260% 100%", animation: "pid-sheen 5s ease-in-out infinite" }} />}
                       </div>
+                      <div style={{ position: "absolute", left: 34, right: 34, top: 84, height: 1, backgroundImage: `linear-gradient(90deg, ${metal[2]}, ${metal[1]}, transparent)`, opacity: 0.7 }} />
 
-                      <div style={{ position: "absolute", left: 32, top: 112, padding: 4, borderRadius: 16, background: "rgb(255 255 255 / 0.85)", boxShadow: "0 6px 16px rgb(60 20 80 / 0.3)" }}>
+                      <div style={{ position: "absolute", left: 34, top: 106, padding: 3, background: "#fffdf8", boxShadow: `0 0 0 1px ${metal[1]}, 0 8px 18px rgb(42 22 51 / 0.22)` }}>
                         <Photo look={look} level={level.number} />
                       </div>
 
-                      <Field label="NAME" value={holder.toUpperCase()} x={226} y={112} size={holder.length > 12 ? 15 : 18} />
-                      <Field label="STATUS" value={look.status.toUpperCase()} x={380} y={112} size={look.status.length > 10 ? 15 : 18} />
-                      <Field label="NATIONALITY" value="CHAD" x={226} y={172} />
-                      <Field label="ISSUE DATE" value={issueText} x={380} y={172} />
-                      <Field label="EXPIRY" value="NEVER" x={226} y={232} />
-                      <Field label="PASSPORT NO." value={number} x={380} y={232} />
+                      <Field label="Name" value={holder.toUpperCase()} x={226} y={106} size={holder.length > 12 ? 15 : 17} />
+                      <Field label="Status" value={look.status.toUpperCase()} x={380} y={106} size={look.status.length > 10 ? 15 : 17} />
+                      <Field label="Nationality" value="CHAD" x={226} y={168} />
+                      <Field label="Issued" value={issueText} x={380} y={168} />
+                      <Field label="Expiry" value="NEVER" x={226} y={230} />
+                      <Field label="Passport no." value={number} x={380} y={230} />
+                      <div style={{ position: "absolute", left: 226, right: 34, top: 156, height: 1, background: HAIR }} />
+                      <div style={{ position: "absolute", left: 226, right: 34, top: 218, height: 1, background: HAIR }} />
 
-                      {/* credits live on the passport */}
-                      <div style={{ position: "absolute", left: 226, top: 296, width: 176, borderRadius: 14, background: "rgb(255 255 255 / 0.68)", boxShadow: "inset 0 0 0 1px rgb(90 42 114 / 0.2)", padding: "9px 14px 11px" }}>
-                        <div style={{ fontSize: 10, color: SOFT }}>CREDITS</div>
-                        <div style={{ marginTop: 1, fontSize: 28, fontWeight: 800, color: INK, lineHeight: 1.1 }}>{left}</div>
-                        <div style={{ marginTop: 2, fontSize: 11, color: SOFT }}>{earned} earned</div>
-                        <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", fontSize: 10, color: SOFT }}>
-                          <span>LEVEL {level.number}</span>
-                          <span>{points.toLocaleString()} PTS</span>
+                      {/* credits and level, quietly */}
+                      <div style={{ position: "absolute", left: 34, right: 34, top: 322, height: 1, background: HAIR }} />
+                      <div style={{ position: "absolute", left: 34, top: 324 }}>
+                        <div style={{ fontSize: 11, color: MUTED }}>Credits</div>
+                        <div style={{ marginTop: 2, fontSize: 38, fontWeight: 700, lineHeight: 1.05 }}>{left}</div>
+                        <div style={{ marginTop: 3, fontSize: 12, color: MUTED }}>{earned} earned</div>
+                      </div>
+                      <div style={{ position: "absolute", left: 250, top: 324, width: 128 }}>
+                        <div style={{ fontSize: 11, color: MUTED }}>Level</div>
+                        <div style={{ marginTop: 2, fontSize: 26, fontWeight: 700, lineHeight: 1.1 }}>{level.number}</div>
+                        <div style={{ marginTop: 9, height: 3, borderRadius: 2, background: "rgb(42 22 51 / 0.12)", overflow: "hidden" }}>
+                          <div style={{ width: `${level.share * 100}%`, height: "100%", backgroundImage: `linear-gradient(90deg, ${metal[2]}, ${metal[1]})` }} />
                         </div>
-                        <div style={{ marginTop: 4, height: 6, borderRadius: 3, background: "rgb(90 42 114 / 0.18)", overflow: "hidden" }}>
-                          <div style={{ width: `${level.share * 100}%`, height: "100%", background: "linear-gradient(90deg, #8c2a7a, #e5476b)" }} />
-                        </div>
+                        <div style={{ marginTop: 6, fontSize: 11, color: MUTED }}>{next ? `${toNext.toLocaleString()} pts to level ${next}` : `${points.toLocaleString()} pts`}</div>
                       </div>
 
                       {/* the seal arrives at level 2 */}
                       {level.number >= 2 && (
-                        <div style={{ position: "absolute", left: 398, top: 282, opacity: 0.9, mixBlendMode: "multiply" }}>
-                          <Stamp size={132} color="#7a2f96" rotate={-9} text="APPROVED * DECENTRALIZED CITIZEN *" center="DEV2" centerSize={27} />
+                        <div style={{ position: "absolute", left: 392, top: 322, opacity: 0.88, mixBlendMode: "multiply" }}>
+                          <Seal size={118} color="#4a2a6a" rotate={-8} />
                         </div>
                       )}
 
-                      {/* one visa stamp per level after the first */}
-                      <div style={{ position: "absolute", left: 30, top: 344, display: "flex", gap: 6 }}>
-                        {[2, 3, 4, 5, 6].map((n) =>
-                          level.number >= n ? (
-                            <div key={n} style={{ mixBlendMode: "multiply" }}>
-                              <Stamp size={32} color={["#7a2f96", "#c0306a", "#b8862d", "#2f7a8c", "#4a2fa0"][n - 2]} rotate={[-10, 8, -6, 12, -4][n - 2]} text="PALM ID * PALM ID * PALM *" fontSize={14} center={`LV ${n}`} centerSize={22} />
-                            </div>
-                          ) : (
-                            <div key={n} style={{ width: 32, height: 32, borderRadius: "50%", border: "1.5px dashed rgb(90 42 114 / 0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "rgb(90 42 114 / 0.45)" }}>
-                              {n}
-                            </div>
-                          ),
-                        )}
+                      <div style={{ position: "absolute", left: 34, top: 416 }}>
+                        <div style={{ fontSize: 11, color: MUTED }}>Wallet</div>
+                        <div style={{ marginTop: 2, fontSize: 12.5, color: INK, opacity: 0.8, whiteSpace: "nowrap" }}>{address}</div>
                       </div>
 
-                      {/* the wallet this passport was issued to */}
-                      <div style={{ position: "absolute", left: 32, top: 398, right: 32 }}>
-                        <div style={{ fontSize: 10, color: SOFT }}>WALLET</div>
-                        <div style={{ marginTop: 3,  fontSize: 13, fontWeight: 700, color: INK, whiteSpace: "nowrap" }}>{wallet}</div>
-                      </div>
-
-                      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 62, background: "rgb(255 255 255 / 0.55)", borderTop: "1px solid rgb(90 42 114 / 0.12)" }}>
-                        <svg width={PW} height={62} aria-hidden="true">
-                          <text x="32" y="26" fontSize="19" fontFamily={PALM_FONT} fill={INK}>
+                      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 58, background: "rgb(255 255 255 / 0.42)", borderTop: `1px solid ${HAIR}` }}>
+                        <svg width={PW} height={58} aria-hidden="true">
+                          <text x="34" y="24" fontSize="15" fontFamily={PALM_FONT} fill={INK} opacity="0.7">
                             {mrz("P<PALM<<" + clean(holder))}
                           </text>
-                          <text x="32" y="50" fontSize="19" fontFamily={PALM_FONT} fill={INK}>
+                          <text x="34" y="47" fontSize="15" fontFamily={PALM_FONT} fill={INK} opacity="0.7">
                             {mrz(`${number}<<GLOBAL<<${clean(look.status)}<<${issueMrz}<<NEVER`)}
                           </text>
                         </svg>
@@ -455,26 +409,13 @@ export default function PalmId({ address, credit, onConnect }) {
                     </>
                   )}
 
-                  <div style={{ position: "absolute", left: 0, top: 0, width: 54, height: PH, background: "linear-gradient(90deg, rgb(10 2 20 / 0.34), transparent)", pointerEvents: "none", zIndex: 5 }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, width: 56, height: PH, background: "linear-gradient(90deg, rgb(20 8 24 / 0.28), transparent)", pointerEvents: "none", zIndex: 5 }} />
                 </div>
               </div>
             </div>
 
             {/* the cover: its outside faces you when closed, its inside is the left page once it has swung open */}
-            <div
-              style={{
-                position: "absolute",
-                left: HALF,
-                top: 0,
-                width: HALF,
-                height: H,
-                transformOrigin: "0 50%",
-                transformStyle: "preserve-3d",
-                transform: open ? "rotateY(-180deg)" : "rotateY(0deg)",
-                transition: ease,
-                zIndex: 3,
-              }}
-            >
+            <div style={{ position: "absolute", left: HALF, top: 0, width: HALF, height: H, transformOrigin: "0 50%", transformStyle: "preserve-3d", transform: open ? "rotateY(-180deg)" : "rotateY(0deg)", transition: ease, zIndex: 3 }}>
               <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}>
                 <FrontCover look={look} address={address} onConnect={onConnect} />
               </div>
@@ -488,7 +429,7 @@ export default function PalmId({ address, credit, onConnect }) {
       <p className="mx-auto mt-3 max-w-[760px] text-[12px] leading-5 text-[var(--muted)]">
         {address ? (
           <>
-            Level {level.number} · {look.status}. Issued to your wallet. Your ID shows your credits and levels up as you earn points in Achievements.
+            Level {level.number} · {look.status}. Issued to your wallet. Your ID shows your credits and gets richer as you earn points in Achievements.
             {next ? ` Level ${next} adds ${UNLOCKS[next - 1]}.` : " This is the best it gets."} Click the passport to close or open it.
           </>
         ) : (

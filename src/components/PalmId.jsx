@@ -18,44 +18,46 @@ const HAIR = "rgb(42 22 51 / 0.12)";
 const PALM_FONT = '"PALM", "Segoe UI", system-ui, sans-serif';
 const OPEN_MS = 1700;
 
-// What the passport looks like at each level. The metal gets richer as you level up.
+// Holdings decide the tier. Top rank is 250,000 $PALM held plus staked.
 const LOOKS = [
-  { status: "Visitor", cover: "#1f1d26", metal: ["#e3e5ea", "#a4a8b3", "#767b87"], guil: 0.05, duo: ["#16161a", "#e9e9ec"], pearl: 0.3 },
-  { status: "Resident", cover: "#2b1830", metal: ["#f6d6b4", "#c48a56", "#8c5a32"], guil: 0.06, duo: ["#1a1216", "#eee4d8"], pearl: 0.35 },
-  { status: "Citizen", cover: "#2e1228", metal: ["#fae0d4", "#cf9588", "#a56a5e"], guil: 0.07, duo: ["#1c1216", "#f0e4d8"], pearl: 0.6 },
-  { status: "Holder", cover: "#1b1020", metal: ["#fbeab4", "#d0a748", "#9a6f1c"], guil: 0.08, duo: ["#1e1015", "#f4e4cf"], pearl: 0.7 },
-  { status: "Diamond Hands", cover: "#1b1020", metal: ["#fff3c4", "#d9b04f", "#9a6f1c"], guil: 0.09, duo: ["#1e1015", "#f6e5cf"], pearl: 0.85, shine: true },
-  { status: "Founder", cover: "#150b19", metal: ["#fff6d0", "#e0b857", "#a07418"], guil: 0.1, duo: ["#1e1015", "#f8e7d0"], pearl: 1, shine: true },
+  { status: "Guest", cover: "#1f1d26", metal: ["#e3e5ea", "#a4a8b3", "#767b87"], guil: 0.05, duo: ["#16161a", "#e9e9ec"], pearl: 0.25 },
+  { status: "Member", cover: "#241c28", metal: ["#f6d6b4", "#c48a56", "#8c5a32"], guil: 0.055, duo: ["#1a1216", "#eee4d8"], pearl: 0.32 },
+  { status: "Plus", cover: "#1c1e26", metal: ["#e8e4dc", "#9aa3b0", "#6d7582"], guil: 0.06, duo: ["#16161c", "#ece8e2"], pearl: 0.4 },
+  { status: "Silver", cover: "#1a1c22", metal: ["#f2f3f6", "#b8bec8", "#7d8490"], guil: 0.065, duo: ["#14161a", "#f0f0f2"], pearl: 0.5 },
+  { status: "Gold", cover: "#1b1020", metal: ["#fbeab4", "#d0a748", "#9a6f1c"], guil: 0.075, duo: ["#1e1015", "#f4e4cf"], pearl: 0.65 },
+  { status: "Platinum", cover: "#141820", metal: ["#f4f6fa", "#c5d0dc", "#8a97a8"], guil: 0.08, duo: ["#12161c", "#eef2f6"], pearl: 0.78 },
+  { status: "Black", cover: "#100c12", metal: ["#fff3c4", "#d9b04f", "#9a6f1c"], guil: 0.09, duo: ["#1e1015", "#f6e5cf"], pearl: 0.9, shine: true },
+  { status: "Reserve", cover: "#0c0810", metal: ["#fff6d0", "#e0b857", "#a07418"], guil: 0.1, duo: ["#1e1015", "#f8e7d0"], pearl: 1, shine: true },
 ];
 
-// Holdings decide the tier: $PALM held plus staked, with the tier names from LOOKS.
-const TIER_AT = [0, 1000, 10000, 100000, 1000000, 5000000];
+const TIER_AT = [0, 1000, 2500, 10000, 25000, 50000, 100000, 250000];
 const PERKS = [
   "Welcome credits",
-  "1 credit every 14 days",
-  "10 credits every 14 days",
-  "100 credits every 14 days",
-  "1,000 credits every 14 days",
-  "5,000 credits every 14 days",
+  "1 credit / 14 days",
+  "2.5 credits / 14 days",
+  "10 credits / 14 days",
+  "25 credits / 14 days",
+  "50 credits / 14 days",
+  "100 credits / 14 days",
+  "250 credits / 14 days",
 ];
-const FINISH = ["Steel foil", "Bronze foil and the DEV2 seal", "Rose-gold foil", "Gold foil and a warm photo", "A slow foil shimmer", "The pearl seal"];
-
-// Customisation. Everything here is unlocked by how far the passport has come (min = look level).
 const COVERS = [
   { id: "auto", label: "Tier default", min: 1 },
   { id: "graphite", label: "Graphite", color: "#1d1e24", min: 1 },
   { id: "plum", label: "Plum", color: "#2b1830", min: 2 },
-  { id: "midnight", label: "Midnight", color: "#0f1a30", min: 2 },
-  { id: "forest", label: "Forest", color: "#10261f", min: 3 },
-  { id: "oxblood", label: "Oxblood", color: "#2c1017", min: 4 },
+  { id: "midnight", label: "Midnight", color: "#0f1a30", min: 3 },
+  { id: "forest", label: "Forest", color: "#10261f", min: 4 },
+  { id: "oxblood", label: "Oxblood", color: "#2c1017", min: 5 },
+  { id: "ink", label: "Ink", color: "#0c0810", min: 7 },
 ];
 const FOILS = [
   { id: "auto", label: "Tier default", min: 1 },
   { id: "1", label: "Steel", min: 1 },
   { id: "2", label: "Bronze", min: 2 },
-  { id: "3", label: "Rose gold", min: 3 },
-  { id: "4", label: "Gold", min: 4 },
-  { id: "6", label: "Royal gold", min: 6 },
+  { id: "4", label: "Silver", min: 4 },
+  { id: "5", label: "Gold", min: 5 },
+  { id: "6", label: "Platinum", min: 6 },
+  { id: "8", label: "Reserve gold", min: 8 },
 ];
 const SETTINGS_KEY = "root-web-passport:";
 
@@ -218,7 +220,7 @@ function Field({ label, value, x, y, width = 140, size = 17 }) {
 
 /** The DEV2 seal, pressed in ink. */
 function Seal({ size, color, rotate }) {
-  const text = "APPROVED  \u2022  DECENTRALIZED CITIZEN  \u2022";
+  const text = "APPROVED  \u2022  PALM ID  \u2022  APPROVED  \u2022";
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" style={{ transform: `rotate(${rotate}deg)`, fontFamily: PALM_FONT }}>
       <defs>
@@ -291,7 +293,7 @@ function FrontCover({ look, address, onConnect }) {
         <div style={{ position: "absolute", left: PW / 2 - 62, top: 130, width: 124, height: 85, ...foil, ...maskPalm, filter: "drop-shadow(0 -1px 0 rgb(255 255 255 / 0.25)) drop-shadow(0 2px 3px rgb(0 0 0 / 0.6))" }} />
         <div style={{ position: "absolute", left: 0, right: 0, top: 252, textAlign: "center" }}>
           <div style={{ display: "inline-block", fontSize: 30, fontWeight: 700, color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.55))" }}>PALM ID</div>
-          <div style={{ marginTop: 6, fontSize: 12, color: look.metal[1], opacity: 0.85 }}>Decentralized Citizen</div>
+          <div style={{ marginTop: 6, fontSize: 12, color: look.metal[1], opacity: 0.85 }}>{look.status}</div>
           {short && <div style={{ marginTop: 26, display: "inline-block", padding: "6px 16px", borderRadius: 999, border: `1px solid ${look.metal[1]}`, fontSize: 14, fontWeight: 600, color: look.metal[0], opacity: 0.95 }}>{short}</div>}
         </div>
         <svg width="34" height="24" viewBox="0 0 34 24" style={{ position: "absolute", left: PW / 2 - 17, bottom: 56 }} aria-hidden="true">
@@ -323,8 +325,6 @@ function FrontCover({ look, address, onConnect }) {
 /** The inside of the front cover: the sunset-oasis artwork, with the tier ladder laid over it. */
 function InsideCover({ look, total, tier }) {
   const next = tier < TIER_AT.length - 1 ? tier + 1 : null;
-  const from = TIER_AT[tier];
-  const share = next ? Math.min(1, Math.max(0, (total - from) / (TIER_AT[next] - from))) : 1;
   const soft = "rgb(255 244 224 / 0.62)";
   return (
     <div style={frameStyle(look, "16px 6px 6px 16px")}>
@@ -332,31 +332,31 @@ function InsideCover({ look, total, tier }) {
         <img src="/brand/passport-oasis.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "23% 50%" }} />
         <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 90px rgb(40 8 40 / 0.35)" }} />
         <div style={{ position: "absolute", right: 0, top: 0, width: 70, height: PH, background: "linear-gradient(270deg, rgb(20 4 24 / 0.45), transparent)" }} />
-        <div style={{ position: "absolute", left: 26, right: 26, top: 24, bottom: 24, borderRadius: 14, background: "linear-gradient(180deg, rgb(22 7 30 / 0.5), rgb(22 7 30 / 0.34))", border: "1px solid rgb(255 244 224 / 0.28)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", padding: "22px 26px", boxSizing: "border-box" }}>
+        <div style={{ position: "absolute", left: 22, right: 22, top: 20, bottom: 20, borderRadius: 14, background: "linear-gradient(180deg, rgb(22 7 30 / 0.52), rgb(22 7 30 / 0.36))", border: "1px solid rgb(255 244 224 / 0.28)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", padding: "16px 20px 14px", boxSizing: "border-box" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-            <div style={{ fontSize: 21, fontWeight: 700 }}>Tier progress</div>
-            <div style={{ fontSize: 13, color: soft }}>{shortAmount(total)} $PALM</div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>Tiers</div>
+            <div style={{ fontSize: 12, color: soft }}>{shortAmount(total)} / 250K</div>
           </div>
-          <div style={{ marginTop: 14, height: 5, borderRadius: 3, background: "rgb(255 244 224 / 0.18)", overflow: "hidden" }}>
-            <div style={{ width: `${share * 100}%`, height: "100%", borderRadius: 3, backgroundImage: foilFill(LOOKS[Math.min(5, tier + 1)]) }} />
+          <div style={{ marginTop: 10, height: 4, borderRadius: 3, background: "rgb(255 244 224 / 0.18)", overflow: "hidden" }}>
+            <div style={{ width: `${Math.min(1, total / TIER_AT[TIER_AT.length - 1]) * 100}%`, height: "100%", borderRadius: 3, backgroundImage: foilFill(LOOKS[tier]) }} />
           </div>
-          <div style={{ marginTop: 8, fontSize: 12.5, color: soft }}>
-            {next ? `${shortAmount(Math.max(0, TIER_AT[next] - total))} $PALM more to reach ${LOOKS[next].status}` : "You are at the top tier."}
+          <div style={{ marginTop: 6, fontSize: 11.5, color: soft }}>
+            {next ? `${shortAmount(Math.max(0, TIER_AT[next] - total))} more to ${LOOKS[next].status}` : "Top tier."}
           </div>
-          <div style={{ position: "relative", marginTop: 18 }}>
-            <div style={{ position: "absolute", left: 6, top: 24, height: 240, width: 1, background: "rgb(255 244 224 / 0.22)" }} />
-            <div style={{ position: "absolute", left: 6, top: 24, height: tier * 48, width: 1, background: look.metal[0] }} />
+          <div style={{ position: "relative", marginTop: 10 }}>
+            <div style={{ position: "absolute", left: 5, top: 16, height: LOOKS.length * 42 - 32, width: 1, background: "rgb(255 244 224 / 0.22)" }} />
+            <div style={{ position: "absolute", left: 5, top: 16, height: Math.max(0, tier * 42), width: 1, background: look.metal[0] }} />
             {LOOKS.map((item, index) => {
               const reached = index <= tier;
               const current = index === tier;
               return (
-                <div key={item.status} style={{ position: "relative", display: "flex", alignItems: "center", gap: 16, height: 48, opacity: reached ? 1 : 0.62, background: current ? "rgb(255 244 224 / 0.1)" : "transparent", borderRadius: 10, margin: "0 -8px", padding: "0 8px" }}>
-                  <div style={{ width: 13, height: 13, borderRadius: "50%", flex: "none", boxSizing: "border-box", border: `2px solid ${reached ? item.metal[0] : "rgb(255 244 224 / 0.4)"}`, background: reached ? item.metal[1] : "transparent", boxShadow: current ? `0 0 0 4px ${item.metal[1]}40` : "none" }} />
+                <div key={item.status} style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 42, opacity: reached ? 1 : 0.55, background: current ? "rgb(255 244 224 / 0.1)" : "transparent", borderRadius: 8, margin: "0 -6px", padding: "0 6px" }}>
+                  <div style={{ width: 11, height: 11, borderRadius: "50%", flex: "none", boxSizing: "border-box", border: `2px solid ${reached ? item.metal[0] : "rgb(255 244 224 / 0.4)"}`, background: reached ? item.metal[1] : "transparent", boxShadow: current ? `0 0 0 3px ${item.metal[1]}40` : "none" }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600 }}>{item.status}</div>
-                    <div style={{ fontSize: 11.5, color: soft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{PERKS[index]} · {FINISH[index]}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.15 }}>{item.status}</div>
+                    <div style={{ fontSize: 10.5, color: soft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{PERKS[index]}</div>
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 600, color: reached ? item.metal[0] : soft }}>{index === 0 ? "Any" : shortAmount(TIER_AT[index]) + "+"}</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: reached ? item.metal[0] : soft }}>{index === 0 ? "0" : shortAmount(TIER_AT[index])}</div>
                 </div>
               );
             })}
@@ -434,8 +434,8 @@ export default function PalmId({ address, credit, onConnect }) {
   const staked = palmAmount(credit?.staked);
   const total = address ? held + staked : 0;
   const tier = tierOf(total);
-  const shown = Math.max(level.number, tier + 1);
-  const base = LOOKS[shown - 1];
+  const shown = tier + 1;
+  const base = LOOKS[tier];
   const tierName = LOOKS[tier].status;
   const nextTier = tier < TIER_AT.length - 1 ? tier + 1 : null;
   const [settings, setSettings] = useState(() => readSettings(address));
@@ -504,7 +504,7 @@ export default function PalmId({ address, credit, onConnect }) {
   const left = credit ? formatCredits(credit.remaining) : "0";
   const earned = quests ? formatCredits(quests.creditsEarned) : "0";
   const scale = Math.min(1, width / W);
-  const next = level.number < LOOKS.length ? level.number + 1 : null;
+  const next = level.next ? level.number + 1 : null;
   const toNext = level.next ? Math.max(0, level.next - points) : 0;
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const ease = reduce ? "none" : `transform ${OPEN_MS}ms cubic-bezier(0.65, 0, 0.25, 1)`;
@@ -548,7 +548,7 @@ export default function PalmId({ address, credit, onConnect }) {
         ctx.fillText(value, x, y);
       };
       text("PALM ID", 34, 52, 26, INK, 700);
-      text("Holder passport \u00b7 Decentralized citizen", 34, 74, 12, MUTED);
+      text(`${tierName} \u00b7 ${shortAmount(total)} $PALM`, 34, 74, 12, MUTED);
       ctx.fillStyle = HAIR;
       ctx.fillRect(34, 84, PW - 68, 1);
       if (typeof ctx.filter === "string") {
@@ -669,7 +669,7 @@ export default function PalmId({ address, credit, onConnect }) {
                     <>
                       <div style={{ position: "absolute", left: 34, top: 26 }}>
                         <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.1 }}>PALM ID</div>
-                        <div style={{ marginTop: 4, fontSize: 12, color: MUTED }}>Holder passport · Decentralized citizen</div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: MUTED }}>{tierName} · {shortAmount(total)} $PALM</div>
                       </div>
                       {/* pearl security seal */}
                       <div style={{ position: "absolute", right: 32, top: 22, width: 48, height: 48, borderRadius: "50%", opacity: look.pearl, backgroundImage: "conic-gradient(from 30deg, #f6f1f8, #d3e3ee, #f2dfe8, #e5ecd2, #f6f1f8)", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 0.8), 0 0 0 1px rgb(42 22 51 / 0.14), 0 3px 8px rgb(42 22 51 / 0.18)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -752,8 +752,8 @@ export default function PalmId({ address, credit, onConnect }) {
       <p className="mx-auto mt-3 max-w-[760px] text-[12px] leading-5 text-[var(--muted)]">
         {address ? (
           <>
-            {tierName} tier, from {shortAmount(total)} $PALM held and staked.
-            {nextTier ? ` ${shortAmount(TIER_AT[nextTier] - total)} more reaches ${LOOKS[nextTier].status}.` : ""} The passport finish also grows with your Achievements level. Click it to close or open.
+            {tierName}, from {shortAmount(total)} $PALM held and staked.
+            {nextTier ? ` ${shortAmount(TIER_AT[nextTier] - total)} more reaches ${LOOKS[nextTier].status}.` : " This is the top tier."} Click the passport to close or open it.
           </>
         ) : (
           "A PALM ID is issued to a wallet address, so it stays shut until you connect one."

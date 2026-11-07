@@ -52,6 +52,7 @@ import DayTasksToggle from "./components/DayTasksToggle.jsx";
 import Tour from "./components/Tour.jsx";
 import { DockTargets, LayoutBar, useLayout } from "./layout.jsx";
 import HamrinIntro, { hamrinSeen } from "./components/HamrinIntro.jsx";
+import MobileDock, { useMobileShell } from "./components/MobileDock.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
 
@@ -106,6 +107,7 @@ export default function App() {
   const signOpsRef = useRef(signMessageAsync);
   signOpsRef.current = signMessageAsync;
   const [dayTasksIdle, setDayTasksIdle] = useState(false);
+  const mobile = useMobileShell();
   const [editorFile, setEditorFile] = useState("README.md");
   const [tour, setTour] = useState(() => {
     try {
@@ -920,6 +922,7 @@ export default function App() {
               project={activeProject}
               filesOpen={filesOpen}
               credit={credit}
+              address={isConnected ? address : ""}
               onBilling={() => openView("billing")}
               onMenu={() => {
                 setFilesOpen(false);
@@ -1094,6 +1097,30 @@ export default function App() {
                 />
               )}
             </div>
+            {mobile && (
+              <MobileDock
+                view={view}
+                address={isConnected ? address : ""}
+                onNew={() => {
+                  setNavOpen(false);
+                  setView("home");
+                  setSessionId(null);
+                  setSessionTitle("New Agent");
+                }}
+                onMenu={() => {
+                  setFilesOpen(false);
+                  setNavOpen((open) => !open);
+                }}
+                onAccount={() => {
+                  setNavOpen(false);
+                  openView("account");
+                }}
+                onId={() => {
+                  setNavOpen(false);
+                  openView("account");
+                }}
+              />
+            )}
           </main>
         </div>
       </div>

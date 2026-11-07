@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Icon } from "./Icons.jsx";
 import { useAppState } from "../AppState.jsx";
 import { creditTitle, formatCredits, PALM_PER_CREDIT } from "../glmChat.js";
 import WalletButton from "./WalletButton.jsx";
 import { PanelGrip, useLayout, Zone } from "../layout.jsx";
+import { APP_VERSION, publicIdUrl } from "../version.js";
 
 const HEADERS = {
   home: { title: "New Agent" },
@@ -38,8 +40,11 @@ export default function HeaderBar({
   project: liveProject,
   credit = null,
   onBilling,
+  address = "",
 }) {
   const { signedIn } = useAppState();
+  const [more, setMore] = useState(false);
+  const idHref = publicIdUrl(address);
   const header = HEADERS[view] || HEADERS.home;
   const title =
     view === "chat" && sessionTitle ? sessionTitle : view === "editor" && sessionTitle ? sessionTitle : header.title;
@@ -135,7 +140,65 @@ export default function HeaderBar({
       >
         <Icon name="folder" size={16} />
       </button>
+      <div className="relative sm:hidden">
+        <button
+          type="button"
+          onClick={() => setMore((value) => !value)}
+          className={`flex h-10 w-10 items-center justify-center rounded-lg ${more ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"}`}
+          aria-label="More"
+          aria-expanded={more}
+        >
+          <Icon name="dots" size={16} />
+        </button>
+        {more && (
+          <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-[220px] rounded-[14px] border border-[var(--stroke)] bg-[var(--panel)] p-1.5 shadow-[0_18px_40px_rgb(0_0_0_/_0.35)]">
+            <MoreItem
+              onClick={() => {
+                setMore(false);
+                onAvatar();
+              }}
+            >
+              Avatar {avatarOn ? "· on" : ""}
+            </MoreItem>
+            <MoreItem
+              onClick={() => {
+                setMore(false);
+                onHelp();
+              }}
+            >
+              Help
+            </MoreItem>
+            <MoreItem
+              onClick={() => {
+                setMore(false);
+                onClear();
+              }}
+            >
+              Clear chat
+            </MoreItem>
+            {idHref && (
+              <MoreItem
+                onClick={() => {
+                  setMore(false);
+                  window.location.href = idHref;
+                }}
+              >
+                Public PALM ID
+              </MoreItem>
+            )}
+            <div className="px-3 py-2 text-[11px] text-[var(--faint)]">Web {APP_VERSION} · mobile</div>
+          </div>
+        )}
+      </div>
     </header>
+  );
+}
+
+function MoreItem({ children, onClick }) {
+  return (
+    <button type="button" onClick={onClick} className="flex h-11 w-full items-center rounded-[10px] px-3 text-left text-[13.5px] hover:bg-[var(--hover)]">
+      {children}
+    </button>
   );
 }
 

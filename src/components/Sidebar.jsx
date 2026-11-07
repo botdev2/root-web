@@ -305,7 +305,7 @@ export default function Sidebar({
   ];
 
   return (
-    <aside data-tour="sidebar" className={`frost flex h-full w-[min(248px,86vw)] shrink-0 flex-col border-[var(--stroke)] ${layout.sidebar === "right" ? "border-r md:border-l md:border-r-0" : "border-r"}`}>
+    <aside data-tour="sidebar" className={`frost flex h-full w-[min(320px,92vw)] shrink-0 flex-col border-[var(--stroke)] md:w-[248px] ${layout.sidebar === "right" ? "border-r md:border-l md:border-r-0" : "border-r"}`}>
       <div className="flex items-center justify-between gap-2 px-3.5 pb-1 pt-3.5">
         <button
           type="button"

@@ -74,6 +74,18 @@ export function readCredits(address) {
   return call("/v1/credits", { address });
 }
 
+/** Public PALM ID snapshot. No wallet sign-in. */
+export function readPalmId(address) {
+  const wallet = String(address || "").toLowerCase();
+  return fetch(ORIGIN + "/v1/palm-id/" + encodeURIComponent(wallet), {
+    headers: { "content-type": "application/json" },
+  }).then(async (response) => {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not read this PALM ID.");
+    return data;
+  });
+}
+
 export function readQuests(address) {
   return call("/v1/quests", { address });
 }

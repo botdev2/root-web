@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import { Icon } from "./Icons.jsx";
@@ -38,6 +38,7 @@ export default function Composer({
   const { editing } = useLayout();
   const fileRef = useRef(null);
   const boxRef = useRef(null);
+  const [more, setMore] = useState(false);
 
   const pool = [
     {
@@ -146,7 +147,7 @@ export default function Composer({
       id: "json",
       label: "JSON export",
       home: "composer",
-      className: "shrink-0",
+      className: "hidden shrink-0 md:block",
       node: (
         <button
           type="button"
@@ -265,14 +266,42 @@ export default function Composer({
               event.target.value = "";
             }}
           />
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="relative flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--stroke)] text-[var(--ink)] md:hidden"
+              aria-label="Composer controls"
+              onClick={() => setMore((value) => !value)}
+            >
+              <Icon name="dots" size={16} />
+            </button>
+            {more && (
+              <div className="absolute bottom-[calc(100%+8px)] right-0 z-30 w-[220px] rounded-[14px] border border-[var(--stroke)] bg-[var(--panel)] p-1.5 md:hidden">
+                <button type="button" className="flex h-11 w-full items-center rounded-[10px] px-3 text-left text-[13.5px] hover:bg-[var(--hover)]" onClick={() => { onAutoPrompt?.(); setMore(false); }}>
+                  Auto-Prompt {autoPrompt ? "· on" : "· off"}
+                </button>
+                <button type="button" className="flex h-11 w-full items-center rounded-[10px] px-3 text-left text-[13.5px] hover:bg-[var(--hover)]" onClick={() => { onWeb?.(); setMore(false); }}>
+                  Web {web ? "· on" : "· off"}
+                </button>
+                <button
+                  type="button"
+                  className="flex h-11 w-full items-center rounded-[10px] px-3 text-left text-[13.5px] hover:bg-[var(--hover)]"
+                  onClick={() => {
+                    downloadChatJson({ turns, sessionTitle, projectLabel, mode, usagePercent, credit });
+                    setMore(false);
+                  }}
+                >
+                  Download JSON
+                </button>
+              </div>
+            )}
             <button
               type="button"
               data-tour="send"
               onClick={submit}
               disabled={sending}
               aria-label="Send"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--bg)] disabled:opacity-50 md:h-[34px] md:w-[34px]"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--bg)] disabled:opacity-50 md:h-[34px] md:w-[34px]"
             >
               <Icon name="send" size={16} />
             </button>

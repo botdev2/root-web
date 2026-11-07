@@ -1495,3 +1495,14 @@ textarea {
 /* ---- PALM ID card ---- */
 @keyframes pid-foil { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 @keyframes pid-sheen { 0%, 100% { background-position: 130% 0; } 50% { background-position: -30% 0; } }
+
+/* Mobile shell: larger taps, hide arrange-layout chrome */
+[data-shell="mobile"] .lay-bar,
+[data-shell="mobile"] .lay-panel-grip {
+  display: none !important;
+}
+@media (max-width: 767px) {
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+}

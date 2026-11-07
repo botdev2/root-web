@@ -3,6 +3,7 @@ import portrait from "../assets/avatar.png";
 import { formatCredits, readQuests } from "../glmChat.js";
 import { readProfile, writeProfile } from "../account.js";
 import { levelOf } from "./views/QuestsView.jsx";
+import { publicIdUrl } from "../version.js";
 
 // The whole open passport is drawn at this size, then scaled to fit. Both pages are the same size.
 const W = 1100;
@@ -368,7 +369,7 @@ function InsideCover({ look, total, tier }) {
 }
 
 /** An open PALM ID passport. It needs a wallet, reads credits and level from the account, and the more you do, the richer it looks. */
-export default function PalmId({ address, credit, onConnect }) {
+export default function PalmId({ address, credit, onConnect, publicPage = false }) {
   const [quests, setQuests] = useState(null);
   const [width, setWidth] = useState(W);
   const [open, setOpen] = useState(false);
@@ -380,6 +381,10 @@ export default function PalmId({ address, credit, onConnect }) {
     let cancelled = false;
     setQuests(null);
     if (!address) return undefined;
+    if (publicPage) {
+      setQuests({ points: credit?.points || 0, creditsEarned: credit?.creditsEarned || 0 });
+      return undefined;
+    }
     readQuests(address)
       .then((data) => {
         if (!cancelled) setQuests(data.quests || null);
@@ -388,7 +393,7 @@ export default function PalmId({ address, credit, onConnect }) {
     return () => {
       cancelled = true;
     };
-  }, [address]);
+  }, [address, publicPage, credit?.points, credit?.creditsEarned]);
 
   useEffect(() => {
     const node = wrap.current;
@@ -764,13 +769,25 @@ export default function PalmId({ address, credit, onConnect }) {
         <div className="mx-auto mt-3 max-w-[760px]">
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" style={chip(false)} onClick={() => copy(address, "Wallet address copied")}>Copy address</button>
-            <button type="button" style={chip(false)} onClick={() => copy(`PALM ID ${number} \u00b7 ${tierName} \u00b7 ${shortAddress}\n${address}`, "ID details copied")}>Share ID</button>
+            <button type="button" style={chip(false)} onClick={() => copy(publicIdUrl(address) || address, "Public ID link copied")}>Copy public link</button>
+            {!publicPage && (
+              <button
+                type="button"
+                style={chip(false)}
+                onClick={() => {
+                  const href = publicIdUrl(address);
+                  if (href) window.open(href, "_blank", "noopener");
+                }}
+              >
+                Open public page
+              </button>
+            )}
             <button type="button" style={chip(false)} onClick={saveImage}>Save as image</button>
-            <button type="button" style={chip(custom)} onClick={() => setCustom((value) => !value)}>{custom ? "Done" : "Customize"}</button>
+            {!publicPage && <button type="button" style={chip(custom)} onClick={() => setCustom((value) => !value)}>{custom ? "Done" : "Customize"}</button>}
             <span className="text-[12px] text-[var(--muted)]" aria-live="polite">{note}</span>
           </div>
 
-          {custom && (
+          {custom && !publicPage && (
             <div className="mt-3 grid gap-4 rounded-[14px] border border-[var(--stroke-soft)] bg-[var(--panel-soft)] p-4 text-[12px] text-[var(--muted)] sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1.5 block">Name on the passport</span>

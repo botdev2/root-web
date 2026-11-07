@@ -1,0 +1,4 @@
+/id/*    /index.html   200
+/tv      /index.html   200
+/tv/     /index.html   200
+/*       /index.html   200

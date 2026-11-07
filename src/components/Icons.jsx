@@ -117,6 +117,29 @@ export function Icon({ name, size = 16, className = "" }) {
           <path d="M4 7h16M4 12h16M4 17h16" />
         </svg>
       );
+    case "user":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="8" r="3.2" />
+          <path d="M5.2 19.2a7 7 0 0 1 13.6 0" />
+        </svg>
+      );
+    case "id":
+      return (
+        <svg {...props}>
+          <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+          <circle cx="9" cy="12" r="2.1" />
+          <path d="M13 10.5h5M13 13.5h3.5" />
+        </svg>
+      );
+    case "dots":
+      return (
+        <svg {...props}>
+          <circle cx="6" cy="12" r="1.3" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+          <circle cx="18" cy="12" r="1.3" fill="currentColor" stroke="none" />
+        </svg>
+      );
     case "play":
       return (
         <svg {...props} fill="currentColor" stroke="none">

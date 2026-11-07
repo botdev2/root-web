@@ -28,7 +28,29 @@ const LOOKS = [
   { status: "Founder", cover: "#150b19", metal: ["#fff6d0", "#e0b857", "#a07418"], guil: 0.1, duo: ["#1e1015", "#f8e7d0"], pearl: 1, shine: true },
 ];
 
-const UNLOCKS = ["", "bronze foil and the DEV2 seal", "rose-gold foil", "gold foil and a warmer photo", "a slow foil shimmer", "the pearl seal"];
+// Holdings decide how the passport looks: $PALM held plus staked, with the tier names from LOOKS.
+const TIER_AT = [0, 1000, 10000, 100000, 1000000, 5000000];
+
+function tierOf(total) {
+  let index = 0;
+  TIER_AT.forEach((min, i) => {
+    if (total >= min) index = i;
+  });
+  return index;
+}
+
+function palmAmount(text) {
+  const value = Number.parseFloat(String(text || "0").replace(/,/g, ""));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function shortAmount(value) {
+  if (value >= 1e9) return (value / 1e9).toFixed(2).replace(/\.?0+$/, "") + "B";
+  if (value >= 1e6) return (value / 1e6).toFixed(2).replace(/\.?0+$/, "") + "M";
+  if (value >= 1e5) return (value / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+  return value.toLocaleString("en-US", { maximumFractionDigits: value < 100 ? 2 : 0 });
+}
+
 
 function hash(text) {
   let value = 2166136261;
@@ -182,6 +204,7 @@ function Photo({ look, level }) {
 
 /** The outside of the passport: dark leather with a foil palm and name. */
 function FrontCover({ look, address, onConnect }) {
+  const short = address ? `${address.slice(0, 2)}...${address.slice(-4)}` : "";
   const foil = { backgroundImage: foilFill(look) };
   return (
     <div style={frameStyle(look, "6px 16px 16px 6px")}>
@@ -198,6 +221,7 @@ function FrontCover({ look, address, onConnect }) {
         <div style={{ position: "absolute", left: 0, right: 0, top: 252, textAlign: "center" }}>
           <div style={{ display: "inline-block", fontSize: 30, fontWeight: 700, color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.55))" }}>PALM ID</div>
           <div style={{ marginTop: 6, fontSize: 12, color: look.metal[1], opacity: 0.85 }}>Decentralized Citizen</div>
+          {short && <div style={{ marginTop: 26, display: "inline-block", padding: "6px 16px", borderRadius: 999, border: `1px solid ${look.metal[1]}`, fontSize: 14, fontWeight: 600, color: look.metal[0], opacity: 0.95 }}>{short}</div>}
         </div>
         <svg width="34" height="24" viewBox="0 0 34 24" style={{ position: "absolute", left: PW / 2 - 17, bottom: 56 }} aria-hidden="true">
           <rect x="1" y="1" width="32" height="22" rx="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.8" />
@@ -302,7 +326,13 @@ export default function PalmId({ address, credit, onConnect }) {
 
   const points = quests?.points || 0;
   const level = levelOf(address ? points : 0);
-  const look = LOOKS[level.number - 1];
+  const held = palmAmount(credit?.held);
+  const staked = palmAmount(credit?.staked);
+  const total = address ? held + staked : 0;
+  const tier = tierOf(total);
+  const shown = Math.max(level.number, tier + 1);
+  const look = LOOKS[shown - 1];
+  const nextTier = tier < TIER_AT.length - 1 ? tier + 1 : null;
   const profile = useMemo(() => (address ? readProfile(address) : { name: "" }), [address]);
   const issued = useMemo(() => issuedOn(address), [address]);
   const holder = (profile?.name || "").trim() || "$PALM HOLDER";
@@ -356,15 +386,15 @@ export default function PalmId({ address, credit, onConnect }) {
                       <div style={{ position: "absolute", left: 34, right: 34, top: 84, height: 1, backgroundImage: `linear-gradient(90deg, ${metal[2]}, ${metal[1]}, transparent)`, opacity: 0.7 }} />
 
                       <div style={{ position: "absolute", left: 34, top: 106, padding: 3, background: "#fffdf8", boxShadow: `0 0 0 1px ${metal[1]}, 0 8px 18px rgb(42 22 51 / 0.22)` }}>
-                        <Photo look={look} level={level.number} />
+                        <Photo look={look} level={shown} />
                       </div>
 
                       <Field label="Name" value={holder.toUpperCase()} x={226} y={106} size={holder.length > 12 ? 15 : 17} />
-                      <Field label="Status" value={look.status.toUpperCase()} x={380} y={106} size={look.status.length > 10 ? 15 : 17} />
-                      <Field label="Nationality" value="CHAD" x={226} y={168} />
-                      <Field label="Issued" value={issueText} x={380} y={168} />
-                      <Field label="Expiry" value="NEVER" x={226} y={230} />
-                      <Field label="Passport no." value={number} x={380} y={230} />
+                      <Field label="Tier" value={look.status.toUpperCase()} x={380} y={106} size={look.status.length > 10 ? 15 : 17} />
+                      <Field label="$PALM held" value={shortAmount(held)} x={226} y={168} />
+                      <Field label="$PALM staked" value={shortAmount(staked)} x={380} y={168} />
+                      <Field label="Passport no." value={number} x={226} y={230} />
+                      <Field label="Issued" value={issueText} x={380} y={230} />
                       <div style={{ position: "absolute", left: 226, right: 34, top: 156, height: 1, background: HAIR }} />
                       <div style={{ position: "absolute", left: 226, right: 34, top: 218, height: 1, background: HAIR }} />
 
@@ -385,7 +415,7 @@ export default function PalmId({ address, credit, onConnect }) {
                       </div>
 
                       {/* the seal arrives at level 2 */}
-                      {level.number >= 2 && (
+                      {shown >= 2 && (
                         <div style={{ position: "absolute", left: 392, top: 322, opacity: 0.88, mixBlendMode: "multiply" }}>
                           <Seal size={118} color="#4a2a6a" rotate={-8} />
                         </div>
@@ -402,7 +432,7 @@ export default function PalmId({ address, credit, onConnect }) {
                             {mrz("P<PALM<<" + clean(holder))}
                           </text>
                           <text x="34" y="47" fontSize="15" fontFamily={PALM_FONT} fill={INK} opacity="0.7">
-                            {mrz(`${number}<<GLOBAL<<${clean(look.status)}<<${issueMrz}<<NEVER`)}
+                            {mrz(`${number}<<${clean(look.status)}<<${issueMrz}<<${shortAmount(total).replace(/[^0-9A-Z]/gi, "")}`)}
                           </text>
                         </svg>
                       </div>
@@ -429,8 +459,8 @@ export default function PalmId({ address, credit, onConnect }) {
       <p className="mx-auto mt-3 max-w-[760px] text-[12px] leading-5 text-[var(--muted)]">
         {address ? (
           <>
-            Level {level.number} · {look.status}. Issued to your wallet. Your ID shows your credits and gets richer as you earn points in Achievements.
-            {next ? ` Level ${next} adds ${UNLOCKS[next - 1]}.` : " This is the best it gets."} Click the passport to close or open it.
+            {look.status} tier, from {shortAmount(total)} $PALM held and staked. The passport gets richer as you hold or stake more, and as you earn points in Achievements.
+            {nextTier ? ` Reach ${shortAmount(TIER_AT[nextTier])} $PALM for ${LOOKS[nextTier].status}.` : ""} Click it to close or open.
           </>
         ) : (
           "A PALM ID is issued to a wallet address, so it stays shut until you connect one."

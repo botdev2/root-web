@@ -15,7 +15,6 @@ const PH = H - FR * 2;
 const INK = "#3b1650";
 const SOFT = "#7d5a8e";
 const PALM_FONT = '"PALM", "Segoe UI", system-ui, sans-serif';
-const MONO = '"Courier New", ui-monospace, monospace';
 const OPEN_MS = 1600;
 
 // What the passport looks like at each level. Higher level, richer passport.
@@ -122,16 +121,16 @@ function Leaf({ x, y, rotate, scale = 1, opacity }) {
   );
 }
 
-function Field({ label, value, x, y, width = 140, size = 15 }) {
+function Field({ label, value, x, y, width = 140, size = 18 }) {
   return (
     <div style={{ position: "absolute", left: x, top: y, width }}>
-      <div style={{ fontSize: 10, letterSpacing: "0.2em", color: SOFT }}>{label}</div>
-      <div style={{ marginTop: 3, fontSize: size, fontWeight: 700, letterSpacing: "0.08em", color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+      <div style={{ fontSize: 12, color: SOFT }}>{label}</div>
+      <div style={{ marginTop: 3, fontSize: size, fontWeight: 700, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
     </div>
   );
 }
 
-function Stamp({ size, color, rotate, text, center, centerSize = 24, fontSize = 9.5, spacing = 1.1 }) {
+function Stamp({ size, color, rotate, text, center, centerSize = 24, fontSize = 12 }) {
   const id = "pid-arc-" + size + text.length;
   return (
     <svg width={size} height={size} viewBox="0 0 120 120" style={{ transform: `rotate(${rotate}deg)`, fontFamily: PALM_FONT }}>
@@ -140,12 +139,12 @@ function Stamp({ size, color, rotate, text, center, centerSize = 24, fontSize = 
       </defs>
       <circle cx="60" cy="60" r="56" fill="none" stroke={color} strokeWidth="3" />
       <circle cx="60" cy="60" r="31" fill="none" stroke={color} strokeWidth="1.5" />
-      <text fill={color} fontSize={fontSize} fontWeight="700" letterSpacing={spacing} fontFamily="inherit">
+      <text fill={color} fontSize={fontSize} fontWeight="700" fontFamily="inherit">
         <textPath href={"#" + id} startOffset="0">
           {text}
         </textPath>
       </text>
-      <text x="60" y="60" textAnchor="middle" dominantBaseline="central" fill={color} fontSize={centerSize} fontWeight="800" letterSpacing="1" fontFamily="inherit">
+      <text x="60" y="60" textAnchor="middle" dominantBaseline="central" fill={color} fontSize={centerSize} fontWeight="800" fontFamily="inherit">
         {center}
       </text>
     </svg>
@@ -183,7 +182,7 @@ function Photo({ look, level }) {
       <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 3px)", mixBlendMode: "overlay" }} />
       <svg width="160" height="204" style={{ position: "absolute", inset: 0, mixBlendMode: "overlay" }} aria-hidden="true">
         {Array.from({ length: 8 }, (_, index) => (
-          <text key={index} x={-20 + (index % 2) * 18} y={20 + index * 26} fontSize="9" letterSpacing="3" fill="#fff" opacity="0.32" fontFamily={PALM_FONT}>
+          <text key={index} x={-20 + (index % 2) * 18} y={20 + index * 26} fontSize="9" fill="#fff" opacity="0.32" fontFamily={PALM_FONT}>
             PALM PALM PALM PALM PALM PALM PALM PALM
           </text>
         ))}
@@ -210,15 +209,15 @@ function FrontCover({ look, address, onConnect }) {
         <div style={{ position: "absolute", inset: 22, borderRadius: 10, border: "1.5px solid", borderImage: `linear-gradient(135deg, ${light}, ${dark}) 1`, opacity: 0.55 }} />
         <div style={{ position: "absolute", left: PW / 2 - 70, top: 96, width: 140, height: 140, ...gold, WebkitMaskImage: "url(/palm.png)", maskImage: "url(/palm.png)", WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center", filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.5))" }} />
         <div style={{ position: "absolute", left: 0, right: 0, top: 262, textAlign: "center" }}>
-          <div style={{ display: "inline-block", fontSize: 36, fontWeight: 800, letterSpacing: "0.3em", paddingLeft: "0.3em", color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...gold, filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.5))" }}>PALM ID</div>
-          <div style={{ marginTop: 8, fontSize: 11, letterSpacing: "0.36em", paddingLeft: "0.36em", color: light, opacity: 0.8 }}>DECENTRALIZED CITIZEN</div>
+          <div style={{ display: "inline-block", fontSize: 36, fontWeight: 800, color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...gold, filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.5))" }}>PALM ID</div>
+          <div style={{ marginTop: 8, fontSize: 11, color: light, opacity: 0.8 }}>DECENTRALIZED CITIZEN</div>
         </div>
         <div style={{ position: "absolute", left: PW / 2 - 19, bottom: 52, width: 38, height: 26, borderRadius: 5, ...gold, boxShadow: "inset 0 0 0 1.5px rgb(90 55 8 / 0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 18, height: 12, borderRadius: 2, border: "1.5px solid rgb(90 55 8 / 0.6)" }} />
         </div>
         {!address && (
           <div style={{ position: "absolute", left: 40, right: 40, top: 344, textAlign: "center" }}>
-            <div style={{ fontSize: 12, lineHeight: 1.6, letterSpacing: "0.04em", color: "rgb(255 255 255 / 0.86)" }}>A PALM ID is issued to a wallet. Connect one to open yours.</div>
+            <div style={{ fontSize: 12, lineHeight: 1.6, color: "rgb(255 255 255 / 0.86)" }}>A PALM ID is issued to a wallet. Connect one to open yours.</div>
             <button
               type="button"
               onClick={(event) => {
@@ -365,9 +364,9 @@ export default function PalmId({ address, credit, onConnect }) {
                   {address && (
                     <>
                       <div style={{ position: "absolute", left: 34, top: 20, right: 110 }}>
-                        <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "0.26em", color: INK }}>PALM ID</div>
-                        <div style={{ marginTop: 5, fontSize: 11, letterSpacing: "0.32em", color: SOFT }}>HOLDER PASSPORT</div>
-                        <div style={{ marginTop: 2, fontSize: 10, letterSpacing: "0.32em", color: SOFT }}>DECENTRALIZED CITIZEN</div>
+                        <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.1, color: INK }}>PALM ID</div>
+                        <div style={{ marginTop: 3, fontSize: 13, lineHeight: 1.2, color: SOFT }}>HOLDER PASSPORT</div>
+                        <div style={{ marginTop: 1, fontSize: 12, lineHeight: 1.2, color: SOFT }}>DECENTRALIZED CITIZEN</div>
                       </div>
                       <div
                         style={{
@@ -394,8 +393,8 @@ export default function PalmId({ address, credit, onConnect }) {
                         <Photo look={look} level={level.number} />
                       </div>
 
-                      <Field label="NAME" value={holder.toUpperCase()} x={226} y={112} size={holder.length > 12 ? 13 : 15} />
-                      <Field label="STATUS" value={look.status.toUpperCase()} x={380} y={112} size={look.status.length > 10 ? 13 : 15} />
+                      <Field label="NAME" value={holder.toUpperCase()} x={226} y={112} size={holder.length > 12 ? 15 : 18} />
+                      <Field label="STATUS" value={look.status.toUpperCase()} x={380} y={112} size={look.status.length > 10 ? 15 : 18} />
                       <Field label="NATIONALITY" value="CHAD" x={226} y={172} />
                       <Field label="ISSUE DATE" value={issueText} x={380} y={172} />
                       <Field label="EXPIRY" value="NEVER" x={226} y={232} />
@@ -403,10 +402,10 @@ export default function PalmId({ address, credit, onConnect }) {
 
                       {/* credits live on the passport */}
                       <div style={{ position: "absolute", left: 226, top: 296, width: 176, borderRadius: 14, background: "rgb(255 255 255 / 0.68)", boxShadow: "inset 0 0 0 1px rgb(90 42 114 / 0.2)", padding: "9px 14px 11px" }}>
-                        <div style={{ fontSize: 10, letterSpacing: "0.2em", color: SOFT }}>CREDITS</div>
-                        <div style={{ marginTop: 1, fontSize: 28, fontWeight: 800, color: INK, letterSpacing: "0.02em", lineHeight: 1.1 }}>{left}</div>
+                        <div style={{ fontSize: 10, color: SOFT }}>CREDITS</div>
+                        <div style={{ marginTop: 1, fontSize: 28, fontWeight: 800, color: INK, lineHeight: 1.1 }}>{left}</div>
                         <div style={{ marginTop: 2, fontSize: 11, color: SOFT }}>{earned} earned</div>
-                        <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", fontSize: 10, letterSpacing: "0.14em", color: SOFT }}>
+                        <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", fontSize: 10, color: SOFT }}>
                           <span>LEVEL {level.number}</span>
                           <span>{points.toLocaleString()} PTS</span>
                         </div>
@@ -427,7 +426,7 @@ export default function PalmId({ address, credit, onConnect }) {
                         {[2, 3, 4, 5, 6].map((n) =>
                           level.number >= n ? (
                             <div key={n} style={{ mixBlendMode: "multiply" }}>
-                              <Stamp size={32} color={["#7a2f96", "#c0306a", "#b8862d", "#2f7a8c", "#4a2fa0"][n - 2]} rotate={[-10, 8, -6, 12, -4][n - 2]} text="PALM ID * PALM ID * PALM *" fontSize={11} spacing={3} center={`LV ${n}`} centerSize={22} />
+                              <Stamp size={32} color={["#7a2f96", "#c0306a", "#b8862d", "#2f7a8c", "#4a2fa0"][n - 2]} rotate={[-10, 8, -6, 12, -4][n - 2]} text="PALM ID * PALM ID * PALM *" fontSize={14} center={`LV ${n}`} centerSize={22} />
                             </div>
                           ) : (
                             <div key={n} style={{ width: 32, height: 32, borderRadius: "50%", border: "1.5px dashed rgb(90 42 114 / 0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "rgb(90 42 114 / 0.45)" }}>
@@ -439,16 +438,16 @@ export default function PalmId({ address, credit, onConnect }) {
 
                       {/* the wallet this passport was issued to */}
                       <div style={{ position: "absolute", left: 32, top: 398, right: 32 }}>
-                        <div style={{ fontSize: 10, letterSpacing: "0.2em", color: SOFT }}>WALLET</div>
-                        <div style={{ marginTop: 3, fontFamily: MONO, fontSize: 11.5, fontWeight: 700, letterSpacing: "0.02em", color: INK, whiteSpace: "nowrap" }}>{wallet}</div>
+                        <div style={{ fontSize: 10, color: SOFT }}>WALLET</div>
+                        <div style={{ marginTop: 3,  fontSize: 13, fontWeight: 700, color: INK, whiteSpace: "nowrap" }}>{wallet}</div>
                       </div>
 
                       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 62, background: "rgb(255 255 255 / 0.55)", borderTop: "1px solid rgb(90 42 114 / 0.12)" }}>
                         <svg width={PW} height={62} aria-hidden="true">
-                          <text x="32" y="26" textLength={PW - 64} lengthAdjust="spacing" fontSize="15" fontFamily={MONO} fill={INK}>
+                          <text x="32" y="26" fontSize="19" fontFamily={PALM_FONT} fill={INK}>
                             {mrz("P<PALM<<" + clean(holder))}
                           </text>
-                          <text x="32" y="50" textLength={PW - 64} lengthAdjust="spacing" fontSize="15" fontFamily={MONO} fill={INK}>
+                          <text x="32" y="50" fontSize="19" fontFamily={PALM_FONT} fill={INK}>
                             {mrz(`${number}<<GLOBAL<<${clean(look.status)}<<${issueMrz}<<NEVER`)}
                           </text>
                         </svg>

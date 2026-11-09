@@ -99,6 +99,7 @@ export default function PalmIdPage() {
             </span>
           </a>
           <div className="flex items-center gap-5 text-[12px] text-[var(--muted)]">
+            <a href="#authenticator" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Authenticator</a>
             <a href="#marketplace" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Marketplace</a>
             <a href="/" className="no-underline hover:text-[var(--ink)]">Open /root</a>
           </div>

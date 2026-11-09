@@ -86,7 +86,7 @@ export function readPalmId(address) {
   });
 }
 
-/** Live 20-second seal for a PALM ID. Signed by the PALM backend. */
+/** TOTP secret and live code for a PALM ID. Add it to an authenticator. */
 export function readPalmOtp(address) {
   const wallet = String(address || "").toLowerCase();
   return fetch(ORIGIN + "/v1/palm-id/" + encodeURIComponent(wallet) + "/otp", {

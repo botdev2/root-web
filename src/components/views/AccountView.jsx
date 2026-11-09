@@ -21,6 +21,7 @@ import {
 import { formatCredits, PALM_PER_CREDIT, readCredits, readPalmId } from "../../glmChat.js";
 import { Page, Card, Tabs, Row, Field, Ghost, Primary, Toggle, Section } from "../ui.jsx";
 import PalmId from "../PalmId.jsx";
+import PalmSeal from "../PalmSeal.jsx";
 import PalmTxList from "../PalmTx.jsx";
 import { APP_VERSION } from "../../version.js";
 
@@ -109,6 +110,11 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
   return (
     <>
     <PalmId address={isConnected ? address : ""} credit={credit} onConnect={onConnect} />
+    {isConnected && address ? (
+      <div className="mx-auto mb-6 w-full max-w-[760px]">
+        <PalmSeal address={address} />
+      </div>
+    ) : null}
     {isConnected && address ? <PalmTxList txs={txs} loading={txs === null} /> : null}
     <Card>
       <Row label="Status" value={isConnected ? "Wallet connected" : "Guest — browsing"} />

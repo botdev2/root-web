@@ -45,11 +45,11 @@ export function usePalmSeal(address) {
   return { code, grouped, left, period };
 }
 
-export default function PalmSeal({ address }) {
+export default function PalmSeal({ address, compact }) {
   const { grouped, code, left, period } = usePalmSeal(address);
   const share = period > 0 ? Math.max(0, Math.min(1, left / period)) : 0;
   return (
-    <section className="pid-seal" aria-live="polite">
+    <section className={compact ? "pid-seal pid-seal--compact" : "pid-seal"} aria-live="polite">
       <div className="pid-seal-copy">
         <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">LIVE SEAL</div>
         <div className="pid-seal-code">{code ? grouped : "—— ———"}</div>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "../themes.js";
 import { formatCredits, readPalmId } from "../glmChat.js";
+import { hamrinTotal, PALM_PER_CREDIT, useMarketBook, windowFromHoldings } from "../market.js";
 import { parsePublicId } from "../version.js";
+import PalmDesk from "./PalmDesk.jsx";
 import PalmId from "./PalmId.jsx";
 import PalmSeal from "./PalmSeal.jsx";
 import PalmTxList from "./PalmTx.jsx";
@@ -35,10 +37,11 @@ export default function PalmIdPage() {
   const [txs, setTxs] = useState(null);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  const { book, save } = useMarketBook(address, credit);
 
   useEffect(() => {
     applyTheme(findTheme(readSavedThemeId()), readSavedWallpaper());
-    document.title = address ? `PALM Private · ${address.slice(0, 6)}…${address.slice(-4)}` : "PALM Private";
+    document.title = address ? `PALM ID · ${address.slice(0, 6)}…${address.slice(-4)}` : "PALM ID";
   }, [address]);
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function PalmIdPage() {
         setTxs(Array.isArray(data.txs) ? data.txs : []);
       })
       .catch((failure) => {
-        if (!cancelled) setError(failure.message || "Could not read this account.");
+        if (!cancelled) setError(failure.message || "Could not read this ID.");
       });
     return () => {
       cancelled = true;
@@ -69,6 +72,13 @@ export default function PalmIdPage() {
   const total = held + staked;
   const tier = tierOf(total);
   const next = tier < TIER_AT.length - 1 ? tier + 1 : null;
+  const windowCredits = windowFromHoldings(credit);
+  const extra = Number(book?.extra) || 0;
+  const hamrin = hamrinTotal(credit, book);
+  const passportCredit = credit
+    ? { ...credit, remaining: hamrin, window: windowCredits, extra }
+    : null;
+
   const copy = async (text, done) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -80,26 +90,22 @@ export default function PalmIdPage() {
   };
 
   return (
-    <div className="pid-bank relative isolate min-h-[100dvh] overflow-auto">
+    <div className="pid-lux relative isolate min-h-[100dvh] overflow-auto">
       <div className="wallpaper-layer" />
-      <div className="pid-bank-veil" />
-      <div className="relative z-[1] mx-auto flex min-h-[100dvh] w-full max-w-[1180px] flex-col px-4 pb-[max(32px,env(safe-area-inset-bottom))] pt-[max(16px,env(safe-area-inset-top))] md:px-10">
-        <header className="pid-bank-bar">
+      <div className="pid-lux-veil" />
+      <div className="relative z-[1] mx-auto flex min-h-[100dvh] w-full max-w-[1360px] flex-col px-4 pb-[max(32px,env(safe-area-inset-bottom))] pt-[max(16px,env(safe-area-inset-top))] md:px-8 lg:px-10">
+        <header className="pid-lux-bar">
           <a href="/" className="flex items-center gap-2.5 no-underline">
             <img src="/palm.png" alt="" className="h-6 w-6 object-contain" />
             <span>
               <span className="block text-[10px] tracking-[0.28em] text-[var(--faint)]">PALM</span>
-              <span className="block text-[13px] tracking-[0.08em]">Private</span>
+              <span className="block text-[13px] tracking-[0.08em]">ID</span>
             </span>
           </a>
-          <nav className="hidden items-center gap-6 text-[12px] text-[var(--muted)] sm:flex">
-            <a href="#overview" className="no-underline hover:text-[var(--ink)]">Overview</a>
-            <a href="#identity" className="no-underline hover:text-[var(--ink)]">Identity</a>
-            <a href="#statement" className="no-underline hover:text-[var(--ink)]">Statement</a>
-          </nav>
-          <a href="/" className="text-[12px] tracking-[0.04em] text-[var(--muted)] no-underline hover:text-[var(--ink)]">
-            Open /root
-          </a>
+          <div className="flex items-center gap-5 text-[12px] text-[var(--muted)]">
+            <a href="#marketplace" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Marketplace</a>
+            <a href="/" className="no-underline hover:text-[var(--ink)]">Open /root</a>
+          </div>
         </header>
 
         {!address ? (
@@ -108,60 +114,50 @@ export default function PalmIdPage() {
           <p className="mt-24 text-[13px] text-[var(--muted)]">{error}</p>
         ) : (
           <>
-            <section id="overview" className="pid-bank-account">
+            <div className="pid-lux-hero">
               <div>
-                <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">CURRENT ACCOUNT · PUBLIC RECORD</div>
-                <h1 className="mt-2 text-[22px] font-semibold tracking-[0.02em] md:text-[26px]">PALM ID</h1>
-                <div className="pid-bank-iban mt-2">{address}</div>
+                <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">{TIER_NAME[tier]}</div>
+                <h1 className="mt-1 text-[26px] font-semibold tracking-[0.04em]">PALM ID</h1>
+                <div className="pid-lux-addr mt-2">{address}</div>
+                {next && (
+                  <div className="mt-2 text-[12px] text-[var(--muted)]">
+                    {money(Math.max(0, TIER_AT[next] - total))} $PALM to {TIER_NAME[next]}
+                  </div>
+                )}
               </div>
-              <div className="pid-bank-rel">
-                <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">RELATIONSHIP</div>
-                <div className="mt-1 text-[18px]">{TIER_NAME[tier]}</div>
-                <div className="mt-1 text-[12px] text-[var(--muted)]">
-                  {next ? `${money(Math.max(0, TIER_AT[next] - total))} $PALM to ${TIER_NAME[next]}` : "Reserve · top relationship"}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" className="pid-bank-btn" onClick={() => copy(address, "Account number copied")}>
-                    Copy account
-                  </button>
-                  <button
-                    type="button"
-                    className="pid-bank-btn"
-                    onClick={() => copy(window.location.href.split("?")[0], "Link copied")}
-                  >
-                    Copy link
-                  </button>
-                  {note && <span className="self-center text-[12px] text-[var(--muted)]">{note}</span>}
-                </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="pid-lux-btn" onClick={() => copy(address, "Address copied")}>
+                  Copy address
+                </button>
+                <button type="button" className="pid-lux-btn" onClick={() => copy(window.location.href.split("?")[0], "Link copied")}>
+                  Copy link
+                </button>
+                {note && <span className="self-center text-[12px] text-[var(--muted)]">{note}</span>}
               </div>
-            </section>
-
-            <PalmSeal address={address} />
-
-            <div className="pid-bank-balances">
-              <Balance label="Total $PALM" value={credit ? money(total) : "—"} hint="Held and staked" />
-              <Balance label="Available" value={credit ? money(held) : "—"} hint="In the wallet" />
-              <Balance label="Staked" value={credit ? money(staked) : "—"} hint="In the staking contract" />
-              <Balance label="Hamrin window" value={credit ? formatCredits(credit.remaining) : "—"} hint="Credits this period" />
             </div>
 
-            <section id="identity" className="pid-bank-panel pid-bank-id">
-              <div className="pid-bank-panel-head">
-                <div>
-                  <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">IDENTITY DOCUMENT</div>
-                  <div className="mt-1 text-[15px]">PALM ID passport</div>
-                </div>
-                <div className="text-[12px] text-[var(--muted)]">Click the book to open. Issued to this account.</div>
+            <div className="pid-lux-split">
+              <div className="pid-lux-passport">
+                <PalmId address={address} credit={passportCredit} publicPage />
               </div>
-              <PalmId address={address} credit={credit} publicPage />
-            </section>
+              <aside className="pid-lux-side">
+                <PalmSeal address={address} compact />
+                <div className="pid-lux-balances">
+                  <Balance label="Held" value={credit ? money(held) : "—"} />
+                  <Balance label="Staked" value={credit ? money(staked) : "—"} />
+                  <Balance label="Hamrin" value={credit ? formatCredits(hamrin) : "—"} hint={extra ? `+${formatCredits(extra)} desk` : `${PALM_PER_CREDIT.toLocaleString()} PALM = 1`} />
+                  <Balance label="wPALM" value={money(book.wpalm)} />
+                </div>
+                <PalmDesk book={book} save={save} credit={credit} compact />
+              </aside>
+            </div>
 
             <PalmTxList txs={txs} loading={txs === null} edition />
           </>
         )}
 
-        <footer className="pid-bank-foot">
-          Public record of $PALM holdings and transfers for this address. Not a statement from a licensed bank.
+        <footer className="pid-lux-foot">
+          Public $PALM holdings, transfers, and the wPALM desk for this address.
           <span className="mx-2 text-[var(--faint)]">·</span>
           <a href="/" className="text-[var(--muted)] no-underline hover:text-[var(--ink)]">
             /root
@@ -174,10 +170,10 @@ export default function PalmIdPage() {
 
 function Balance({ label, value, hint }) {
   return (
-    <div className="pid-bank-tile">
-      <div className="text-[11px] tracking-[0.14em] text-[var(--faint)]">{label}</div>
-      <div className="mt-2 text-[22px] tabular-nums tracking-[0.02em]">{value}</div>
-      <div className="mt-1 text-[11px] text-[var(--muted)]">{hint}</div>
+    <div className="pid-lux-tile">
+      <div className="text-[10px] tracking-[0.14em] text-[var(--faint)]">{label}</div>
+      <div className="mt-1 text-[18px] tabular-nums tracking-[0.02em]">{value}</div>
+      {hint && <div className="mt-0.5 text-[10px] text-[var(--muted)]">{hint}</div>}
     </div>
   );
 }

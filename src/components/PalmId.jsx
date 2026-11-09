@@ -323,7 +323,7 @@ function FrontCover({ look, address, onConnect, otp }) {
         <div style={{ position: "absolute", right: 28, bottom: 28, opacity: 0.7, transform: "scale(-1)" }}><CornerFoil look={look} /></div>
         <div style={{ position: "absolute", left: PW / 2 - 60, top: 108, width: 120, height: 84, ...foil, ...maskPalm, filter: "drop-shadow(0 -1px 0 rgb(255 255 255 / 0.38)) drop-shadow(0 4px 10px rgb(0 0 0 / 0.7))" }} />
         <div style={{ position: "absolute", left: 0, right: 0, top: 218, textAlign: "center" }}>
-          <div style={{ fontSize: 10, letterSpacing: "0.48em", color: look.metal[1], opacity: 0.72 }}>PRIVATE CLIENT</div>
+          <div style={{ fontSize: 10, letterSpacing: "0.48em", color: look.metal[1], opacity: 0.72 }}>IDENTITY</div>
           <div style={{ marginTop: 10, display: "inline-block", fontSize: 30, fontWeight: 600, letterSpacing: "0.36em", color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.65))" }}>PALM ID</div>
           <div style={{ marginTop: 10, fontSize: 12, letterSpacing: "0.32em", textTransform: "uppercase", color: look.metal[1], opacity: 0.92 }}>{look.status}</div>
           {short && <div style={{ marginTop: 20, fontSize: 13, letterSpacing: "0.24em", fontWeight: 600, color: look.metal[0] }}>{short}</div>}
@@ -643,9 +643,17 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
       ctx.fillRect(226, 156, PW - 260, 1);
       ctx.fillRect(226, 218, PW - 260, 1);
       ctx.fillRect(34, 322, PW - 68, 1);
-      text("Credits", 34, 346, 11, PAPER_MUTED);
+      text("Hamrin", 34, 346, 11, PAPER_MUTED);
       text(left, 34, 386, 38, PAPER_INK, 700);
-      text(`${earned} earned`, 34, 408, 12, PAPER_MUTED);
+      text(
+        credit?.extra
+          ? `${formatCredits(credit.window || 0)} holdings · +${formatCredits(credit.extra)} desk`
+          : `${earned} earned`,
+        34,
+        408,
+        12,
+        PAPER_MUTED,
+      );
       text("Level", 250, 346, 11, PAPER_MUTED);
       text(String(level.number), 250, 376, 26, PAPER_INK, 700);
       text("Wallet", 34, 436, 11, PAPER_MUTED);
@@ -789,9 +797,13 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
                       {/* credits and level, quietly */}
                       <div style={{ position: "absolute", left: 34, right: 34, top: 322, height: 1, background: PAPER_HAIR }} />
                       <div style={{ position: "absolute", left: 34, top: 324 }}>
-                        <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: PAPER_MUTED }}>Credits</div>
+                        <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: PAPER_MUTED }}>Hamrin</div>
                         <div style={{ marginTop: 2, fontSize: 38, fontWeight: 700, lineHeight: 1.05 }}>{left}</div>
-                        <div style={{ marginTop: 3, fontSize: 12, color: PAPER_MUTED }}>{earned} earned</div>
+                        <div style={{ marginTop: 3, fontSize: 12, color: PAPER_MUTED }}>
+                          {credit?.extra
+                            ? `${formatCredits(credit.window || 0)} holdings · +${formatCredits(credit.extra)} desk`
+                            : `${earned} earned`}
+                        </div>
                       </div>
                       <div style={{ position: "absolute", left: 250, top: 324, width: 128 }}>
                         <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: PAPER_MUTED }}>Level</div>

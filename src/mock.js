@@ -207,9 +207,9 @@ export const HELP = [
     id: "marketplace",
     section: "Ship",
     title: "Marketplace",
-    summary: "PALM wraps 1:1 into wPALM. wPALM buys credits and services. Pledged PALM can back a loan.",
-    body: "Marketplace is the PALM desk. Wrap locks PALM and mints wPALM. Unwrap burns wPALM and returns PALM. Services sell extra Hamrin credits, Ops months, and crawler time in wPALM. Lend lets you pledge PALM at 40% LTV and borrow wPALM instead of selling. The book on this tab is a live sketch — wrap and lend are not on-chain yet. Hosting and domains stay on the Ops tab.",
-    bullets: ["1 PALM locked = 1 wPALM", "Extra credit 800 wPALM · Ops month 2,500 · crawler pane 1,000", "Borrow at 40% LTV, liquidation at 75%", "Holdings still mint the 14-day Hamrin window"],
+    summary: "WIP. You have wPALM if you own $PALM. Credits are that PALM, in another form.",
+    body: "Marketplace is the PALM desk. Credits are not minted for Ops or hosting. They are wPALM, and wPALM is only active when it is collateralized with real $PALM. Own PALM, you have wPALM. Post it, those credits can pay Hamrin, Ops, hosting, and crawler. Pay in any other crypto and the desk converts it to the same credits, still backed by PALM. Lend only moves PALM already in the pool. The book is a live sketch.",
+    bullets: ["You have wPALM if you own $PALM", "Active wPALM = PALM posted as collateral", "All PALM services spend the same credits", "Other crypto converts to credits; it does not mint them"],
   },
   {
     id: "imagegen",

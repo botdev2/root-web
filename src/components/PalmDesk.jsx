@@ -1,33 +1,24 @@
 import { useState } from "react";
 import { formatCredits } from "../glmChat.js";
 import {
-  BORROW_APY,
   CRAWLER,
-  CREDIT_PRICE,
+  HAMRIN,
   LTV,
   OPS_MONTH,
-  PALM_PER_CREDIT,
-  SUPPLY_APY,
-  applyBorrow,
-  applyBuy,
-  applyPledge,
-  applyRepay,
-  applyWrap,
-  hamrinTotal,
-  loanHealth,
+  applyActivate,
+  applyDeactivate,
+  applySpend,
+  creditsOf,
   money,
   parseAmount,
-  windowFromHoldings,
+  wpalmOf,
 } from "../market.js";
 
-export default function PalmDesk({ book, save, credit, compact }) {
-  const [wrapAmt, setWrapAmt] = useState("1000");
-  const [lendAmt, setLendAmt] = useState("1000");
+export default function PalmDesk({ book, save, compact }) {
+  const [postAmt, setPostAmt] = useState("1000");
   const [note, setNote] = useState("");
-  const windowCredits = windowFromHoldings(credit);
-  const extra = Number(book.extra) || 0;
-  const hamrin = hamrinTotal(credit, book);
-  const health = loanHealth(book);
+  const wpalm = wpalmOf(book);
+  const credits = creditsOf(book);
 
   const tell = (text) => {
     setNote(text);
@@ -44,67 +35,66 @@ export default function PalmDesk({ book, save, credit, compact }) {
   };
 
   const listings = [
-    { id: "credit", name: "Hamrin extra", price: CREDIT_PRICE, extra: 1 },
-    { id: "ops", name: "Ops · 30 days", price: OPS_MONTH, extra: 0 },
-    { id: "crawler", name: "Crawler pane", price: CRAWLER, extra: 0 },
+    { id: "hamrin", name: "Hamrin", price: HAMRIN },
+    { id: "ops", name: "Ops · 30 days", price: OPS_MONTH },
+    { id: "crawler", name: "Crawler pane", price: CRAWLER },
   ];
 
   return (
     <section id="marketplace" className={compact ? "pid-lux-desk" : "pid-lux-desk pid-lux-desk--wide"}>
       <div className="pid-lux-desk-head">
         <div>
-          <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">MARKETPLACE</div>
+          <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">MARKETPLACE · WIP</div>
           <div className="mt-1 text-[16px]">wPALM desk</div>
         </div>
-        <div className="text-[12px] text-[var(--muted)]">1 PALM = 1 wPALM</div>
+        <div className="text-[12px] text-[var(--muted)]">You have wPALM if you own $PALM</div>
       </div>
 
       <div className="pid-lux-hamrin">
         <div>
-          <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">HAMRIN WINDOW</div>
-          <div className="mt-1 text-[28px] tabular-nums tracking-[0.02em]">{credit ? formatCredits(hamrin) : "—"}</div>
+          <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">ACTIVE CREDITS</div>
+          <div className="mt-1 text-[28px] tabular-nums tracking-[0.02em]">{formatCredits(credits)}</div>
           <div className="mt-1 text-[12px] leading-5 text-[var(--muted)]">
-            {formatCredits(windowCredits)} from {PALM_PER_CREDIT.toLocaleString()} PALM held or staked / 14 days
-            {extra ? ` · +${formatCredits(extra)} extra in wPALM` : " · extra credits: 800 wPALM"}
+            {money(wpalm)} wPALM from {money(wpalm)} $PALM owned · {money(book.posted)} posted as collateral
           </div>
         </div>
         <div className="pid-lux-hamrin-meta">
-          <Meta label="wPALM" value={money(book.wpalm)} />
+          <Meta label="wPALM" value={money(wpalm)} />
           <Meta label="Free PALM" value={money(book.palm)} />
-          <Meta label="Pledged" value={money(book.collateral)} />
+          <Meta label="Posted" value={money(book.posted)} />
         </div>
       </div>
 
       <div className="pid-lux-desk-block">
-        <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">WRAP</div>
+        <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">ACTIVATE</div>
         <div className="mt-2 flex flex-wrap gap-2">
           <input
             className="pid-lux-input"
-            value={wrapAmt}
-            onChange={(event) => setWrapAmt(event.target.value)}
+            value={postAmt}
+            onChange={(event) => setPostAmt(event.target.value)}
             inputMode="decimal"
-            aria-label="Wrap amount"
+            aria-label="Activate amount"
           />
-          <button type="button" className="pid-lux-btn pid-lux-btn--fill" onClick={() => run(applyWrap(book, parseAmount(wrapAmt), true))}>
-            Wrap
+          <button type="button" className="pid-lux-btn pid-lux-btn--fill" onClick={() => run(applyActivate(book, parseAmount(postAmt)))}>
+            Post PALM
           </button>
-          <button type="button" className="pid-lux-btn" onClick={() => run(applyWrap(book, parseAmount(wrapAmt), false))}>
-            Unwrap
+          <button type="button" className="pid-lux-btn" onClick={() => run(applyDeactivate(book, parseAmount(postAmt)))}>
+            Release
           </button>
         </div>
       </div>
 
       <div className="pid-lux-desk-block">
-        <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">BUY WITH WPALM</div>
+        <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">SPEND CREDITS</div>
         <ul className="mt-1">
           {listings.map((item) => (
             <li key={item.id} className="pid-lux-listing">
               <div>
                 <div>{item.name}</div>
-                <div className="text-[11px] text-[var(--muted)]">{money(item.price)} wPALM</div>
+                <div className="text-[11px] text-[var(--muted)]">{money(item.price)} credits</div>
               </div>
-              <button type="button" className="pid-lux-btn" onClick={() => run(applyBuy(book, item.id, item.price, item.extra))}>
-                Buy
+              <button type="button" className="pid-lux-btn" onClick={() => run(applySpend(book, item.id, item.price))}>
+                Spend
               </button>
             </li>
           ))}
@@ -112,30 +102,8 @@ export default function PalmDesk({ book, save, credit, compact }) {
       </div>
 
       <div className="pid-lux-desk-block">
-        <div className="flex items-baseline justify-between gap-3">
-          <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">LEND · {LTV * 100}% LTV</div>
-          <div className="text-[12px] tabular-nums text-[var(--muted)]">{health == null ? "No borrow" : `${health.toFixed(2)}× health`}</div>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <input
-            className="pid-lux-input"
-            value={lendAmt}
-            onChange={(event) => setLendAmt(event.target.value)}
-            inputMode="decimal"
-            aria-label="Lend amount"
-          />
-          <button type="button" className="pid-lux-btn" onClick={() => run(applyPledge(book, parseAmount(lendAmt)))}>
-            Pledge
-          </button>
-          <button type="button" className="pid-lux-btn pid-lux-btn--fill" onClick={() => run(applyBorrow(book, parseAmount(lendAmt)))}>
-            Borrow
-          </button>
-          <button type="button" className="pid-lux-btn" onClick={() => run(applyRepay(book, parseAmount(lendAmt)))}>
-            Repay
-          </button>
-        </div>
-        <p className="mt-2 text-[11px] leading-5 text-[var(--faint)]">
-          Supply {SUPPLY_APY * 100}% · borrow {BORROW_APY * 100}%. Sketch on this device — wrap is not on-chain yet.
+        <p className="text-[11px] leading-5 text-[var(--faint)]">
+          Credits are PALM in another form. {LTV * 100}% LTV borrow stays on the Marketplace tab. Sketch on this device.
         </p>
       </div>
 

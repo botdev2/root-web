@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "../themes.js";
 import { formatCredits, readPalmId } from "../glmChat.js";
-import { hamrinTotal, PALM_PER_CREDIT, useMarketBook, windowFromHoldings } from "../market.js";
+import { creditsOf, useMarketBook, wpalmOf } from "../market.js";
 import { parsePublicId } from "../version.js";
 import PalmDesk from "./PalmDesk.jsx";
 import PalmId from "./PalmId.jsx";
@@ -72,12 +72,9 @@ export default function PalmIdPage() {
   const total = held + staked;
   const tier = tierOf(total);
   const next = tier < TIER_AT.length - 1 ? tier + 1 : null;
-  const windowCredits = windowFromHoldings(credit);
-  const extra = Number(book?.extra) || 0;
-  const hamrin = hamrinTotal(credit, book);
-  const passportCredit = credit
-    ? { ...credit, remaining: hamrin, window: windowCredits, extra }
-    : null;
+  const credits = creditsOf(book);
+  const wpalm = wpalmOf(book);
+  const passportCredit = credit ? { ...credit, remaining: credits } : null;
 
   const copy = async (text, done) => {
     try {
@@ -145,10 +142,10 @@ export default function PalmIdPage() {
                 <div className="pid-lux-balances">
                   <Balance label="Held" value={credit ? money(held) : "—"} />
                   <Balance label="Staked" value={credit ? money(staked) : "—"} />
-                  <Balance label="Hamrin" value={credit ? formatCredits(hamrin) : "—"} hint={extra ? `+${formatCredits(extra)} desk` : `${PALM_PER_CREDIT.toLocaleString()} PALM = 1`} />
-                  <Balance label="wPALM" value={money(book.wpalm)} />
+                  <Balance label="Credits" value={formatCredits(credits)} hint="Active wPALM" />
+                  <Balance label="wPALM" value={money(wpalm)} hint="You have wPALM if you own $PALM" />
                 </div>
-                <PalmDesk book={book} save={save} credit={credit} compact />
+                <PalmDesk book={book} save={save} compact />
               </aside>
             </div>
 

@@ -1732,6 +1732,9 @@ textarea {
   padding: 14px 16px;
   border-bottom: 1px solid rgb(255 255 255 / 0.06);
 }
+.pid-lux-desk > :last-child {
+  border-bottom: 0;
+}
 .pid-lux-desk-head {
   display: flex;
   align-items: flex-end;
@@ -1755,6 +1758,33 @@ textarea {
 .pid-lux-listing:last-child {
   border-bottom: 0;
   padding-bottom: 0;
+}
+.pid-lux-splitbar {
+  display: flex;
+  height: 4px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.06);
+}
+.pid-lux-splitbar > div:first-child {
+  background: rgb(196 165 116 / 0.45);
+}
+.pid-lux-splitbar > div:last-child {
+  background: rgb(196 165 116 / 0.9);
+}
+.pid-lux-desk-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+}
+.pid-lux-desk-links a {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c9c1b4;
+  text-decoration: none;
+}
+.pid-lux-desk-links a:hover {
+  color: #efe8dc;
 }
 .pid-lux-input {
   height: 32px;

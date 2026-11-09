@@ -57,6 +57,8 @@ export default function PalmIdPage() {
         if (cancelled) return;
         setCredit({
           remaining: data.windowAllowance,
+          windowAllowance: data.windowAllowance,
+          palmPerCredit: data.palmPerCredit,
           held: data.held,
           staked: data.staked,
           points: data.points,
@@ -106,7 +108,7 @@ export default function PalmIdPage() {
           <nav className="flex items-center gap-5 text-[12px] text-[var(--muted)]">
             <a href="#overview" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Overview</a>
             <a href="#activity" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Statement</a>
-            <a href="#marketplace" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Services</a>
+            <a href="#account" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Account</a>
             <a href="/" className="no-underline hover:text-[var(--ink)]">Open /root</a>
           </nav>
         </header>
@@ -158,8 +160,8 @@ export default function PalmIdPage() {
                 <PalmId address={address} credit={passportCredit} publicPage />
               </div>
               <aside className="pid-lux-side">
-                <div className="pid-lux-section-label">Services</div>
-                <PalmDesk credit={credit} compact />
+                <div className="pid-lux-section-label">Account</div>
+                <PalmDesk address={address} credit={credit} txs={txs} />
               </aside>
             </div>
 

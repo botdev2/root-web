@@ -207,9 +207,9 @@ export const HELP = [
     id: "marketplace",
     section: "Ship",
     title: "Marketplace",
-    summary: "WIP. An address has as much wPALM as PALM in the wallet plus staked.",
-    body: "Marketplace is the PALM desk. wPALM is not a second token you activate. It is wallet PALM plus staked PALM, added together. Credits are that number in another form. Hamrin, Ops, hosting, and crawler spend those credits. Other crypto converts in. The book is a live sketch.",
-    bullets: ["wPALM = PALM in wallet + PALM staked", "Credits are that wPALM", "All PALM services spend the same credits", "Other crypto converts to credits; it does not mint them"],
+    summary: "WIP. wPALM = wallet + staked. Same USD price as PALM. Service prices are mockups.",
+    body: "Marketplace is the PALM desk. An address has as much wPALM as PALM in the wallet plus staked. 1 wPALM = 1 PALM, so the dollar value is the same. Hamrin, Ops, and crawler are listed in wPALM. Nothing on this tab spends.",
+    bullets: ["wPALM = PALM in wallet + PALM staked", "USD of wPALM is the PALM price", "Service prices are mockups in wPALM", "Nothing here spends"],
   },
   {
     id: "imagegen",

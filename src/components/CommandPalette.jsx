@@ -10,7 +10,7 @@ const HITS = [
   { id: "quests", label: "Achievements", hint: "Daily challenges, achievements, and credits you can earn" },
   { id: "reasoning", label: "Reasoning", hint: "Agent brain graph" },
   { id: "ops", label: "Ops", hint: "PALM Ops console" },
-  { id: "marketplace", label: "Marketplace", hint: "wPALM, credits, and PALM services" },
+  { id: "marketplace", label: "Marketplace", hint: "wPALM mockups · same USD as PALM" },
   { id: "notes", label: "Notes", hint: "Daily goals" },
   { id: "billing", label: "Billing", hint: "Credits and when they reset" },
   { id: "settings", label: "Settings · Appearance", hint: "Themes, PALM, wallpaper" },

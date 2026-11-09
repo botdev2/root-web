@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "../themes.js";
-import { formatCredits, readPalmId } from "../glmChat.js";
-import { creditsOf, useMarketBook, wpalmOf } from "../market.js";
+import { readPalmId } from "../glmChat.js";
+import { usd, usePalmUsd, wpalmOf } from "../market.js";
 import { parsePublicId } from "../version.js";
 import PalmDesk from "./PalmDesk.jsx";
 import PalmId from "./PalmId.jsx";
@@ -37,7 +37,7 @@ export default function PalmIdPage() {
   const [txs, setTxs] = useState(null);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
-  const { book, save } = useMarketBook(address);
+  const price = usePalmUsd();
 
   useEffect(() => {
     applyTheme(findTheme(readSavedThemeId()), readSavedWallpaper());
@@ -72,7 +72,6 @@ export default function PalmIdPage() {
   const total = held + staked;
   const tier = tierOf(total);
   const next = tier < TIER_AT.length - 1 ? tier + 1 : null;
-  const credits = creditsOf(book, credit);
   const wpalm = wpalmOf(credit);
   const passportCredit = credit ? { ...credit, remaining: wpalm } : null;
 
@@ -143,9 +142,9 @@ export default function PalmIdPage() {
                   <Balance label="Held" value={credit ? money(held) : "—"} />
                   <Balance label="Staked" value={credit ? money(staked) : "—"} />
                   <Balance label="wPALM" value={credit ? money(wpalm) : "—"} hint="Wallet + staked" />
-                  <Balance label="Credits" value={credit ? formatCredits(credits) : "—"} hint="Same PALM, to spend" />
+                  <Balance label="USD" value={credit ? usd(wpalm, price) : "—"} hint="Same as PALM" />
                 </div>
-                <PalmDesk book={book} save={save} credit={credit} compact />
+                <PalmDesk credit={credit} compact />
               </aside>
             </div>
 

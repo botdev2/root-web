@@ -13,6 +13,13 @@ function compact(value) {
   return amount.toLocaleString("en-US", { maximumFractionDigits: amount < 100 ? 2 : 0 });
 }
 
+function pct(share) {
+  const p = (Number(share) || 0) * 100;
+  if (p <= 0) return "0%";
+  if (p < 1) return p.toFixed(1) + "%";
+  return Math.round(p) + "%";
+}
+
 function passportNo(address) {
   const text = String(address || "").toLowerCase();
   let value = 2166136261;
@@ -90,8 +97,8 @@ export default function PalmDesk({ address, credit, txs }) {
           <div style={{ width: `${Math.max(1, stakeShare * 100)}%` }} />
         </div>
         <div className="mt-3 grid grid-cols-2 gap-4">
-          <Meta label="Wallet" value={credit ? compact(held) : "—"} note={total ? `${Math.round(walletShare * 100)}%` : ""} />
-          <Meta label="Staked" value={credit ? compact(staked) : "—"} note={total ? `${Math.round(stakeShare * 100)}%` : ""} />
+          <Meta label="Wallet" value={credit ? compact(held) : "—"} note={total ? pct(walletShare) : ""} />
+          <Meta label="Staked" value={credit ? compact(staked) : "—"} note={total ? pct(stakeShare) : ""} />
         </div>
       </div>
 

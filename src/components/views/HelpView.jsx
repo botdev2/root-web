@@ -100,9 +100,9 @@ export default function HelpView({ onOpen, onTour, onEpisode }) {
               Open Automations →
             </button>
           )}
-          {page.id === "plugins" && (
-            <button type="button" onClick={() => onOpen?.("plugins")} className="mt-5 text-[13px] text-[var(--accent)]">
-              Open Plugins →
+          {page.id === "marketplace" && (
+            <button type="button" onClick={() => onOpen?.("marketplace")} className="mt-5 text-[13px] text-[var(--accent)]">
+              Open Marketplace →
             </button>
           )}
         </Card>

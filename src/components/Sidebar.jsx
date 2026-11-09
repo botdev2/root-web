@@ -9,7 +9,7 @@ const NAV = [
   { id: "quests", label: "Achievements" },
   { id: "reasoning", label: "Reasoning" },
   { id: "ops", label: "Ops" },
-  { id: "plugins", label: "Plugins" },
+  { id: "marketplace", label: "Marketplace" },
   { id: "notes", label: "Notes" },
   { id: "billing", label: "Billing" },
 ];

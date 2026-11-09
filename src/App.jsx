@@ -45,7 +45,7 @@ import TemplatesView from "./components/views/TemplatesView.jsx";
 import BillingView from "./components/views/BillingView.jsx";
 import QuestsView from "./components/views/QuestsView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
-import PluginsView from "./components/views/PluginsView.jsx";
+import MarketplaceView from "./components/views/MarketplaceView.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
@@ -68,7 +68,9 @@ export default function App() {
   const [view, setView] = useState(() => {
     try {
       const id = new URLSearchParams(window.location.search).get("view") || "home";
-      return id === "crawler" ? "home" : id;
+      if (id === "crawler") return "home";
+      if (id === "plugins") return "marketplace";
+      return id;
     } catch {
       return "home";
     }
@@ -218,9 +220,10 @@ export default function App() {
   }, []);
 
   const openView = (id) => {
-    setView(id);
+    const next = id === "plugins" ? "marketplace" : id;
+    setView(next);
     setNavOpen(false);
-    if (id === "settings") setSettingsTab("appearance");
+    if (next === "settings") setSettingsTab("appearance");
   };
 
   useEffect(() => {
@@ -1002,7 +1005,7 @@ export default function App() {
                 {view === "notes" && <NotesView />}
                 {view === "billing" && <BillingView credit={credit} token={opsToken} onRefresh={refreshCredits} />}
                 {view === "quests" && <QuestsView token={opsToken} onRefresh={refreshCredits} />}
-                {view === "plugins" && <PluginsView token={opsToken} onToken={setOpsToken} />}
+                {view === "marketplace" && <MarketplaceView credit={credit} />}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}

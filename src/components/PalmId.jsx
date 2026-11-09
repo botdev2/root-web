@@ -182,7 +182,7 @@ function frameStyle(look, radius) {
     backgroundImage: foilFill(look),
     backgroundSize: "300% 300%",
     animation: look.shine ? "pid-foil 8s linear infinite" : undefined,
-    boxShadow: "0 42px 90px -18px rgb(0 0 0 / 0.62), 0 10px 24px rgb(0 0 0 / 0.38), 0 0 0 1px rgb(255 255 255 / 0.06)",
+    boxShadow: "0 48px 110px -16px rgb(0 0 0 / 0.72), 0 14px 28px rgb(0 0 0 / 0.42), inset 0 1px 0 rgb(255 255 255 / 0.14), 0 0 0 1px rgb(255 255 255 / 0.06)",
     backfaceVisibility: "hidden",
     WebkitBackfaceVisibility: "hidden",
   };
@@ -287,32 +287,48 @@ function Photo({ look, level, src }) {
   );
 }
 
+function CornerFoil({ look, size = 28 }) {
+  const stroke = look.metal[0];
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <path d="M2 12 V4 H10" stroke={stroke} strokeWidth="1.2" />
+      <path d="M2 8 V4 H8" stroke={look.metal[1]} strokeWidth="0.6" opacity="0.7" />
+    </svg>
+  );
+}
+
 /** The outside of the passport: dark leather with a foil palm and name. */
 function FrontCover({ look, address, onConnect }) {
   const short = address ? `${address.slice(0, 2)}...${address.slice(-4)}` : "";
   const foil = { backgroundImage: foilFill(look) };
   return (
     <div style={frameStyle(look, "6px 16px 16px 6px")}>
-      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", backgroundImage: `radial-gradient(120% 90% at 28% 12%, rgb(255 255 255 / 0.14), transparent 52%), linear-gradient(160deg, ${look.cover}, #0a070c)` }}>
-        <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: "overlay", opacity: 0.6 }} aria-hidden="true">
+      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", backgroundImage: `radial-gradient(90% 70% at 32% 8%, rgb(255 255 255 / 0.2), transparent 46%), radial-gradient(70% 50% at 80% 90%, rgb(255 220 160 / 0.08), transparent 55%), linear-gradient(160deg, ${look.cover}, #07050a)` }}>
+        <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: "overlay", opacity: 0.72 }} aria-hidden="true">
           <filter id="pid-leather" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="9" />
-            <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.92" numOctaves="4" seed="9" />
+            <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.62 0" />
           </filter>
           <rect width={PW} height={PH} filter="url(#pid-leather)" />
         </svg>
-        <div style={{ position: "absolute", inset: 18, borderRadius: 4, border: "1px solid", borderColor: look.metal[1], opacity: 0.38 }} />
-        <div style={{ position: "absolute", inset: 22, borderRadius: 2, border: "1px solid", borderColor: look.metal[0], opacity: 0.12 }} />
-        <div style={{ position: "absolute", left: PW / 2 - 58, top: 118, width: 116, height: 80, ...foil, ...maskPalm, filter: "drop-shadow(0 -1px 0 rgb(255 255 255 / 0.28)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.65))" }} />
-        <div style={{ position: "absolute", left: 0, right: 0, top: 228, textAlign: "center" }}>
-          <div style={{ fontSize: 11, letterSpacing: "0.42em", color: look.metal[1], opacity: 0.7 }}>IDENTITY</div>
-          <div style={{ marginTop: 10, display: "inline-block", fontSize: 28, fontWeight: 600, letterSpacing: "0.34em", color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.55))" }}>PALM ID</div>
-          <div style={{ marginTop: 8, fontSize: 12, letterSpacing: "0.28em", textTransform: "uppercase", color: look.metal[1], opacity: 0.88 }}>{look.status}</div>
-          {short && <div style={{ marginTop: 22, fontSize: 13, letterSpacing: "0.22em", fontWeight: 600, color: look.metal[0] }}>{short}</div>}
+        <div style={{ position: "absolute", left: 0, top: 0, width: 18, height: PH, background: "linear-gradient(90deg, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.12) 55%, transparent)", boxShadow: `inset -1px 0 0 ${look.metal[2]}55` }} />
+        <div style={{ position: "absolute", left: 18, top: 0, width: 2, height: PH, backgroundImage: foilFill(look), opacity: 0.35 }} />
+        <div style={{ position: "absolute", inset: 16, borderRadius: 5, border: "1px solid", borderColor: look.metal[1], opacity: 0.42 }} />
+        <div style={{ position: "absolute", inset: 21, borderRadius: 3, border: "1px solid", borderColor: look.metal[0], opacity: 0.16 }} />
+        <div style={{ position: "absolute", left: 28, top: 28, opacity: 0.7 }}><CornerFoil look={look} /></div>
+        <div style={{ position: "absolute", right: 28, top: 28, opacity: 0.7, transform: "scaleX(-1)" }}><CornerFoil look={look} /></div>
+        <div style={{ position: "absolute", left: 28, bottom: 28, opacity: 0.7, transform: "scaleY(-1)" }}><CornerFoil look={look} /></div>
+        <div style={{ position: "absolute", right: 28, bottom: 28, opacity: 0.7, transform: "scale(-1)" }}><CornerFoil look={look} /></div>
+        <div style={{ position: "absolute", left: PW / 2 - 60, top: 108, width: 120, height: 84, ...foil, ...maskPalm, filter: "drop-shadow(0 -1px 0 rgb(255 255 255 / 0.38)) drop-shadow(0 4px 10px rgb(0 0 0 / 0.7))" }} />
+        <div style={{ position: "absolute", left: 0, right: 0, top: 218, textAlign: "center" }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.48em", color: look.metal[1], opacity: 0.72 }}>PRIVATE CLIENT</div>
+          <div style={{ marginTop: 10, display: "inline-block", fontSize: 30, fontWeight: 600, letterSpacing: "0.36em", color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.65))" }}>PALM ID</div>
+          <div style={{ marginTop: 10, fontSize: 12, letterSpacing: "0.32em", textTransform: "uppercase", color: look.metal[1], opacity: 0.92 }}>{look.status}</div>
+          {short && <div style={{ marginTop: 20, fontSize: 13, letterSpacing: "0.24em", fontWeight: 600, color: look.metal[0] }}>{short}</div>}
         </div>
-        <svg width="34" height="24" viewBox="0 0 34 24" style={{ position: "absolute", left: PW / 2 - 17, bottom: 56 }} aria-hidden="true">
-          <rect x="1" y="1" width="32" height="22" rx="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.8" />
-          <circle cx="17" cy="12" r="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.8" />
+        <svg width="34" height="24" viewBox="0 0 34 24" style={{ position: "absolute", left: PW / 2 - 17, bottom: 52 }} aria-hidden="true">
+          <rect x="1" y="1" width="32" height="22" rx="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.85" />
+          <circle cx="17" cy="12" r="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.85" />
         </svg>
         {!address && (
           <div style={{ position: "absolute", left: 56, right: 56, top: 336, textAlign: "center" }}>
@@ -329,8 +345,9 @@ function FrontCover({ look, address, onConnect }) {
             </button>
           </div>
         )}
-        <div style={{ position: "absolute", left: 0, top: 0, width: 44, height: PH, background: "linear-gradient(90deg, rgb(0 0 0 / 0.5), transparent)" }} />
-        <div style={{ position: "absolute", right: 0, top: 0, width: 30, height: PH, background: "linear-gradient(270deg, rgb(255 255 255 / 0.07), transparent)" }} />
+        <div style={{ position: "absolute", left: 0, top: 0, width: 52, height: PH, background: "linear-gradient(90deg, rgb(0 0 0 / 0.55), transparent)" }} />
+        <div style={{ position: "absolute", right: 0, top: 0, width: 36, height: PH, background: "linear-gradient(270deg, rgb(255 236 196 / 0.1), transparent)" }} />
+        {look.shine && <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 0.18) 50%, transparent 62%)", backgroundSize: "260% 100%", animation: "pid-sheen 9s ease-in-out infinite", pointerEvents: "none" }} />}
       </div>
     </div>
   );
@@ -386,6 +403,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
   const [quests, setQuests] = useState(null);
   const [width, setWidth] = useState(W);
   const [open, setOpen] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const wrap = useRef(null);
   const timer = useRef(0);
   const played = useRef(false);
@@ -528,6 +546,16 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
   const ease = reduce ? "none" : `transform ${OPEN_MS}ms cubic-bezier(0.65, 0, 0.25, 1)`;
   const metal = look.metal;
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
+  const poseX = reduce ? 0 : (open ? 8 : 16) + tilt.x;
+  const poseY = reduce ? 0 : (open ? -5 : -22) + tilt.y;
+  const extra = publicPage ? 88 : 48;
+  const follow = (event) => {
+    if (reduce || !wrap.current) return;
+    const box = wrap.current.getBoundingClientRect();
+    const px = (event.clientX - box.left) / Math.max(1, box.width) - 0.5;
+    const py = (event.clientY - box.top) / Math.max(1, box.height) - 0.5;
+    setTilt({ x: py * -10, y: px * 14 });
+  };
 
   // Draws the data page onto a canvas and downloads it as a PNG.
   const saveImage = async () => {
@@ -664,13 +692,49 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
 
   return (
     <div className="mb-4">
-      <div ref={wrap} className="mx-auto w-full" style={{ maxWidth: W, height: H * scale + 16 }}>
+      <div
+        ref={wrap}
+        className="mx-auto w-full"
+        onPointerMove={follow}
+        onPointerLeave={() => setTilt({ x: 0, y: 0 })}
+        style={{ maxWidth: W, height: H * scale + extra }}
+      >
         <div style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
           {/* closed, the passport sits in the middle; opening slides it back to the right as the cover swings left */}
           <div
-            onClick={() => address && setOpen((value) => !value)}
-            style={{ position: "relative", width: W, height: H, perspective: 2800, transform: `translateX(${open ? 0 : -HALF / 2}px)`, transition: ease, cursor: address ? "pointer" : "default", fontFamily: PALM_FONT }}
+            className="pid-pose"
+            style={{
+              width: W,
+              height: H,
+              perspective: 2200,
+              perspectiveOrigin: "50% 42%",
+            }}
           >
+            <div
+              style={{
+                width: W,
+                height: H,
+                transformStyle: "preserve-3d",
+                transform: `rotateX(${poseX}deg) rotateY(${poseY}deg)`,
+                transition: reduce ? "none" : "transform 180ms ease-out",
+              }}
+            >
+              <div className="pid-pose-shadow" aria-hidden="true" />
+              <div
+                onClick={() => address && setOpen((value) => !value)}
+                style={{
+                  position: "relative",
+                  width: W,
+                  height: H,
+                  transformStyle: "preserve-3d",
+                  transform: `translateX(${open ? 0 : -HALF / 2}px)`,
+                  transition: ease,
+                  cursor: address ? "pointer" : "default",
+                  fontFamily: PALM_FONT,
+                }}
+              >
+              <div className="pid-gold-edge pid-gold-edge--side" aria-hidden="true" />
+              <div className="pid-gold-edge pid-gold-edge--foot" aria-hidden="true" />
             {/* right page: the data page */}
             <div style={{ position: "absolute", left: HALF, top: 0, width: HALF, height: H }}>
               <div style={frameStyle(look, "6px 16px 16px 6px")}>
@@ -766,6 +830,8 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
               </div>
               <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
                 <InsideCover look={look} total={total} tier={tier} />
+              </div>
+            </div>
               </div>
             </div>
           </div>

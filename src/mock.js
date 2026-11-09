@@ -146,7 +146,7 @@ export const HELP = [
     summary: "Agentic coding in the browser — chat, tools, git, notes, achievements, and ship.",
     body: "/root is an agentic coding workspace. Chat, tools, git, notes, automations, and ship from the same chrome. A Root Account on useroot.sh unlocks the session.",
     bullets: [
-      "Sidebar: New Agent, Achievements, Reasoning, Ops, Plugins, Notes",
+      "Sidebar: New Agent, Achievements, Reasoning, Ops, Marketplace, Notes",
       "Composer: Agent / Ask / Plan, Auto-Prompt, model, Attach, Files, send",
       "Projects use GitHub remotes — github.com/you/…",
     ],
@@ -204,12 +204,12 @@ export const HELP = [
     bullets: ["Sign in with the wallet, then the authenticator code", "Publish uses a GitHub token once and does not store it", "Hosting, Domains, Ops Hub, Plans, and the palm-ops repos"],
   },
   {
-    id: "plugins",
+    id: "marketplace",
     section: "Ship",
-    title: "Plugins",
-    summary: "Hosting, domains, and Ops Hub for this wallet.",
-    body: "Plugins is the three Ops panels. Hosting lists sites, Domains searches and lists names, and Ops Hub lists the git for this address. Each panel links to the same page on ops.palmaierc.com.",
-    bullets: ["Sign in with the wallet, then the authenticator code", "The same Ops session loads the sidebar repositories", "Open each panel on ops.palmaierc.com"],
+    title: "Marketplace",
+    summary: "PALM wraps 1:1 into wPALM. wPALM buys credits and services. Pledged PALM can back a loan.",
+    body: "Marketplace is the PALM desk. Wrap locks PALM and mints wPALM. Unwrap burns wPALM and returns PALM. Services sell extra Hamrin credits, Ops months, and crawler time in wPALM. Lend lets you pledge PALM at 40% LTV and borrow wPALM instead of selling. The book on this tab is a live sketch — wrap and lend are not on-chain yet. Hosting and domains stay on the Ops tab.",
+    bullets: ["1 PALM locked = 1 wPALM", "Extra credit 800 wPALM · Ops month 2,500 · crawler pane 1,000", "Borrow at 40% LTV, liquidation at 75%", "Holdings still mint the 14-day Hamrin window"],
   },
   {
     id: "imagegen",

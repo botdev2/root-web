@@ -43,11 +43,11 @@ export default function PalmTxList({ txs, loading, edition }) {
   ];
 
   return (
-    <section className={`mx-auto w-full ${edition ? "mt-4 max-w-[760px]" : "mb-6"}`}>
-      <div className={`mb-3 ${edition ? "text-center text-[10px] tracking-[0.32em] text-[var(--faint)]" : "text-[12px] text-[var(--faint)]"}`}>
-        {edition ? "STATEMENT · LAST 30 DAYS" : "$PALM activity · last 30 days"}
+    <section className={`mx-auto w-full ${edition ? "pid-ledger mt-8 max-w-[760px]" : "mb-6"}`}>
+      <div className={`mb-3 ${edition ? "text-center text-[10px] tracking-[0.36em] text-[var(--faint)]" : "text-[12px] text-[var(--faint)]"}`}>
+        {edition ? "CONFIDENTIAL STATEMENT · LAST 30 DAYS" : "$PALM activity · last 30 days"}
       </div>
-      <div className={edition ? "border-y border-[color-mix(in_srgb,var(--amber)_28%,var(--stroke))]" : "frost-panel rounded-2xl border border-[var(--stroke)]"}>
+      <div className={edition ? "border-y border-[color-mix(in_srgb,var(--amber)_38%,var(--stroke))]" : "frost-panel rounded-2xl border border-[var(--stroke)]"}>
         <div className={`grid grid-cols-2 sm:grid-cols-4 ${edition ? "gap-0" : "gap-px bg-[var(--stroke-soft)]"}`}>
           {figures.map(([label, value]) => (
             <div key={label} className={edition ? "px-3 py-5 text-center sm:px-4" : "bg-[var(--panel)] px-4 py-3"}>

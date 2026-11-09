@@ -1542,6 +1542,27 @@ textarea {
   gap: 16px;
   margin-bottom: 28px;
 }
+.pid-lux-total {
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.pid-lux-iban {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  word-break: break-all;
+  color: #c9c1b4;
+  font-variant-numeric: tabular-nums;
+}
+.pid-lux-section-label {
+  margin-bottom: 10px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #8f877c;
+}
 .pid-lux-addr {
   font-size: 13px;
   letter-spacing: 0.02em;
@@ -1550,6 +1571,8 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 .pid-lux-btn {
+  display: inline-flex;
+  align-items: center;
   height: 32px;
   padding: 0 12px;
   border: 1px solid rgb(196 165 116 / 0.45);
@@ -1595,8 +1618,16 @@ textarea {
   background: rgb(196 165 116 / 0.22);
   border: 1px solid rgb(196 165 116 / 0.22);
 }
+.pid-lux-balances--wide {
+  margin-bottom: 36px;
+}
+@media (min-width: 900px) {
+  .pid-lux-balances--wide {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 .pid-lux-tile {
-  padding: 12px 14px 14px;
+  padding: 16px 18px 18px;
   background: #12131a;
 }
 .pid-lux-tile--lead {
@@ -1847,6 +1878,9 @@ textarea {
   cursor: pointer;
 }
 @media (max-width: 640px) {
+  .pid-lux-total {
+    font-size: 34px;
+  }
   .pid-seal-row {
     flex-direction: column;
     align-items: flex-start;

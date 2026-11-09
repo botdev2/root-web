@@ -11,7 +11,7 @@ export default function PalmDesk({ credit, compact }) {
       <div className="pid-lux-desk-head">
         <div>
           <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">MARKETPLACE · WIP</div>
-          <div className="mt-1 text-[16px]">{compact ? "Service mockups" : "wPALM"}</div>
+          <div className="mt-1 text-[16px]">{compact ? "Quoted in wPALM" : "wPALM"}</div>
         </div>
         <div className="text-[12px] text-[var(--muted)]">{compact ? "Quoted in wPALM" : "Wallet + staked"}</div>
       </div>

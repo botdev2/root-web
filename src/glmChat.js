@@ -1,6 +1,6 @@
 const ORIGIN = "https://ollama1.57.129.151.80.sslip.io";
 
-function opsBearer(address) {
+export function opsBearer(address) {
   try {
     const parsed = JSON.parse(localStorage.getItem("root-web-ops-session") || "null");
     if (!parsed?.token || !parsed?.address) return "";
@@ -86,14 +86,20 @@ export function readPalmId(address) {
   });
 }
 
-/** TOTP secret and live code for a PALM ID. Add it to an authenticator. */
+/** Owner-only TOTP setup. Requires a signed-in Ops session for this wallet. */
 export function readPalmOtp(address) {
   const wallet = String(address || "").toLowerCase();
+  const headers = {
+    "content-type": "application/json",
+    "x-wallet": wallet,
+  };
+  const token = opsBearer(wallet);
+  if (token) headers.authorization = "Bearer " + token;
   return fetch(ORIGIN + "/v1/palm-id/" + encodeURIComponent(wallet) + "/otp", {
-    headers: { "content-type": "application/json" },
+    headers,
   }).then(async (response) => {
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Could not read this seal.");
+    if (!response.ok) throw new Error(data.error || "Could not open the authenticator.");
     return data;
   });
 }

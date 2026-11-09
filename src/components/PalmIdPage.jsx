@@ -5,7 +5,6 @@ import { usd, usePalmUsd, wpalmOf } from "../market.js";
 import { parsePublicId } from "../version.js";
 import PalmDesk from "./PalmDesk.jsx";
 import PalmId from "./PalmId.jsx";
-import PalmSeal from "./PalmSeal.jsx";
 import PalmTxList from "./PalmTx.jsx";
 
 const TIER_AT = [0, 1000, 2500, 10000, 25000, 50000, 100000, 250000];
@@ -21,6 +20,12 @@ function money(value) {
   if (amount >= 1e6) return (amount / 1e6).toFixed(2).replace(/\.?0+$/, "") + "M";
   if (amount >= 1e5) return (amount / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
   return amount.toLocaleString("en-US", { maximumFractionDigits: amount < 100 ? 2 : 0 });
+}
+
+function iban(address) {
+  const hex = String(address || "").replace(/^0x/i, "");
+  const parts = hex.match(/.{1,4}/g) || [];
+  return "0x " + parts.join(" ");
 }
 
 function tierOf(total) {
@@ -41,7 +46,7 @@ export default function PalmIdPage() {
 
   useEffect(() => {
     applyTheme(findTheme(readSavedThemeId()), readSavedWallpaper());
-    document.title = address ? `PALM ID · ${address.slice(0, 6)}…${address.slice(-4)}` : "PALM ID";
+    document.title = address ? `PALM · ${address.slice(0, 6)}…${address.slice(-4)}` : "PALM Account";
   }, [address]);
 
   useEffect(() => {
@@ -60,7 +65,7 @@ export default function PalmIdPage() {
         setTxs(Array.isArray(data.txs) ? data.txs : []);
       })
       .catch((failure) => {
-        if (!cancelled) setError(failure.message || "Could not read this ID.");
+        if (!cancelled) setError(failure.message || "Could not read this account.");
       });
     return () => {
       cancelled = true;
@@ -89,20 +94,21 @@ export default function PalmIdPage() {
     <div className="pid-lux relative isolate min-h-[100dvh] overflow-auto">
       <div className="wallpaper-layer" />
       <div className="pid-lux-veil" />
-      <div className="relative z-[1] mx-auto flex min-h-[100dvh] w-full max-w-[1360px] flex-col px-4 pb-[max(32px,env(safe-area-inset-bottom))] pt-[max(16px,env(safe-area-inset-top))] md:px-8 lg:px-10">
+      <div className="relative z-[1] mx-auto flex min-h-[100dvh] w-full max-w-[1280px] flex-col px-4 pb-[max(32px,env(safe-area-inset-bottom))] pt-[max(16px,env(safe-area-inset-top))] md:px-8 lg:px-10">
         <header className="pid-lux-bar">
           <a href="/" className="flex items-center gap-2.5 no-underline">
             <img src="/palm.png" alt="" className="h-6 w-6 object-contain" />
             <span>
               <span className="block text-[10px] tracking-[0.28em] text-[var(--faint)]">PALM</span>
-              <span className="block text-[13px] tracking-[0.08em]">ID</span>
+              <span className="block text-[13px] tracking-[0.08em]">Account</span>
             </span>
           </a>
-          <div className="flex items-center gap-5 text-[12px] text-[var(--muted)]">
-            <a href="#authenticator" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Authenticator</a>
-            <a href="#marketplace" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Marketplace</a>
+          <nav className="flex items-center gap-5 text-[12px] text-[var(--muted)]">
+            <a href="#overview" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Overview</a>
+            <a href="#activity" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Statement</a>
+            <a href="#marketplace" className="hidden no-underline hover:text-[var(--ink)] sm:inline">Services</a>
             <a href="/" className="no-underline hover:text-[var(--ink)]">Open /root</a>
-          </div>
+          </nav>
         </header>
 
         {!address ? (
@@ -111,11 +117,17 @@ export default function PalmIdPage() {
           <p className="mt-24 text-[13px] text-[var(--muted)]">{error}</p>
         ) : (
           <>
-            <div className="pid-lux-hero">
+            <section id="overview" className="pid-lux-hero">
               <div>
-                <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">{TIER_NAME[tier]}</div>
-                <h1 className="mt-1 text-[26px] font-semibold tracking-[0.04em]">PALM ID</h1>
-                <div className="pid-lux-addr mt-2">{address}</div>
+                <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">
+                  {TIER_NAME[tier]} · ACCOUNT
+                </div>
+                <div className="pid-lux-total mt-2">{credit ? usd(wpalm, price) : "—"}</div>
+                <div className="mt-1 text-[15px] tabular-nums text-[var(--muted)]">
+                  {credit ? `${money(wpalm)} wPALM` : "Reading holdings…"}
+                  <span className="text-[var(--faint)]"> · wallet + staked</span>
+                </div>
+                <div className="pid-lux-iban mt-4">{iban(address)}</div>
                 {next && (
                   <div className="mt-2 text-[12px] text-[var(--muted)]">
                     {money(Math.max(0, TIER_AT[next] - total))} $PALM to {TIER_NAME[next]}
@@ -123,28 +135,30 @@ export default function PalmIdPage() {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="pid-lux-btn" onClick={() => copy(address, "Address copied")}>
-                  Copy address
+                <button type="button" className="pid-lux-btn" onClick={() => copy(address, "Account copied")}>
+                  Copy account
                 </button>
                 <button type="button" className="pid-lux-btn" onClick={() => copy(window.location.href.split("?")[0], "Link copied")}>
                   Copy link
                 </button>
                 {note && <span className="self-center text-[12px] text-[var(--muted)]">{note}</span>}
               </div>
+            </section>
+
+            <div className="pid-lux-balances pid-lux-balances--wide">
+              <Balance label="Available" value={credit ? money(held) : "—"} hint="$PALM in wallet" />
+              <Balance label="Staked" value={credit ? money(staked) : "—"} hint="Reserved" />
+              <Balance label="Total" value={credit ? money(wpalm) : "—"} hint="wPALM" lead />
+              <Balance label="Value" value={credit ? usd(wpalm, price) : "—"} hint="Same as PALM" />
             </div>
 
             <div className="pid-lux-split">
               <div className="pid-lux-passport">
+                <div className="pid-lux-section-label">Identity</div>
                 <PalmId address={address} credit={passportCredit} publicPage />
               </div>
               <aside className="pid-lux-side">
-                <PalmSeal address={address} compact />
-                <div className="pid-lux-balances">
-                  <Balance label="Held" value={credit ? money(held) : "—"} />
-                  <Balance label="Staked" value={credit ? money(staked) : "—"} />
-                  <Balance label="wPALM" value={credit ? money(wpalm) : "—"} hint="Wallet + staked" lead />
-                  <Balance label="USD" value={credit ? usd(wpalm, price) : "—"} hint="Same as PALM" />
-                </div>
+                <div className="pid-lux-section-label">Services</div>
                 <PalmDesk credit={credit} compact />
               </aside>
             </div>
@@ -154,7 +168,7 @@ export default function PalmIdPage() {
         )}
 
         <footer className="pid-lux-foot">
-          Public $PALM holdings, six-month transfers including swaps, and the wPALM desk.
+          Public holdings and six-month $PALM statement for this account.
           <span className="mx-2 text-[var(--faint)]">·</span>
           <a href="/" className="text-[var(--muted)] no-underline hover:text-[var(--ink)]">
             /root
@@ -169,7 +183,7 @@ function Balance({ label, value, hint, lead }) {
   return (
     <div className={lead ? "pid-lux-tile pid-lux-tile--lead" : "pid-lux-tile"}>
       <div className="text-[10px] tracking-[0.14em] text-[var(--faint)]">{label}</div>
-      <div className="mt-1 text-[18px] tabular-nums tracking-[0.02em]">{value}</div>
+      <div className="mt-1 text-[22px] tabular-nums tracking-[0.02em]">{value}</div>
       {hint && <div className="mt-0.5 text-[10px] text-[var(--muted)]">{hint}</div>}
     </div>
   );

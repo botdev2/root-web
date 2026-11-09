@@ -119,7 +119,7 @@ export default function PalmTxList({ txs, loading, edition }) {
     <section id="activity" className="pid-lux-panel mt-8">
       <div className="pid-lux-panel-head">
         <div>
-          <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">ACTIVITY</div>
+          <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">STATEMENT</div>
           <div className="mt-1 text-[15px]">Last 6 months · $PALM</div>
         </div>
         <div className="text-[12px] tabular-nums text-[var(--muted)]">

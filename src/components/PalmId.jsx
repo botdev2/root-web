@@ -4,7 +4,7 @@ import { formatCredits, readQuests } from "../glmChat.js";
 import { readProfile, writeProfile } from "../account.js";
 import { levelOf } from "./views/QuestsView.jsx";
 import { usd, usePalmUsd } from "../market.js";
-import { publicIdUrl } from "../version.js";
+import { authenticatorUrl, publicIdUrl } from "../version.js";
 
 // The whole open passport is drawn at this size, then scaled to fit. Both pages are the same size.
 const W = 1100;
@@ -876,6 +876,16 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
                 Open public page
               </button>
             )}
+            <button
+              type="button"
+              style={chip(false)}
+              onClick={() => {
+                const href = authenticatorUrl(address);
+                if (href) window.open(href, "_blank", "noopener");
+              }}
+            >
+              Authenticator
+            </button>
             <button type="button" style={chip(false)} onClick={saveImage}>Save as image</button>
             {!publicPage && <button type="button" style={chip(custom)} onClick={() => setCustom((value) => !value)}>{custom ? "Done" : "Customize"}</button>}
             <span className="text-[12px] text-[var(--muted)]" aria-live="polite">{note}</span>

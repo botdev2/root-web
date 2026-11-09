@@ -548,7 +548,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "";
   const poseX = reduce ? 0 : (open ? 8 : 16) + tilt.x;
   const poseY = reduce ? 0 : (open ? -5 : -22) + tilt.y;
-  const extra = publicPage ? 88 : 48;
+  const extra = publicPage ? 56 : 48;
   const follow = (event) => {
     if (reduce || !wrap.current) return;
     const box = wrap.current.getBoundingClientRect();
@@ -837,6 +837,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
           </div>
         </div>
       </div>
+      {!publicPage && (
       <p className="mx-auto mt-7 max-w-[640px] text-center text-[11px] leading-5 tracking-[0.06em] text-[var(--muted)]">
         {address ? (
           <>
@@ -847,10 +848,11 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
           "Issued to a wallet address."
         )}
       </p>
+      )}
 
-      {address && (
+      {address && !publicPage && (
         <div className="mx-auto mt-5 max-w-[760px]">
-          <div className={`flex flex-wrap items-center gap-2 ${publicPage ? "justify-center" : ""}`}>
+          <div className="flex flex-wrap items-center gap-2">
             <button type="button" style={chip(false)} onClick={() => copy(address, "Wallet address copied")}>Copy address</button>
             <button type="button" style={chip(false)} onClick={() => copy(publicIdUrl(address) || address, "Public ID link copied")}>Copy public link</button>
             {!publicPage && (

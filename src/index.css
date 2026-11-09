@@ -1644,6 +1644,29 @@ textarea {
   line-height: 1.6;
   color: #8f877c;
 }
+.pid-seal {
+  margin-bottom: 22px;
+  padding: 16px 18px 14px;
+  border: 1px solid rgb(196 165 116 / 0.35);
+  background: rgb(18 19 26 / 0.85);
+}
+.pid-seal-code {
+  margin-top: 8px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  font-variant-numeric: tabular-nums;
+}
+.pid-seal-meter {
+  margin-top: 14px;
+  height: 3px;
+  background: rgb(255 255 255 / 0.08);
+}
+.pid-seal-meter-fill {
+  height: 100%;
+  background: rgb(196 165 116 / 0.9);
+  transition: width 1s linear;
+}
 .pid-pose {
   transform-style: preserve-3d;
 }

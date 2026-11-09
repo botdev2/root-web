@@ -86,6 +86,18 @@ export function readPalmId(address) {
   });
 }
 
+/** Live 20-second seal for a PALM ID. Signed by the PALM backend. */
+export function readPalmOtp(address) {
+  const wallet = String(address || "").toLowerCase();
+  return fetch(ORIGIN + "/v1/palm-id/" + encodeURIComponent(wallet) + "/otp", {
+    headers: { "content-type": "application/json" },
+  }).then(async (response) => {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not read this seal.");
+    return data;
+  });
+}
+
 export function readQuests(address) {
   return call("/v1/quests", { address });
 }

@@ -3,6 +3,7 @@ import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "../
 import { formatCredits, readPalmId } from "../glmChat.js";
 import { parsePublicId } from "../version.js";
 import PalmId from "./PalmId.jsx";
+import PalmSeal from "./PalmSeal.jsx";
 import PalmTxList from "./PalmTx.jsx";
 
 const TIER_AT = [0, 1000, 2500, 10000, 25000, 50000, 100000, 250000];
@@ -134,6 +135,8 @@ export default function PalmIdPage() {
                 </div>
               </div>
             </section>
+
+            <PalmSeal address={address} />
 
             <div className="pid-bank-balances">
               <Balance label="Total $PALM" value={credit ? money(total) : "—"} hint="Held and staked" />

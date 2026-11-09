@@ -4,6 +4,7 @@ import { formatCredits, readQuests } from "../glmChat.js";
 import { readProfile, writeProfile } from "../account.js";
 import { levelOf } from "./views/QuestsView.jsx";
 import { publicIdUrl } from "../version.js";
+import { usePalmSeal } from "./PalmSeal.jsx";
 
 // The whole open passport is drawn at this size, then scaled to fit. Both pages are the same size.
 const W = 1100;
@@ -298,9 +299,10 @@ function CornerFoil({ look, size = 28 }) {
 }
 
 /** The outside of the passport: dark leather with a foil palm and name. */
-function FrontCover({ look, address, onConnect }) {
+function FrontCover({ look, address, onConnect, otp }) {
   const short = address ? `${address.slice(0, 2)}...${address.slice(-4)}` : "";
   const foil = { backgroundImage: foilFill(look) };
+  const grouped = otp && otp.length === 6 ? otp.slice(0, 3) + "  " + otp.slice(3) : otp;
   return (
     <div style={frameStyle(look, "6px 16px 16px 6px")}>
       <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", backgroundImage: `radial-gradient(90% 70% at 32% 8%, rgb(255 255 255 / 0.2), transparent 46%), radial-gradient(70% 50% at 80% 90%, rgb(255 220 160 / 0.08), transparent 55%), linear-gradient(160deg, ${look.cover}, #07050a)` }}>
@@ -325,6 +327,12 @@ function FrontCover({ look, address, onConnect }) {
           <div style={{ marginTop: 10, display: "inline-block", fontSize: 30, fontWeight: 600, letterSpacing: "0.36em", color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.65))" }}>PALM ID</div>
           <div style={{ marginTop: 10, fontSize: 12, letterSpacing: "0.32em", textTransform: "uppercase", color: look.metal[1], opacity: 0.92 }}>{look.status}</div>
           {short && <div style={{ marginTop: 20, fontSize: 13, letterSpacing: "0.24em", fontWeight: 600, color: look.metal[0] }}>{short}</div>}
+          {grouped && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 9, letterSpacing: "0.28em", color: look.metal[1], opacity: 0.7 }}>LIVE SEAL</div>
+              <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, letterSpacing: "0.22em", color: look.metal[0], fontVariantNumeric: "tabular-nums" }}>{grouped}</div>
+            </div>
+          )}
         </div>
         <svg width="34" height="24" viewBox="0 0 34 24" style={{ position: "absolute", left: PW / 2 - 17, bottom: 52 }} aria-hidden="true">
           <rect x="1" y="1" width="32" height="22" rx="5" fill="none" stroke={look.metal[1]} strokeWidth="1.2" opacity="0.85" />
@@ -405,6 +413,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
   const [open, setOpen] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const wrap = useRef(null);
+  const seal = usePalmSeal(address);
   const timer = useRef(0);
   const played = useRef(false);
 
@@ -826,7 +835,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
             {/* the cover: its outside faces you when closed, its inside is the left page once it has swung open */}
             <div style={{ position: "absolute", left: HALF, top: 0, width: HALF, height: H, transformOrigin: "0 50%", transformStyle: "preserve-3d", transform: open ? "rotateY(-180deg)" : "rotateY(0deg)", transition: ease, zIndex: 3 }}>
               <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}>
-                <FrontCover look={look} address={address} onConnect={onConnect} />
+                <FrontCover look={look} address={address} onConnect={onConnect} otp={seal.code} />
               </div>
               <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
                 <InsideCover look={look} total={total} tier={tier} />

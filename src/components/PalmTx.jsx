@@ -1,4 +1,6 @@
 const KIND = {
+  buy: { label: "Buy", sign: "+", debit: false },
+  sell: { label: "Sell", sign: "−", debit: true },
   in: { label: "Incoming", sign: "+", debit: false },
   out: { label: "Outgoing", sign: "−", debit: true },
   stake: { label: "Staked", sign: "−", debit: true },
@@ -18,17 +20,25 @@ function formatWhen(at) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function monthOf(at) {
+  const date = new Date(at);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
+
 function scan(txs) {
   return (txs || []).reduce(
     (sum, tx) => {
       const amount = Number(tx.amount) || 0;
-      if (tx.kind === "in" || tx.kind === "unstake") sum.in += amount;
-      else sum.out += amount;
-      if (tx.kind === "stake") sum.staked += amount;
-      if (tx.kind === "unstake") sum.unstaked += amount;
+      if (tx.kind === "buy") sum.bought += amount;
+      else if (tx.kind === "sell") sum.sold += amount;
+      else if (tx.kind === "in") sum.in += amount;
+      else if (tx.kind === "out") sum.out += amount;
+      else if (tx.kind === "stake") sum.staked += amount;
+      else if (tx.kind === "unstake") sum.unstaked += amount;
       return sum;
     },
-    { in: 0, out: 0, staked: 0, unstaked: 0 },
+    { bought: 0, sold: 0, in: 0, out: 0, staked: 0, unstaked: 0 },
   );
 }
 
@@ -38,20 +48,29 @@ function shortRef(hash) {
   return text.slice(0, 6) + "…" + text.slice(-4);
 }
 
+function partyOf(tx) {
+  return tx.venue || tx.counterparty || "";
+}
+
+function netOf(totals) {
+  return totals.bought + totals.in + totals.unstaked - totals.sold - totals.out - totals.staked;
+}
+
 export default function PalmTxList({ txs, loading, edition }) {
   const rows = Array.isArray(txs) ? txs : [];
   const totals = scan(rows);
+  const net = netOf(totals);
   const figures = [
+    ["Bought", totals.bought],
+    ["Sold", totals.sold],
     ["Received", totals.in],
     ["Sent", totals.out],
-    ["Staked", totals.staked],
-    ["Unstaked", totals.unstaked],
   ];
 
   if (!edition) {
     return (
       <section className="mx-auto mb-6 w-full">
-        <div className="mb-3 text-[12px] text-[var(--faint)]">$PALM activity · last 30 days</div>
+        <div className="mb-3 text-[12px] text-[var(--faint)]">$PALM activity · last 6 months</div>
         <div className="frost-panel rounded-2xl border border-[var(--stroke)]">
           <div className="grid grid-cols-2 gap-px bg-[var(--stroke-soft)] sm:grid-cols-4">
             {figures.map(([label, value]) => (
@@ -64,17 +83,17 @@ export default function PalmTxList({ txs, loading, edition }) {
           {loading && !rows.length ? (
             <div className="px-4 py-6 text-center text-[13px] text-[var(--muted)]">Reading transfers…</div>
           ) : !rows.length ? (
-            <div className="px-4 py-6 text-center text-[13px] text-[var(--muted)]">No $PALM transfers in the last month.</div>
+            <div className="px-4 py-6 text-center text-[13px] text-[var(--muted)]">No $PALM transfers in the last 6 months.</div>
           ) : (
             <ul>
-              {rows.map((tx) => {
+              {rows.map((tx, index) => {
                 const kind = KIND[tx.kind] || KIND.out;
                 return (
-                  <li key={tx.hash} className="flex items-center justify-between gap-3 border-b border-[var(--stroke-soft)] px-4 py-3.5 last:border-b-0">
+                  <li key={`${tx.hash}-${tx.kind}-${index}`} className="flex items-center justify-between gap-3 border-b border-[var(--stroke-soft)] px-4 py-3.5 last:border-b-0">
                     <div className="min-w-0">
                       <div className="text-[13px] text-[var(--ink)]">{kind.label}</div>
                       <div className="mt-0.5 truncate text-[11px] text-[var(--muted)]">
-                        {formatWhen(tx.at)} · {tx.counterparty}
+                        {formatWhen(tx.at)} · {partyOf(tx)}
                       </div>
                     </div>
                     <a
@@ -101,9 +120,12 @@ export default function PalmTxList({ txs, loading, edition }) {
       <div className="pid-lux-panel-head">
         <div>
           <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">ACTIVITY</div>
-          <div className="mt-1 text-[15px]">Last 30 days · $PALM</div>
+          <div className="mt-1 text-[15px]">Last 6 months · $PALM</div>
         </div>
-        <div className="text-[12px] tabular-nums text-[var(--muted)]">Net {formatPalm(totals.in - totals.out)}</div>
+        <div className="text-[12px] tabular-nums text-[var(--muted)]">
+          Net {net >= 0 ? "+" : "−"}
+          {formatPalm(net)}
+        </div>
       </div>
       <div className="grid grid-cols-2 border-y border-[color-mix(in_srgb,var(--amber)_28%,var(--stroke))] sm:grid-cols-4">
         {figures.map(([label, value]) => (
@@ -116,7 +138,7 @@ export default function PalmTxList({ txs, loading, edition }) {
       {loading && !rows.length ? (
         <div className="px-4 py-8 text-[13px] text-[var(--muted)]">Reading transfers…</div>
       ) : !rows.length ? (
-        <div className="px-4 py-8 text-[13px] text-[var(--muted)]">No $PALM transfers in the last 30 days.</div>
+        <div className="px-4 py-8 text-[13px] text-[var(--muted)]">No $PALM transfers in the last 6 months.</div>
       ) : (
         <div className="pid-lux-table-wrap">
           <table className="pid-lux-table">
@@ -130,13 +152,17 @@ export default function PalmTxList({ txs, loading, edition }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((tx) => {
+              {rows.map((tx, index) => {
                 const kind = KIND[tx.kind] || KIND.out;
+                const month = monthOf(tx.at);
+                const showMonth = month && month !== monthOf(rows[index - 1]?.at);
                 return (
-                  <tr key={tx.hash}>
+                  <TxGroup key={`${tx.hash}-${tx.kind}-${index}`} month={showMonth ? month : ""}>
                     <td className="whitespace-nowrap">{formatWhen(tx.at)}</td>
-                    <td>{kind.label}</td>
-                    <td className="truncate font-normal">{tx.counterparty}</td>
+                    <td>
+                      <span className={`pid-lux-kind pid-lux-kind--${tx.kind || "out"}`}>{kind.label}</span>
+                    </td>
+                    <td className="truncate font-normal">{partyOf(tx)}</td>
                     <td className="pid-lux-num">
                       {kind.sign}
                       {formatPalm(tx.amount)}
@@ -146,7 +172,7 @@ export default function PalmTxList({ txs, loading, edition }) {
                         {shortRef(tx.hash)}
                       </a>
                     </td>
-                  </tr>
+                  </TxGroup>
                 );
               })}
             </tbody>
@@ -154,5 +180,18 @@ export default function PalmTxList({ txs, loading, edition }) {
         </div>
       )}
     </section>
+  );
+}
+
+function TxGroup({ month, children }) {
+  return (
+    <>
+      {month ? (
+        <tr className="pid-lux-month">
+          <td colSpan={5}>{month}</td>
+        </tr>
+      ) : null}
+      <tr>{children}</tr>
+    </>
   );
 }

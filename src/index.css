@@ -1599,6 +1599,9 @@ textarea {
   padding: 12px 14px 14px;
   background: #12131a;
 }
+.pid-lux-tile--lead {
+  background: linear-gradient(180deg, rgb(196 165 116 / 0.14), #12131a);
+}
 .pid-lux-panel {
   margin-bottom: 8px;
   overflow: hidden;
@@ -1645,6 +1648,41 @@ textarea {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.pid-lux-kind {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid rgb(196 165 116 / 0.28);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d8d0c4;
+}
+.pid-lux-kind--buy {
+  color: #e8d5a3;
+  border-color: rgb(232 213 163 / 0.5);
+  background: rgb(232 213 163 / 0.08);
+}
+.pid-lux-kind--sell {
+  color: #d4b4a6;
+  border-color: rgb(212 180 166 / 0.4);
+}
+.pid-lux-kind--stake,
+.pid-lux-kind--unstake {
+  color: #c5cfe0;
+  border-color: rgb(197 207 224 / 0.35);
+}
+.pid-lux-kind--in {
+  color: #d8d0c4;
+}
+.pid-lux-month td {
+  padding: 14px 16px 8px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8f877c;
+  background: rgb(196 165 116 / 0.06);
+  border-bottom: 1px solid rgb(196 165 116 / 0.18);
 }
 .pid-lux-foot {
   margin-top: auto;

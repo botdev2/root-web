@@ -3,6 +3,7 @@ import portrait from "../assets/avatar.png";
 import { formatCredits, readQuests } from "../glmChat.js";
 import { readProfile, writeProfile } from "../account.js";
 import { levelOf } from "./views/QuestsView.jsx";
+import { usd, usePalmUsd } from "../market.js";
 import { publicIdUrl } from "../version.js";
 import { SealDigits, usePalmSeal } from "./PalmSeal.jsx";
 
@@ -414,6 +415,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const wrap = useRef(null);
   const seal = usePalmSeal(address);
+  const price = usePalmUsd();
   const timer = useRef(0);
   const played = useRef(false);
 
@@ -548,6 +550,13 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
   const issueMrz = Number.isNaN(date.getTime()) ? "202611" : `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}`;
   const left = credit ? formatCredits(credit.remaining) : "0";
   const earned = quests ? formatCredits(quests.creditsEarned) : "0";
+  const figure = publicPage ? shortAmount(total) : left;
+  const figureLabel = publicPage ? "wPALM" : "Credits";
+  const figureNote = publicPage
+    ? (price ? `${usd(total, price)} · wallet + staked` : "Wallet + staked")
+    : credit?.extra
+      ? `${formatCredits(credit.window || 0)} holdings · +${formatCredits(credit.extra)} desk`
+      : `${earned} earned`;
   const scale = Math.min(1, width / W);
   const next = level.next ? level.number + 1 : null;
   const toNext = level.next ? Math.max(0, level.next - points) : 0;
@@ -643,17 +652,9 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
       ctx.fillRect(226, 156, PW - 260, 1);
       ctx.fillRect(226, 218, PW - 260, 1);
       ctx.fillRect(34, 322, PW - 68, 1);
-      text("Credits", 34, 346, 11, PAPER_MUTED);
-      text(left, 34, 386, 38, PAPER_INK, 700);
-      text(
-        credit?.extra
-          ? `${formatCredits(credit.window || 0)} holdings · +${formatCredits(credit.extra)} desk`
-          : `${earned} earned`,
-        34,
-        408,
-        12,
-        PAPER_MUTED,
-      );
+      text(figureLabel, 34, 346, 11, PAPER_MUTED);
+      text(figure, 34, 386, 38, PAPER_INK, 700);
+      text(figureNote, 34, 408, 12, PAPER_MUTED);
       text("Level", 250, 346, 11, PAPER_MUTED);
       text(String(level.number), 250, 376, 26, PAPER_INK, 700);
       text("Wallet", 34, 436, 11, PAPER_MUTED);
@@ -797,13 +798,9 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
                       {/* credits and level, quietly */}
                       <div style={{ position: "absolute", left: 34, right: 34, top: 322, height: 1, background: PAPER_HAIR }} />
                       <div style={{ position: "absolute", left: 34, top: 324 }}>
-                        <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: PAPER_MUTED }}>Credits</div>
-                        <div style={{ marginTop: 2, fontSize: 38, fontWeight: 700, lineHeight: 1.05 }}>{left}</div>
-                        <div style={{ marginTop: 3, fontSize: 12, color: PAPER_MUTED }}>
-                          {credit?.extra
-                            ? `${formatCredits(credit.window || 0)} holdings · +${formatCredits(credit.extra)} desk`
-                            : `${earned} earned`}
-                        </div>
+                        <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: PAPER_MUTED }}>{figureLabel}</div>
+                        <div style={{ marginTop: 2, fontSize: 38, fontWeight: 700, lineHeight: 1.05 }}>{figure}</div>
+                        <div style={{ marginTop: 3, fontSize: 12, color: PAPER_MUTED }}>{figureNote}</div>
                       </div>
                       <div style={{ position: "absolute", left: 250, top: 324, width: 128 }}>
                         <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: PAPER_MUTED }}>Level</div>

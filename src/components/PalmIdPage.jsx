@@ -141,7 +141,7 @@ export default function PalmIdPage() {
                 <div className="pid-lux-balances">
                   <Balance label="Held" value={credit ? money(held) : "—"} />
                   <Balance label="Staked" value={credit ? money(staked) : "—"} />
-                  <Balance label="wPALM" value={credit ? money(wpalm) : "—"} hint="Wallet + staked" />
+                  <Balance label="wPALM" value={credit ? money(wpalm) : "—"} hint="Wallet + staked" lead />
                   <Balance label="USD" value={credit ? usd(wpalm, price) : "—"} hint="Same as PALM" />
                 </div>
                 <PalmDesk credit={credit} compact />
@@ -153,7 +153,7 @@ export default function PalmIdPage() {
         )}
 
         <footer className="pid-lux-foot">
-          Public $PALM holdings, transfers, and the wPALM desk for this address.
+          Public $PALM holdings, six-month transfers including swaps, and the wPALM desk.
           <span className="mx-2 text-[var(--faint)]">·</span>
           <a href="/" className="text-[var(--muted)] no-underline hover:text-[var(--ink)]">
             /root
@@ -164,9 +164,9 @@ export default function PalmIdPage() {
   );
 }
 
-function Balance({ label, value, hint }) {
+function Balance({ label, value, hint, lead }) {
   return (
-    <div className="pid-lux-tile">
+    <div className={lead ? "pid-lux-tile pid-lux-tile--lead" : "pid-lux-tile"}>
       <div className="text-[10px] tracking-[0.14em] text-[var(--faint)]">{label}</div>
       <div className="mt-1 text-[18px] tabular-nums tracking-[0.02em]">{value}</div>
       {hint && <div className="mt-0.5 text-[10px] text-[var(--muted)]">{hint}</div>}

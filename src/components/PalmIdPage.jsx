@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "../themes.js";
+import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper, THEMES } from "../themes.js";
 import { readPalmId } from "../glmChat.js";
 import { APP_VERSION, parsePublicId } from "../version.js";
 import PalmId from "./PalmId.jsx";
+import PalmTxList from "./PalmTx.jsx";
 
 export default function PalmIdPage() {
   const address = parsePublicId();
   const [credit, setCredit] = useState(null);
+  const [txs, setTxs] = useState(null);
   const [error, setError] = useState("");
+  const [themeId, setThemeId] = useState(() => readSavedThemeId());
 
   useEffect(() => {
-    applyTheme(findTheme(readSavedThemeId()), { wallpaper: readSavedWallpaper() !== "none" });
+    applyTheme(findTheme(themeId), readSavedWallpaper());
     document.title = address ? `PALM ID · ${address.slice(0, 6)}…${address.slice(-4)}` : "PALM ID";
-  }, [address]);
+  }, [address, themeId]);
 
   useEffect(() => {
     if (!address) return undefined;
@@ -27,6 +30,7 @@ export default function PalmIdPage() {
           points: data.points,
           creditsEarned: data.creditsEarned,
         });
+        setTxs(Array.isArray(data.txs) ? data.txs : []);
       })
       .catch((failure) => {
         if (!cancelled) setError(failure.message || "Could not read this PALM ID.");
@@ -47,12 +51,31 @@ export default function PalmIdPage() {
           </a>
           <div className="text-[11px] text-[var(--faint)]">Web {APP_VERSION}</div>
         </header>
+        <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1" aria-label="Themes">
+          {THEMES.map((theme) => (
+            <button
+              key={theme.id}
+              type="button"
+              title={theme.name}
+              onClick={() => setThemeId(theme.id)}
+              className="h-6 w-6 shrink-0 rounded-full border"
+              style={{
+                background: theme.vars["--bg"],
+                borderColor: themeId === theme.id ? theme.vars["--accent"] : "var(--stroke)",
+                boxShadow: themeId === theme.id ? `0 0 0 2px ${theme.vars["--accent"]}` : "none",
+              }}
+            />
+          ))}
+        </div>
         {!address ? (
           <p className="mt-16 text-center text-[14px] text-[var(--muted)]">This PALM ID link is not a wallet address.</p>
         ) : error ? (
           <p className="mt-16 text-center text-[14px] text-[var(--muted)]">{error}</p>
         ) : (
-          <PalmId address={address} credit={credit} publicPage />
+          <>
+            <PalmId address={address} credit={credit} publicPage />
+            <PalmTxList txs={txs} loading={txs === null} />
+          </>
         )}
         <p className="mt-auto pt-6 text-center text-[12px] text-[var(--faint)]">
           <a href="/" className="underline">

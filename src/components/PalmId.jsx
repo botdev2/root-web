@@ -13,11 +13,61 @@ const HALF = W / 2;
 const PW = HALF - FR * 2;
 const PH = H - FR * 2;
 
-const INK = "#2a1633";
-const MUTED = "#8a7b86";
-const HAIR = "rgb(42 22 51 / 0.12)";
+const INK = "var(--ink)";
+const MUTED = "var(--muted)";
+const HAIR = "var(--stroke-soft)";
 const PALM_FONT = '"PALM", "Segoe UI", system-ui, sans-serif';
 const OPEN_MS = 1700;
+
+function useThemePaint() {
+  const [paint, setPaint] = useState({
+    ink: "#f5f2ec",
+    muted: "#b8b0a6",
+    panel: "#201f1d",
+    panelSoft: "#252320",
+    bg: "#121110",
+    top: "#171615",
+    accent: "#f5f2ec",
+    amber: "#d4a04a",
+    stroke: "#3a3835",
+    input: "#1a1918",
+    dark: true,
+  });
+  useEffect(() => {
+    const read = () => {
+      const css = getComputedStyle(document.documentElement);
+      const pick = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+      setPaint({
+        ink: pick("--ink", "#f5f2ec"),
+        muted: pick("--muted", "#b8b0a6"),
+        panel: pick("--panel", "#201f1d"),
+        panelSoft: pick("--panel-soft", "#252320"),
+        bg: pick("--bg", "#121110"),
+        top: pick("--top", "#171615"),
+        accent: pick("--accent", "#f5f2ec"),
+        amber: pick("--amber", "#d4a04a"),
+        stroke: pick("--stroke", "#3a3835"),
+        input: pick("--input", "#1a1918"),
+        dark: document.documentElement.dataset.scheme !== "light",
+      });
+    };
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-scheme", "style"] });
+    return () => observer.disconnect();
+  }, []);
+  return paint;
+}
+
+function rgbChannels(value) {
+  const hex = String(value || "").trim();
+  if (hex.startsWith("#") && hex.length >= 7) {
+    return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  }
+  const match = hex.match(/rgba?\(\s*([\d.]+)\s*[, ]\s*([\d.]+)\s*[, ]\s*([\d.]+)/);
+  if (match) return [match[1], match[2], match[3]].map((n) => Number(n) / 255);
+  return [0.12, 0.1, 0.1];
+}
 
 // Holdings decide the tier. Top rank is 250,000 $PALM held plus staked.
 const LOOKS = [
@@ -170,7 +220,7 @@ function frameStyle(look, radius) {
     backgroundImage: foilFill(look),
     backgroundSize: "300% 300%",
     animation: look.shine ? "pid-foil 8s linear infinite" : undefined,
-    boxShadow: "0 34px 60px -14px rgb(8 3 16 / 0.55), 0 8px 18px rgb(8 3 16 / 0.35)",
+    boxShadow: "0 34px 60px -14px color-mix(in srgb, var(--bg) 55%, #000), 0 8px 18px color-mix(in srgb, var(--bg) 70%, #000)",
     backfaceVisibility: "hidden",
     WebkitBackfaceVisibility: "hidden",
   };
@@ -204,7 +254,7 @@ function Guilloche({ opacity }) {
   return (
     <svg width={PW} height={PH} style={{ position: "absolute", left: 0, top: 0 }} aria-hidden="true">
       {lines.map((d, index) => (
-        <path key={index} d={d} fill="none" stroke="#8c7440" strokeWidth="0.6" opacity={opacity} />
+        <path key={index} d={d} fill="none" stroke="var(--amber)" strokeWidth="0.6" opacity={opacity} />
       ))}
     </svg>
   );
@@ -243,13 +293,13 @@ function Seal({ size, color, rotate }) {
 }
 
 /** The holder's photo: drained of colour and posterised so it reads as an ID print. */
-function Photo({ look, level, src }) {
-  const [dark, light] = look.duo;
-  const hex = (value) => [1, 3, 5].map((i) => parseInt(value.slice(i, i + 2), 16) / 255);
-  const [dr, dg, db] = hex(dark);
-  const [lr, lg, lb] = hex(light);
+function Photo({ look, level, src, paint }) {
+  const dark = paint?.dark ? paint.bg : paint?.ink || look.duo[0];
+  const light = paint?.dark ? paint.ink : paint?.panel || look.duo[1];
+  const [dr, dg, db] = rgbChannels(dark);
+  const [lr, lg, lb] = rgbChannels(light);
   const row = (d, l) => `${((l - d) * 0.299).toFixed(4)} ${((l - d) * 0.587).toFixed(4)} ${((l - d) * 0.114).toFixed(4)} 0 ${d.toFixed(4)}`;
-  const id = "pid-duo-" + level;
+  const id = `pid-duo-${level}-${paint?.dark ? "d" : "l"}`;
   return (
     <div style={{ position: "relative", width: 146, height: 186, borderRadius: 3, overflow: "hidden", isolation: "isolate", background: dark }}>
       <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
@@ -271,7 +321,7 @@ function Photo({ look, level, src }) {
       </svg>
       <img src={src || portrait} alt="" width="146" height="186" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 12%", filter: `url(#${id})` }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px)", mixBlendMode: "overlay" }} />
-      <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 24px rgb(20 8 20 / 0.45)" }} />
+      <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 24px color-mix(in srgb, var(--bg) 45%, transparent)" }} />
     </div>
   );
 }
@@ -282,7 +332,7 @@ function FrontCover({ look, address, onConnect }) {
   const foil = { backgroundImage: foilFill(look) };
   return (
     <div style={frameStyle(look, "6px 16px 16px 6px")}>
-      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", backgroundImage: `radial-gradient(120% 90% at 30% 15%, rgb(255 255 255 / 0.1), transparent 55%), linear-gradient(160deg, ${look.cover}, #0c0610)` }}>
+      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", backgroundImage: `radial-gradient(120% 90% at 30% 15%, color-mix(in srgb, var(--ink) 10%, transparent), transparent 55%), linear-gradient(160deg, ${look.cover}, var(--bg))` }}>
         <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: "overlay", opacity: 0.6 }} aria-hidden="true">
           <filter id="pid-leather" x="0" y="0" width="100%" height="100%">
             <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="9" />
@@ -303,7 +353,7 @@ function FrontCover({ look, address, onConnect }) {
         </svg>
         {!address && (
           <div style={{ position: "absolute", left: 56, right: 56, top: 336, textAlign: "center" }}>
-            <div style={{ fontSize: 13, lineHeight: 1.55, color: "rgb(255 255 255 / 0.7)" }}>A PALM ID is issued to a wallet. Connect one to open yours.</div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: "color-mix(in srgb, var(--ink) 72%, transparent)" }}>A PALM ID is issued to a wallet. Connect one to open yours.</div>
             <button
               type="button"
               onClick={(event) => {
@@ -326,33 +376,33 @@ function FrontCover({ look, address, onConnect }) {
 /** The inside of the front cover: the sunset-oasis artwork, with the tier ladder laid over it. */
 function InsideCover({ look, total, tier }) {
   const next = tier < TIER_AT.length - 1 ? tier + 1 : null;
-  const soft = "rgb(255 244 224 / 0.62)";
+  const soft = "var(--muted)";
   return (
     <div style={frameStyle(look, "16px 6px 6px 16px")}>
-      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "12px 3px 3px 12px", overflow: "hidden", background: "#c0306a", color: "#fff6e8" }}>
-        <img src="/brand/passport-oasis.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "23% 50%" }} />
-        <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 90px rgb(40 8 40 / 0.35)" }} />
-        <div style={{ position: "absolute", right: 0, top: 0, width: 70, height: PH, background: "linear-gradient(270deg, rgb(20 4 24 / 0.45), transparent)" }} />
-        <div style={{ position: "absolute", left: 22, right: 22, top: 20, bottom: 20, borderRadius: 14, background: "linear-gradient(180deg, rgb(22 7 30 / 0.52), rgb(22 7 30 / 0.36))", border: "1px solid rgb(255 244 224 / 0.28)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", padding: "16px 20px 14px", boxSizing: "border-box" }}>
+      <div style={{ position: "relative", width: PW, height: PH, borderRadius: "12px 3px 3px 12px", overflow: "hidden", background: "var(--bg)", color: "var(--ink)" }}>
+        <img src="/brand/passport-oasis.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "23% 50%", opacity: 0.42 }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 35%, transparent), color-mix(in srgb, var(--bg) 72%, transparent))" }} />
+        <div style={{ position: "absolute", right: 0, top: 0, width: 70, height: PH, background: "linear-gradient(270deg, color-mix(in srgb, var(--bg) 55%, transparent), transparent)" }} />
+        <div style={{ position: "absolute", left: 22, right: 22, top: 20, bottom: 20, borderRadius: 14, background: "linear-gradient(180deg, color-mix(in srgb, var(--panel) 82%, transparent), color-mix(in srgb, var(--panel) 70%, transparent))", border: "1px solid color-mix(in srgb, var(--ink) 16%, transparent)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", padding: "16px 20px 14px", boxSizing: "border-box" }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <div style={{ fontSize: 18, fontWeight: 700 }}>Tiers</div>
             <div style={{ fontSize: 12, color: soft }}>{shortAmount(total)} / 250K</div>
           </div>
-          <div style={{ marginTop: 10, height: 4, borderRadius: 3, background: "rgb(255 244 224 / 0.18)", overflow: "hidden" }}>
+          <div style={{ marginTop: 10, height: 4, borderRadius: 3, background: "color-mix(in srgb, var(--ink) 14%, transparent)", overflow: "hidden" }}>
             <div style={{ width: `${Math.min(1, total / TIER_AT[TIER_AT.length - 1]) * 100}%`, height: "100%", borderRadius: 3, backgroundImage: foilFill(LOOKS[tier]) }} />
           </div>
           <div style={{ marginTop: 6, fontSize: 11.5, color: soft }}>
             {next ? `${shortAmount(Math.max(0, TIER_AT[next] - total))} more to ${LOOKS[next].status}` : "Top tier."}
           </div>
           <div style={{ position: "relative", marginTop: 10 }}>
-            <div style={{ position: "absolute", left: 5, top: 16, height: LOOKS.length * 42 - 32, width: 1, background: "rgb(255 244 224 / 0.22)" }} />
+            <div style={{ position: "absolute", left: 5, top: 16, height: LOOKS.length * 42 - 32, width: 1, background: "color-mix(in srgb, var(--ink) 18%, transparent)" }} />
             <div style={{ position: "absolute", left: 5, top: 16, height: Math.max(0, tier * 42), width: 1, background: look.metal[0] }} />
             {LOOKS.map((item, index) => {
               const reached = index <= tier;
               const current = index === tier;
               return (
-                <div key={item.status} style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 42, opacity: reached ? 1 : 0.55, background: current ? "rgb(255 244 224 / 0.1)" : "transparent", borderRadius: 8, margin: "0 -6px", padding: "0 6px" }}>
-                  <div style={{ width: 11, height: 11, borderRadius: "50%", flex: "none", boxSizing: "border-box", border: `2px solid ${reached ? item.metal[0] : "rgb(255 244 224 / 0.4)"}`, background: reached ? item.metal[1] : "transparent", boxShadow: current ? `0 0 0 3px ${item.metal[1]}40` : "none" }} />
+                <div key={item.status} style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, height: 42, opacity: reached ? 1 : 0.55, background: current ? "color-mix(in srgb, var(--ink) 8%, transparent)" : "transparent", borderRadius: 8, margin: "0 -6px", padding: "0 6px" }}>
+                  <div style={{ width: 11, height: 11, borderRadius: "50%", flex: "none", boxSizing: "border-box", border: `2px solid ${reached ? item.metal[0] : "color-mix(in srgb, var(--ink) 35%, transparent)"}`, background: reached ? item.metal[1] : "transparent", boxShadow: current ? `0 0 0 3px ${item.metal[1]}40` : "none" }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.15 }}>{item.status}</div>
                     <div style={{ fontSize: 10.5, color: soft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{PERKS[index]}</div>
@@ -370,6 +420,7 @@ function InsideCover({ look, total, tier }) {
 
 /** An open PALM ID passport. It needs a wallet, reads credits and level from the account, and the more you do, the richer it looks. */
 export default function PalmId({ address, credit, onConnect, publicPage = false }) {
+  const paint = useThemePaint();
   const [quests, setQuests] = useState(null);
   const [width, setWidth] = useState(W);
   const [open, setOpen] = useState(false);
@@ -459,7 +510,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
   const foil = FOILS.find((item) => item.id === settings.foil && item.min <= shown && item.id !== "auto");
   const look = {
     ...base,
-    cover: cover?.color || base.cover,
+    cover: cover?.color || paint.bg,
     metal: foil ? LOOKS[Number(foil.id) - 1].metal : base.metal,
   };
   const issued = useMemo(() => issuedOn(address), [address]);
@@ -531,8 +582,8 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
         ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
       };
       const paper = ctx.createLinearGradient(0, 0, PW, PH);
-      paper.addColorStop(0, "#f8f3eb");
-      paper.addColorStop(1, "#efe7db");
+      paper.addColorStop(0, paint.panel);
+      paper.addColorStop(1, paint.panelSoft);
       round(0, 0, PW, PH, 14);
       ctx.fillStyle = paper;
       ctx.fill();
@@ -552,9 +603,9 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
         ctx.textBaseline = "alphabetic";
         ctx.fillText(value, x, y);
       };
-      text("PALM ID", 34, 52, 26, INK, 700);
-      text(`${tierName} \u00b7 ${shortAmount(total)} $PALM`, 34, 74, 12, MUTED);
-      ctx.fillStyle = HAIR;
+      text("PALM ID", 34, 52, 26, paint.ink, 700);
+      text(`${tierName} \u00b7 ${shortAmount(total)} $PALM`, 34, 74, 12, paint.muted);
+      ctx.fillStyle = paint.stroke;
       ctx.fillRect(34, 84, PW - 68, 1);
       if (typeof ctx.filter === "string") {
         const picture = await new Promise((resolve) => {
@@ -586,29 +637,29 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
         ["Issued", issueText, 380, 230],
       ];
       fields.forEach(([label, value, x, y]) => {
-        text(label, x, y + 11, 11, MUTED);
-        text(value, x, y + 34, 17, INK, 600);
+        text(label, x, y + 11, 11, paint.muted);
+        text(value, x, y + 34, 17, paint.ink, 600);
       });
-      ctx.fillStyle = HAIR;
+      ctx.fillStyle = paint.stroke;
       ctx.fillRect(226, 156, PW - 260, 1);
       ctx.fillRect(226, 218, PW - 260, 1);
       ctx.fillRect(34, 322, PW - 68, 1);
-      text("Credits", 34, 346, 11, MUTED);
-      text(left, 34, 386, 38, INK, 700);
-      text(`${earned} earned`, 34, 408, 12, MUTED);
-      text("Level", 250, 346, 11, MUTED);
-      text(String(level.number), 250, 376, 26, INK, 700);
-      text("Wallet", 34, 436, 11, MUTED);
-      text(address || "", 34, 454, 12.5, INK);
-      ctx.fillStyle = "rgb(255 255 255 / 0.42)";
+      text("Credits", 34, 346, 11, paint.muted);
+      text(left, 34, 386, 38, paint.ink, 700);
+      text(`${earned} earned`, 34, 408, 12, paint.muted);
+      text("Level", 250, 346, 11, paint.muted);
+      text(String(level.number), 250, 376, 26, paint.ink, 700);
+      text("Wallet", 34, 436, 11, paint.muted);
+      text(address || "", 34, 454, 12.5, paint.ink);
+      ctx.fillStyle = paint.dark ? "rgb(255 255 255 / 0.08)" : "rgb(0 0 0 / 0.06)";
       ctx.fillRect(4, PH - 62, PW - 8, 58);
-      text(mrz("P<PALM<<" + clean(holder)), 34, PH - 36, 15, INK);
-      text(mrz(`${number}<<${clean(tierName)}<<${issueMrz}`), 34, PH - 13, 15, INK);
+      text(mrz("P<PALM<<" + clean(holder)), 34, PH - 36, 15, paint.ink);
+      text(mrz(`${number}<<${clean(tierName)}<<${issueMrz}`), 34, PH - 13, 15, paint.ink);
       if (shown >= 2) {
         ctx.save();
         ctx.translate(451, 381);
         ctx.rotate(-0.14);
-        ctx.strokeStyle = "#4a2a6a";
+        ctx.strokeStyle = paint.accent;
         ctx.globalAlpha = 0.85;
         ctx.lineWidth = 1.6;
         ctx.beginPath();
@@ -618,7 +669,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
         ctx.beginPath();
         ctx.arc(0, 0, 31, 0, Math.PI * 2);
         ctx.stroke();
-        text("DEV2", 0, 8, 25, "#4a2a6a", 700, "center");
+        text("DEV2", 0, 8, 25, paint.accent, 700, "center");
         ctx.restore();
       }
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
@@ -659,8 +710,8 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
             {/* right page: the data page */}
             <div style={{ position: "absolute", left: HALF, top: 0, width: HALF, height: H }}>
               <div style={frameStyle(look, "6px 16px 16px 6px")}>
-                <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", background: "linear-gradient(135deg, #f8f3eb, #efe7db)", color: INK }}>
-                  <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: "multiply", opacity: 0.35 }} aria-hidden="true">
+                <div style={{ position: "relative", width: PW, height: PH, borderRadius: "3px 12px 12px 3px", overflow: "hidden", background: "linear-gradient(135deg, var(--panel), var(--panel-soft))", color: INK }}>
+                  <svg width={PW} height={PH} style={{ position: "absolute", inset: 0, mixBlendMode: paint.dark ? "overlay" : "multiply", opacity: paint.dark ? 0.22 : 0.35 }} aria-hidden="true">
                     <filter id="pid-paper" x="0" y="0" width="100%" height="100%">
                       <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="3" />
                       <feColorMatrix values="0 0 0 0 0.5  0 0 0 0 0.42  0 0 0 0 0.3  0 0 0 0.35 0" />
@@ -677,14 +728,14 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
                         <div style={{ marginTop: 4, fontSize: 12, color: MUTED }}>{tierName} · {shortAmount(total)} $PALM</div>
                       </div>
                       {/* pearl security seal */}
-                      <div style={{ position: "absolute", right: 32, top: 22, width: 48, height: 48, borderRadius: "50%", opacity: look.pearl, backgroundImage: "conic-gradient(from 30deg, #f6f1f8, #d3e3ee, #f2dfe8, #e5ecd2, #f6f1f8)", boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 0.8), 0 0 0 1px rgb(42 22 51 / 0.14), 0 3px 8px rgb(42 22 51 / 0.18)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                        <div style={{ width: 28, height: 20, background: "rgb(42 22 51 / 0.6)", ...maskPalm }} />
+                      <div style={{ position: "absolute", right: 32, top: 22, width: 48, height: 48, borderRadius: "50%", opacity: look.pearl, backgroundImage: "conic-gradient(from 30deg, var(--panel), var(--amber), var(--accent), var(--panel-soft), var(--panel))", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent), 0 0 0 1px var(--stroke-soft), 0 3px 8px color-mix(in srgb, var(--bg) 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                        <div style={{ width: 28, height: 20, background: "var(--ink)", ...maskPalm }} />
                         {look.shine && <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(115deg, transparent 35%, rgb(255 255 255 / 0.8) 50%, transparent 65%)", backgroundSize: "260% 100%", animation: "pid-sheen 5s ease-in-out infinite" }} />}
                       </div>
                       <div style={{ position: "absolute", left: 34, right: 34, top: 84, height: 1, backgroundImage: `linear-gradient(90deg, ${metal[2]}, ${metal[1]}, transparent)`, opacity: 0.7 }} />
 
-                      <div style={{ position: "absolute", left: 34, top: 106, padding: 3, background: "#fffdf8", boxShadow: `0 0 0 1px ${metal[1]}, 0 8px 18px rgb(42 22 51 / 0.22)` }}>
-                        <Photo look={look} level={shown} src={settings.photo} />
+                      <div style={{ position: "absolute", left: 34, top: 106, padding: 3, background: "var(--input)", boxShadow: `0 0 0 1px ${metal[1]}, 0 8px 18px color-mix(in srgb, var(--bg) 45%, transparent)` }}>
+                        <Photo look={look} level={shown} src={settings.photo} paint={paint} />
                       </div>
 
                       <Field label="Name" value={holder.toUpperCase()} x={226} y={106} size={holder.length > 12 ? 15 : 17} />
@@ -706,7 +757,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
                       <div style={{ position: "absolute", left: 250, top: 324, width: 128 }}>
                         <div style={{ fontSize: 11, color: MUTED }}>Level</div>
                         <div style={{ marginTop: 2, fontSize: 26, fontWeight: 700, lineHeight: 1.1 }}>{level.number}</div>
-                        <div style={{ marginTop: 9, height: 3, borderRadius: 2, background: "rgb(42 22 51 / 0.12)", overflow: "hidden" }}>
+                        <div style={{ marginTop: 9, height: 3, borderRadius: 2, background: "var(--stroke-soft)", overflow: "hidden" }}>
                           <div style={{ width: `${level.share * 100}%`, height: "100%", backgroundImage: `linear-gradient(90deg, ${metal[2]}, ${metal[1]})` }} />
                         </div>
                         <div style={{ marginTop: 6, fontSize: 11, color: MUTED }}>{next ? `${toNext.toLocaleString()} pts to level ${next}` : `${points.toLocaleString()} pts`}</div>
@@ -714,8 +765,8 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
 
                       {/* the seal arrives at level 2 */}
                       {shown >= 2 && (
-                        <div style={{ position: "absolute", left: 392, top: 322, opacity: 0.88, mixBlendMode: "multiply" }}>
-                          <Seal size={118} color="#4a2a6a" rotate={-8} />
+                        <div style={{ position: "absolute", left: 392, top: 322, opacity: 0.88, mixBlendMode: paint.dark ? "screen" : "multiply" }}>
+                          <Seal size={118} color="var(--accent)" rotate={-8} />
                         </div>
                       )}
 
@@ -724,7 +775,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
                         <div style={{ marginTop: 2, fontSize: 12.5, color: INK, opacity: 0.8, whiteSpace: "nowrap" }}>{address}</div>
                       </div>
 
-                      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 58, background: "rgb(255 255 255 / 0.42)", borderTop: `1px solid ${HAIR}` }}>
+                      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 58, background: "color-mix(in srgb, var(--ink) 8%, transparent)", borderTop: `1px solid ${HAIR}` }}>
                         <svg width={PW} height={58} aria-hidden="true">
                           <text x="34" y="24" fontSize="15" fontFamily={PALM_FONT} fill={INK} opacity="0.7">
                             {mrz("P<PALM<<" + clean(holder))}
@@ -737,7 +788,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
                     </>
                   )}
 
-                  <div style={{ position: "absolute", left: 0, top: 0, width: 56, height: PH, background: "linear-gradient(90deg, rgb(20 8 24 / 0.28), transparent)", pointerEvents: "none", zIndex: 5 }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, width: 56, height: PH, background: "linear-gradient(90deg, color-mix(in srgb, var(--bg) 28%, transparent), transparent)", pointerEvents: "none", zIndex: 5 }} />
                 </div>
               </div>
             </div>

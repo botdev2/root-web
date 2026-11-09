@@ -18,9 +18,10 @@ import {
   writeShowWalletTab,
   writeSkills,
 } from "../../account.js";
-import { formatCredits, PALM_PER_CREDIT, readCredits } from "../../glmChat.js";
+import { formatCredits, PALM_PER_CREDIT, readCredits, readPalmId } from "../../glmChat.js";
 import { Page, Card, Tabs, Row, Field, Ghost, Primary, Toggle, Section } from "../ui.jsx";
 import PalmId from "../PalmId.jsx";
+import PalmTxList from "../PalmTx.jsx";
 import { APP_VERSION } from "../../version.js";
 
 export default function AccountView() {
@@ -73,9 +74,11 @@ export default function AccountView() {
 
 function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnect, onWallet, onDisconnect }) {
   const [credit, setCredit] = useState(null);
+  const [txs, setTxs] = useState(null);
   useEffect(() => {
     if (!isConnected || !address) {
       setCredit(null);
+      setTxs(null);
       return undefined;
     }
     let cancelled = false;
@@ -85,6 +88,13 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
       })
       .catch(() => {
         if (!cancelled) setCredit(null);
+      });
+    readPalmId(address)
+      .then((data) => {
+        if (!cancelled) setTxs(Array.isArray(data.txs) ? data.txs : []);
+      })
+      .catch(() => {
+        if (!cancelled) setTxs([]);
       });
     return () => {
       cancelled = true;
@@ -99,6 +109,7 @@ function AccountPanel({ address, isConnected, showWallet, onShowWallet, onConnec
   return (
     <>
     <PalmId address={isConnected ? address : ""} credit={credit} onConnect={onConnect} />
+    {isConnected && address ? <PalmTxList txs={txs} loading={txs === null} /> : null}
     <Card>
       <Row label="Status" value={isConnected ? "Wallet connected" : "Guest — browsing"} />
       <Row label="Web version" value={`${typeof document !== "undefined" && document.documentElement.dataset.shell === "mobile" ? "Mobile" : "Desktop"} ${APP_VERSION}. Lifetime unlock lives on the same wallet.`} />

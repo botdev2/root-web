@@ -1508,10 +1508,7 @@ textarea {
     linear-gradient(180deg, color-mix(in srgb, var(--bg) 18%, transparent), var(--bg) 88%);
 }
 .pid-stage-book {
-  padding: 8px 0 18px;
-}
-.pid-stage .pid-stage-book > div {
-  margin-bottom: 0;
+  padding: 4px 0 8px;
 }
 
 /* Mobile shell: larger taps, hide arrange-layout chrome */

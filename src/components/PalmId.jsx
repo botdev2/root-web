@@ -664,7 +664,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
 
   return (
     <div className="mb-4">
-      <div ref={wrap} className="mx-auto w-full" style={{ maxWidth: W, height: H * scale + 2 }}>
+      <div ref={wrap} className="mx-auto w-full" style={{ maxWidth: W, height: H * scale + 16 }}>
         <div style={{ width: W, height: H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
           {/* closed, the passport sits in the middle; opening slides it back to the right as the cover swings left */}
           <div
@@ -771,7 +771,7 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
           </div>
         </div>
       </div>
-      <p className="mx-auto mt-5 max-w-[640px] text-center text-[11px] leading-5 tracking-[0.06em] text-[var(--muted)]">
+      <p className="mx-auto mt-7 max-w-[640px] text-center text-[11px] leading-5 tracking-[0.06em] text-[var(--muted)]">
         {address ? (
           <>
             {tierName} · {shortAmount(total)} $PALM held and staked
@@ -783,8 +783,8 @@ export default function PalmId({ address, credit, onConnect, publicPage = false 
       </p>
 
       {address && (
-        <div className="mx-auto mt-3 max-w-[760px]">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mx-auto mt-5 max-w-[760px]">
+          <div className={`flex flex-wrap items-center gap-2 ${publicPage ? "justify-center" : ""}`}>
             <button type="button" style={chip(false)} onClick={() => copy(address, "Wallet address copied")}>Copy address</button>
             <button type="button" style={chip(false)} onClick={() => copy(publicIdUrl(address) || address, "Public ID link copied")}>Copy public link</button>
             {!publicPage && (

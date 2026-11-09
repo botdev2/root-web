@@ -1496,6 +1496,24 @@ textarea {
 @keyframes pid-foil { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 @keyframes pid-sheen { 0%, 100% { background-position: 130% 0; } 50% { background-position: -30% 0; } }
 
+.pid-stage {
+  background: var(--bg);
+}
+.pid-stage-veil {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 28%, color-mix(in srgb, var(--amber) 10%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 18%, transparent), var(--bg) 88%);
+}
+.pid-stage-book {
+  padding: 8px 0 18px;
+}
+.pid-stage .pid-stage-book > div {
+  margin-bottom: 0;
+}
+
 /* Mobile shell: larger taps, hide arrange-layout chrome */
 [data-shell="mobile"] .lay-bar,
 [data-shell="mobile"] .lay-panel-grip {

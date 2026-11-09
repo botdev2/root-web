@@ -1,10 +1,8 @@
-import { Card } from "./ui.jsx";
-
 const KIND = {
-  in: { label: "Received", sign: "+", tone: "var(--green)" },
-  out: { label: "Sent", sign: "−", tone: "var(--rose)" },
-  stake: { label: "Staked", sign: "−", tone: "var(--amber)" },
-  unstake: { label: "Unstaked", sign: "+", tone: "var(--green)" },
+  in: { label: "Received", sign: "+" },
+  out: { label: "Sent", sign: "−" },
+  stake: { label: "Staked", sign: "−" },
+  unstake: { label: "Unstaked", sign: "+" },
 };
 
 function formatPalm(value) {
@@ -17,7 +15,7 @@ function formatPalm(value) {
 function formatWhen(at) {
   const date = new Date(at);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function scan(txs) {
@@ -34,40 +32,44 @@ function scan(txs) {
   );
 }
 
-export default function PalmTxList({ txs, loading }) {
+export default function PalmTxList({ txs, loading, edition }) {
   const rows = Array.isArray(txs) ? txs : [];
   const totals = scan(rows);
+  const figures = [
+    ["Received", totals.in],
+    ["Sent", totals.out],
+    ["Staked", totals.staked],
+    ["Unstaked", totals.unstaked],
+  ];
+
   return (
-    <section className="mb-6">
-      <div className="mb-2 text-[12px] text-[var(--faint)]">$PALM activity · last 30 days</div>
-      <Card>
-        <div className="grid grid-cols-2 gap-px border-b border-[var(--stroke-soft)] bg-[var(--stroke-soft)] sm:grid-cols-4">
-          {[
-            ["In", totals.in, "var(--green)"],
-            ["Out", totals.out, "var(--rose)"],
-            ["Staked", totals.staked, "var(--amber)"],
-            ["Unstaked", totals.unstaked, "var(--green)"],
-          ].map(([label, value, tone]) => (
-            <div key={label} className="bg-[var(--panel)] px-4 py-3">
-              <div className="text-[11px] text-[var(--faint)]">{label}</div>
-              <div className="mt-0.5 text-[15px] font-semibold" style={{ color: tone }}>
+    <section className={`mx-auto w-full ${edition ? "mt-4 max-w-[760px]" : "mb-6"}`}>
+      <div className={`mb-3 ${edition ? "text-center text-[10px] tracking-[0.32em] text-[var(--faint)]" : "text-[12px] text-[var(--faint)]"}`}>
+        {edition ? "STATEMENT · LAST 30 DAYS" : "$PALM activity · last 30 days"}
+      </div>
+      <div className={edition ? "border-y border-[color-mix(in_srgb,var(--amber)_28%,var(--stroke))]" : "frost-panel rounded-2xl border border-[var(--stroke)]"}>
+        <div className={`grid grid-cols-2 sm:grid-cols-4 ${edition ? "gap-0" : "gap-px bg-[var(--stroke-soft)]"}`}>
+          {figures.map(([label, value]) => (
+            <div key={label} className={edition ? "px-3 py-5 text-center sm:px-4" : "bg-[var(--panel)] px-4 py-3"}>
+              <div className={edition ? "text-[9px] tracking-[0.2em] text-[var(--faint)]" : "text-[11px] text-[var(--faint)]"}>{label}</div>
+              <div className={`mt-1 font-semibold tabular-nums ${edition ? "text-[16px] tracking-[0.04em] text-[var(--ink)]" : "text-[15px]"}`}>
                 {formatPalm(value)}
               </div>
             </div>
           ))}
         </div>
         {loading && !rows.length ? (
-          <div className="px-4 py-6 text-[13px] text-[var(--muted)]">Reading transfers…</div>
+          <div className="px-4 py-6 text-center text-[13px] text-[var(--muted)]">Reading transfers…</div>
         ) : !rows.length ? (
-          <div className="px-4 py-6 text-[13px] text-[var(--muted)]">No $PALM transfers in the last month.</div>
+          <div className="px-4 py-6 text-center text-[13px] text-[var(--muted)]">No $PALM transfers in the last month.</div>
         ) : (
-          <ul>
+          <ul className={edition ? "border-t border-[var(--stroke-soft)]" : ""}>
             {rows.map((tx) => {
               const kind = KIND[tx.kind] || KIND.out;
               return (
-                <li key={tx.hash} className="flex items-center justify-between gap-3 border-b border-[var(--stroke-soft)] px-4 py-3 last:border-b-0">
+                <li key={tx.hash} className="flex items-center justify-between gap-3 border-b border-[var(--stroke-soft)] px-4 py-3.5 last:border-b-0">
                   <div className="min-w-0">
-                    <div className="text-[13px] text-[var(--ink)]">{kind.label}</div>
+                    <div className={`text-[13px] text-[var(--ink)] ${edition ? "tracking-[0.04em]" : ""}`}>{kind.label}</div>
                     <div className="mt-0.5 truncate text-[11px] text-[var(--muted)]">
                       {formatWhen(tx.at)} · {tx.counterparty}
                     </div>
@@ -76,8 +78,7 @@ export default function PalmTxList({ txs, loading }) {
                     href={`https://etherscan.io/tx/${tx.hash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 text-right text-[13px] font-semibold no-underline"
-                    style={{ color: kind.tone }}
+                    className="shrink-0 text-right text-[13px] font-semibold tabular-nums tracking-[0.04em] text-[var(--ink)] no-underline"
                   >
                     {kind.sign}
                     {formatPalm(tx.amount)}
@@ -87,7 +88,7 @@ export default function PalmTxList({ txs, loading }) {
             })}
           </ul>
         )}
-      </Card>
+      </div>
     </section>
   );
 }

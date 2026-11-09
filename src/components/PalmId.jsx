@@ -4,7 +4,7 @@ import { formatCredits, readQuests } from "../glmChat.js";
 import { readProfile, writeProfile } from "../account.js";
 import { levelOf } from "./views/QuestsView.jsx";
 import { publicIdUrl } from "../version.js";
-import { usePalmSeal } from "./PalmSeal.jsx";
+import { SealDigits, usePalmSeal } from "./PalmSeal.jsx";
 
 // The whole open passport is drawn at this size, then scaled to fit. Both pages are the same size.
 const W = 1100;
@@ -327,10 +327,10 @@ function FrontCover({ look, address, onConnect, otp }) {
           <div style={{ marginTop: 10, display: "inline-block", fontSize: 30, fontWeight: 600, letterSpacing: "0.36em", color: "transparent", WebkitBackgroundClip: "text", backgroundClip: "text", ...foil, filter: "drop-shadow(0 2px 3px rgb(0 0 0 / 0.65))" }}>PALM ID</div>
           <div style={{ marginTop: 10, fontSize: 12, letterSpacing: "0.32em", textTransform: "uppercase", color: look.metal[1], opacity: 0.92 }}>{look.status}</div>
           {short && <div style={{ marginTop: 20, fontSize: 13, letterSpacing: "0.24em", fontWeight: 600, color: look.metal[0] }}>{short}</div>}
-          {grouped && (
-            <div style={{ marginTop: 14 }}>
+          {address && (
+            <div style={{ marginTop: 14, color: look.metal[0] }}>
               <div style={{ fontSize: 9, letterSpacing: "0.28em", color: look.metal[1], opacity: 0.7 }}>LIVE SEAL</div>
-              <div style={{ marginTop: 6, fontSize: 22, fontWeight: 700, letterSpacing: "0.22em", color: look.metal[0], fontVariantNumeric: "tabular-nums" }}>{grouped}</div>
+              <SealDigits code={otp} grouped={grouped} className="pid-seal-code--cover" />
             </div>
           )}
         </div>

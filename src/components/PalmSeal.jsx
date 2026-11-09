@@ -45,16 +45,37 @@ export function usePalmSeal(address) {
   return { code, grouped, left, period };
 }
 
+export function SealDigits({ code, grouped, className = "" }) {
+  const [open, setOpen] = useState(false);
+  const show = (on) => setOpen(on);
+  return (
+    <div
+      className={`pid-seal-code ${open ? "is-open" : ""} ${className}`.trim()}
+      onPointerEnter={() => show(true)}
+      onPointerLeave={() => show(false)}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        show(true);
+      }}
+      onPointerUp={() => show(false)}
+      onPointerCancel={() => show(false)}
+      title="Hold to read"
+    >
+      {open && code ? grouped : "••• •••"}
+    </div>
+  );
+}
+
 export default function PalmSeal({ address, compact }) {
   const { grouped, code, left, period } = usePalmSeal(address);
   const share = period > 0 ? Math.max(0, Math.min(1, left / period)) : 0;
   return (
-    <section className={compact ? "pid-seal pid-seal--compact" : "pid-seal"} aria-live="polite">
+    <section className={compact ? "pid-seal pid-seal--compact" : "pid-seal"}>
       <div className="pid-seal-copy">
         <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">LIVE SEAL</div>
-        <div className="pid-seal-code">{code ? grouped : "—— ———"}</div>
+        <SealDigits code={code} grouped={grouped} />
         <div className="mt-1 text-[12px] text-[var(--muted)]">
-          {left > 0 ? `Refreshes in ${left}s` : "Signing…"} · HMAC from PALM, 20s window
+          Hold to read · {left > 0 ? `refreshes in ${left}s` : "signing…"}
         </div>
       </div>
       <div className="pid-seal-meter" aria-hidden="true">

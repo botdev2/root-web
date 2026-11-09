@@ -10,16 +10,15 @@ import {
   LTV,
   OPS_MONTH,
   SUPPLY_APY,
-  applyActivate,
   applyBorrow,
   applyConvert,
-  applyDeactivate,
   applyRepay,
   applySpend,
   applySupply,
   creditsOf,
   loanHealth,
   money,
+  palmAmount,
   parseAmount,
   useMarketBook,
   wpalmOf,
@@ -28,7 +27,6 @@ import { Card, Field, Ghost, Page, Primary, Section, Tabs } from "../ui.jsx";
 
 const TABS = [
   { id: "summary", label: "Summary" },
-  { id: "activate", label: "Activate" },
   { id: "services", label: "Services" },
   { id: "convert", label: "Convert" },
   { id: "lend", label: "Lend" },
@@ -37,9 +35,8 @@ const TABS = [
 export default function MarketplaceView({ credit = null }) {
   const { notice } = useAppState();
   const { address, isConnected } = useAccount();
-  const { book, save, reset } = useMarketBook(address, credit);
+  const { book, save, reset } = useMarketBook(address);
   const [tab, setTab] = useState("summary");
-  const [postAmt, setPostAmt] = useState("1000");
   const [lendAmt, setLendAmt] = useState("1000");
   const [supplyAmt, setSupplyAmt] = useState("500");
   const [convertAmt, setConvertAmt] = useState("100");
@@ -54,15 +51,16 @@ export default function MarketplaceView({ credit = null }) {
   };
 
   const amount = (text) => parseAmount(text);
-  const health = useMemo(() => loanHealth(book), [book]);
-  const wpalm = wpalmOf(book);
-  const credits = creditsOf(book);
+  const held = palmAmount(credit?.held);
+  const staked = palmAmount(credit?.staked);
+  const wpalm = wpalmOf(credit);
+  const credits = creditsOf(book, credit);
+  const health = useMemo(() => loanHealth(book, credit), [book, credit]);
 
   const copy = {
-    summary: "Credits are wPALM. wPALM is $PALM, in another form. WIP.",
-    activate: "Post real PALM as collateral. That is what makes wPALM active.",
-    services: "Every PALM service spends credits. Nothing here mints credits.",
-    convert: "Pay in any crypto. The desk converts it to credits, backed by PALM.",
+    summary: "wPALM is wallet PALM plus staked PALM. That is the whole number.",
+    services: "Every PALM service spends credits. Credits are that wPALM.",
+    convert: "Pay in any crypto. It converts to credits — still PALM behind them.",
     lend: "The pool only lends PALM that is already there. No empty mint.",
   };
 
@@ -84,69 +82,43 @@ export default function MarketplaceView({ credit = null }) {
         </Ghost>
       </div>
 
-      <BookStrip book={book} wpalm={wpalm} credits={credits} />
+      <BookStrip held={isConnected ? held : wpalm} staked={isConnected ? staked : 0} wpalm={wpalm} credits={credits} borrowed={book.borrowed} />
       <Tabs tabs={TABS} value={tab} onChange={setTab} />
 
       {tab === "summary" && (
         <>
           <Card className="mb-5 p-5">
             <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">SUMMARY · WIP</div>
-            <p className="mt-3 max-w-[720px] text-[14px] leading-6 text-[var(--ink)]">
-              Instead of creating credits out of the blue for Ops and hosting, they are based on wPALM — the supply of $PALM.
-              All PALM services use these credits. Paying direct in any crypto just converts to credits.
+            <p className="mt-3 max-w-[720px] text-[16px] leading-7 text-[var(--ink)]">
+              An address has as much wPALM as it holds in the wallet and in stake, in total.
             </p>
-            <p className="mt-3 max-w-[720px] text-[14px] leading-6 text-[var(--ink)]">
-              For a wPALM to be active, it has to be collateralized with real $PALM. wPALM is not created on empty value.
-              The credits are actual $PALM, just in a different form.
+            <p className="mt-3 max-w-[720px] text-[14px] leading-6 text-[var(--muted)]">
+              Credits are that wPALM, in another form. Hamrin, Ops, hosting, crawler all spend the same credits. Other crypto just converts in. Nothing is minted on empty value.
             </p>
             <div className="mt-5 border-t border-[var(--stroke-soft)] pt-4">
-              <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">WHO HAS WPALM?</div>
-              <div className="mt-1 text-[18px]">You have wPALM if you own $PALM.</div>
+              <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">THIS ADDRESS</div>
+              <div className="mt-1 text-[22px] tabular-nums">{money(wpalm)} wPALM</div>
               <p className="mt-2 text-[13px] leading-5 text-[var(--muted)]">
-                This wallet: {money(wpalm)} wPALM because it owns {money(wpalm)} $PALM. {formatCredits(credits)} active
-                {isConnected ? "." : ". Connect a wallet to seed the sketch from holdings."}
+                {money(isConnected ? held : wpalm)} in wallet + {money(isConnected ? staked : 0)} staked
+                {isConnected ? "." : ". Connect a wallet to use live holdings."}
               </p>
             </div>
           </Card>
           <div className="mb-5 grid gap-3 md:grid-cols-3">
-            <Flow title="Own" body="Hold or stake PALM. That is already wPALM, 1:1 with the supply. Nobody mints a second token out of nothing." />
-            <Flow title="Activate" body="Post that PALM as collateral. Only then is the matching wPALM active — spendable as credits." />
-            <Flow title="Spend" body="Hamrin, Ops, hosting, crawler: all the same credits. Other crypto is converted in. It never becomes a credit without PALM behind it." />
+            <Flow title="Wallet" body="PALM sitting in the address." />
+            <Flow title="Staked" body="PALM in the staking contract. Still yours. Still counts." />
+            <Flow title="wPALM" body="Those two added together. 1 PALM = 1 wPALM. That is the credit supply." />
           </div>
-          <Section title="Posted book (sketch)">
+          <Section title="Services (sketch)">
             <Card>
               <Quote name="Hamrin" price={`${money(HAMRIN)} credits`} note="Inference spends credits. It does not issue them." />
-              <Quote name="Ops hosting · 30 days" price={`${money(OPS_MONTH)} credits`} note="Same credit unit as Hamrin. No separate Ops credit." />
-              <Quote name="Crawler pane" price={`${money(CRAWLER)} credits`} note="Another PALM service, same book." />
-              <Quote name="Borrow" price="40% LTV · pool PALM only" note={`Supply APY ${SUPPLY_APY * 100}% · borrow ${BORROW_APY * 100}%. Liq ${LIQ_LTV * 100}%.`} />
+              <Quote name="Ops hosting · 30 days" price={`${money(OPS_MONTH)} credits`} note="Same credit unit as Hamrin." />
+              <Quote name="Crawler pane" price={`${money(CRAWLER)} credits`} note="Same credit unit." />
             </Card>
           </Section>
           <div className="flex flex-wrap gap-2">
-            <Primary onClick={() => setTab("activate")}>Activate wPALM</Primary>
-            <Ghost onClick={() => setTab("services")}>Open services</Ghost>
+            <Primary onClick={() => setTab("services")}>Open services</Primary>
             <Ghost onClick={() => setTab("convert")}>Convert crypto</Ghost>
-          </div>
-        </>
-      )}
-
-      {tab === "activate" && (
-        <>
-          <p className="mb-4 text-[13px] leading-5 text-[var(--muted)]">
-            You already have wPALM if you own PALM. Posting it as collateral is what turns that wPALM on. Release it, and it goes idle again. 1 PALM posted = 1 active credit.
-          </p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <Card className="space-y-3 p-4">
-              <div className="text-[15px]">Post PALM · activate</div>
-              <p className="text-[12.5px] leading-5 text-[var(--muted)]">Lock real PALM. The matching wPALM becomes spendable credits.</p>
-              <Field label="Amount" value={postAmt} onChange={setPostAmt} placeholder="1000" />
-              <Primary onClick={() => run(applyActivate(book, amount(postAmt)))}>Activate</Primary>
-            </Card>
-            <Card className="space-y-3 p-4">
-              <div className="text-[15px]">Release PALM · idle</div>
-              <p className="text-[12.5px] leading-5 text-[var(--muted)]">Take PALM off collateral. Those credits stop being active. Debt has to be clear first.</p>
-              <Field label="Amount" value={postAmt} onChange={setPostAmt} placeholder="1000" />
-              <Ghost onClick={() => run(applyDeactivate(book, amount(postAmt)))}>Release</Ghost>
-            </Card>
           </div>
         </>
       )}
@@ -154,25 +126,22 @@ export default function MarketplaceView({ credit = null }) {
       {tab === "services" && (
         <>
           <p className="mb-4 text-[13px] leading-5 text-[var(--muted)]">
-            All PALM services settle in the same credits. Buying a month of Ops does not mint an Ops credit. It spends wPALM that is already backed.
+            Spend from {money(wpalm)} wPALM on this address. Services do not mint a second credit.
           </p>
-          <Service name="Hamrin" price={HAMRIN} note="Inference. Spends credits; does not create them." onBuy={() => run(applySpend(book, "hamrin", HAMRIN))} />
-          <Service name="Ops hosting · 30 days" price={OPS_MONTH} note="ops.palmaierc.com, paid in the same credits as Hamrin." onBuy={() => run(applySpend(book, "ops", OPS_MONTH))} />
-          <Service name="Crawler pane" price={CRAWLER} note="Another live crawler pane. Same credit." onBuy={() => run(applySpend(book, "crawler", CRAWLER))} />
-          <p className="mt-3 text-[12px] leading-5 text-[var(--faint)]">
-            Active now: {formatCredits(credits)} credits · {money(book.posted)} PALM posted as collateral.
-          </p>
+          <Service name="Hamrin" price={HAMRIN} note="Inference." onBuy={() => run(applySpend(book, credit, "hamrin", HAMRIN))} />
+          <Service name="Ops hosting · 30 days" price={OPS_MONTH} note="ops.palmaierc.com" onBuy={() => run(applySpend(book, credit, "ops", OPS_MONTH))} />
+          <Service name="Crawler pane" price={CRAWLER} note="Another live pane." onBuy={() => run(applySpend(book, credit, "crawler", CRAWLER))} />
+          <p className="mt-3 text-[12px] leading-5 text-[var(--faint)]">{formatCredits(credits)} credits left on this sketch.</p>
         </>
       )}
 
       {tab === "convert" && (
         <>
           <p className="mb-4 text-[13px] leading-5 text-[var(--muted)]">
-            Pay in ETH, USDC, or anything else. The desk does not issue empty credits. It converts the payment into credits and posts matching PALM as collateral. Sketch — the swap is not live.
+            Pay in ETH, USDC, or anything else. The desk converts it to credits. wPALM on the address stays wallet + staked until that PALM actually arrives. Sketch.
           </p>
           <Card className="max-w-[420px] space-y-3 p-4">
             <div className="text-[15px]">Convert to credits</div>
-            <p className="text-[12.5px] leading-5 text-[var(--muted)]">Amount of credits to receive. PALM is posted behind them 1:1.</p>
             <Field label="Credits" value={convertAmt} onChange={setConvertAmt} placeholder="100" />
             <Primary onClick={() => run(applyConvert(book, amount(convertAmt)))}>Convert other crypto</Primary>
           </Card>
@@ -182,7 +151,7 @@ export default function MarketplaceView({ credit = null }) {
       {tab === "lend" && (
         <>
           <p className="mb-4 text-[13px] leading-5 text-[var(--muted)]">
-            Do not mint wPALM to lend. Supply PALM into the pool. Borrow only against posted PALM, and only up to what the pool already holds.
+            Borrow against wallet + staked, at 40% LTV. The pool only lends PALM that is already there.
           </p>
           <Card className="mb-4 px-4 py-3">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -191,31 +160,29 @@ export default function MarketplaceView({ credit = null }) {
                 <div className="mt-1 text-[22px] tabular-nums">{health == null ? "—" : `${health.toFixed(2)}×`}</div>
               </div>
               <p className="max-w-[420px] text-[12px] leading-5 text-[var(--muted)]">
-                {book.borrowed <= 0
-                  ? "No borrow. Pool PALM backs every credit that leaves the pool."
-                  : "Keep this above 1.00. Liquidation starts at 75% LTV."}
+                {book.borrowed <= 0 ? "No borrow." : "Keep this above 1.00. Liquidation starts at 75% LTV."}
               </p>
             </div>
           </Card>
           <div className="grid gap-3 md:grid-cols-2">
             <Card className="space-y-3 p-4">
-              <div className="text-[15px]">Borrow against posted PALM</div>
-              <p className="text-[12.5px] leading-5 text-[var(--muted)]">40% LTV. The credits you receive are pool PALM, not a new mint.</p>
+              <div className="text-[15px]">Borrow</div>
+              <p className="text-[12.5px] leading-5 text-[var(--muted)]">40% of wallet + staked. Credits come from pool PALM.</p>
               <Field label="Amount" value={lendAmt} onChange={setLendAmt} placeholder="1000" />
               <div className="flex flex-wrap gap-2">
-                <Primary onClick={() => run(applyBorrow(book, amount(lendAmt)))}>Borrow credits</Primary>
+                <Primary onClick={() => run(applyBorrow(book, credit, amount(lendAmt)))}>Borrow credits</Primary>
                 <Ghost onClick={() => run(applyRepay(book, amount(lendAmt)))}>Repay</Ghost>
               </div>
             </Card>
             <Card className="space-y-3 p-4">
               <div className="text-[15px]">Supply PALM</div>
               <p className="text-[12.5px] leading-5 text-[var(--muted)]">
-                Lenders deposit PALM. They earn {SUPPLY_APY * 100}%. Borrowers pay {BORROW_APY * 100}%. Liq {LIQ_LTV * 100}%.
+                Earn {SUPPLY_APY * 100}%. Borrowers pay {BORROW_APY * 100}%. Liq {LIQ_LTV * 100}%.
               </p>
               <Field label="Amount" value={supplyAmt} onChange={setSupplyAmt} placeholder="500" />
               <div className="flex flex-wrap gap-2">
-                <Primary onClick={() => run(applySupply(book, amount(supplyAmt), true))}>Supply</Primary>
-                <Ghost onClick={() => run(applySupply(book, amount(supplyAmt), false))}>Withdraw</Ghost>
+                <Primary onClick={() => run(applySupply(book, credit, amount(supplyAmt), true))}>Supply</Primary>
+                <Ghost onClick={() => run(applySupply(book, credit, amount(supplyAmt), false))}>Withdraw</Ghost>
               </div>
             </Card>
           </div>
@@ -225,13 +192,13 @@ export default function MarketplaceView({ credit = null }) {
   );
 }
 
-function BookStrip({ book, wpalm, credits }) {
+function BookStrip({ held, staked, wpalm, credits, borrowed }) {
   const stats = [
-    ["$PALM owned", money(wpalm)],
+    ["Wallet", money(held)],
+    ["Staked", money(staked)],
     ["wPALM", money(wpalm)],
-    ["Active credits", formatCredits(credits)],
-    ["Posted", money(book.posted)],
-    ["Borrowed", money(book.borrowed)],
+    ["Credits left", formatCredits(credits)],
+    ["Borrowed", money(borrowed)],
   ];
   return (
     <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-5">

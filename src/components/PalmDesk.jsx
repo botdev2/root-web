@@ -3,35 +3,28 @@ import { formatCredits } from "../glmChat.js";
 import {
   CRAWLER,
   HAMRIN,
-  LTV,
   OPS_MONTH,
-  applyActivate,
-  applyDeactivate,
   applySpend,
   creditsOf,
   money,
-  parseAmount,
+  palmAmount,
   wpalmOf,
 } from "../market.js";
 
-export default function PalmDesk({ book, save, compact }) {
-  const [postAmt, setPostAmt] = useState("1000");
+export default function PalmDesk({ book, save, credit, compact }) {
   const [note, setNote] = useState("");
-  const wpalm = wpalmOf(book);
-  const credits = creditsOf(book);
-
-  const tell = (text) => {
-    setNote(text);
-    window.setTimeout(() => setNote(""), 2800);
-  };
+  const held = palmAmount(credit?.held);
+  const staked = palmAmount(credit?.staked);
+  const wpalm = wpalmOf(credit);
+  const credits = creditsOf(book, credit);
 
   const run = (result) => {
     if (result.error) {
-      tell(result.error);
+      setNote(result.error);
       return;
     }
     save(result.book);
-    tell(result.note);
+    setNote(result.note);
   };
 
   const listings = [
@@ -45,42 +38,23 @@ export default function PalmDesk({ book, save, compact }) {
       <div className="pid-lux-desk-head">
         <div>
           <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">MARKETPLACE · WIP</div>
-          <div className="mt-1 text-[16px]">wPALM desk</div>
+          <div className="mt-1 text-[16px]">wPALM</div>
         </div>
-        <div className="text-[12px] text-[var(--muted)]">You have wPALM if you own $PALM</div>
+        <div className="text-[12px] text-[var(--muted)]">Wallet + staked</div>
       </div>
 
       <div className="pid-lux-hamrin">
         <div>
-          <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">ACTIVE CREDITS</div>
-          <div className="mt-1 text-[28px] tabular-nums tracking-[0.02em]">{formatCredits(credits)}</div>
+          <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">WPALM</div>
+          <div className="mt-1 text-[28px] tabular-nums tracking-[0.02em]">{credit ? money(wpalm) : "—"}</div>
           <div className="mt-1 text-[12px] leading-5 text-[var(--muted)]">
-            {money(wpalm)} wPALM from {money(wpalm)} $PALM owned · {money(book.posted)} posted as collateral
+            {money(held)} in wallet + {money(staked)} staked
           </div>
         </div>
         <div className="pid-lux-hamrin-meta">
-          <Meta label="wPALM" value={money(wpalm)} />
-          <Meta label="Free PALM" value={money(book.palm)} />
-          <Meta label="Posted" value={money(book.posted)} />
-        </div>
-      </div>
-
-      <div className="pid-lux-desk-block">
-        <div className="text-[11px] tracking-[0.16em] text-[var(--faint)]">ACTIVATE</div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <input
-            className="pid-lux-input"
-            value={postAmt}
-            onChange={(event) => setPostAmt(event.target.value)}
-            inputMode="decimal"
-            aria-label="Activate amount"
-          />
-          <button type="button" className="pid-lux-btn pid-lux-btn--fill" onClick={() => run(applyActivate(book, parseAmount(postAmt)))}>
-            Post PALM
-          </button>
-          <button type="button" className="pid-lux-btn" onClick={() => run(applyDeactivate(book, parseAmount(postAmt)))}>
-            Release
-          </button>
+          <Meta label="Wallet" value={credit ? money(held) : "—"} />
+          <Meta label="Staked" value={credit ? money(staked) : "—"} />
+          <Meta label="Credits left" value={formatCredits(credits)} />
         </div>
       </div>
 
@@ -93,20 +67,13 @@ export default function PalmDesk({ book, save, compact }) {
                 <div>{item.name}</div>
                 <div className="text-[11px] text-[var(--muted)]">{money(item.price)} credits</div>
               </div>
-              <button type="button" className="pid-lux-btn" onClick={() => run(applySpend(book, item.id, item.price))}>
+              <button type="button" className="pid-lux-btn" onClick={() => run(applySpend(book, credit, item.id, item.price))}>
                 Spend
               </button>
             </li>
           ))}
         </ul>
       </div>
-
-      <div className="pid-lux-desk-block">
-        <p className="text-[11px] leading-5 text-[var(--faint)]">
-          Credits are PALM in another form. {LTV * 100}% LTV borrow stays on the Marketplace tab. Sketch on this device.
-        </p>
-      </div>
-
       {note && <div className="pid-lux-note">{note}</div>}
     </section>
   );

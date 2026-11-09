@@ -207,9 +207,9 @@ export const HELP = [
     id: "marketplace",
     section: "Ship",
     title: "Marketplace",
-    summary: "WIP. You have wPALM if you own $PALM. Credits are that PALM, in another form.",
-    body: "Marketplace is the PALM desk. Credits are not minted for Ops or hosting. They are wPALM, and wPALM is only active when it is collateralized with real $PALM. Own PALM, you have wPALM. Post it, those credits can pay Hamrin, Ops, hosting, and crawler. Pay in any other crypto and the desk converts it to the same credits, still backed by PALM. Lend only moves PALM already in the pool. The book is a live sketch.",
-    bullets: ["You have wPALM if you own $PALM", "Active wPALM = PALM posted as collateral", "All PALM services spend the same credits", "Other crypto converts to credits; it does not mint them"],
+    summary: "WIP. An address has as much wPALM as PALM in the wallet plus staked.",
+    body: "Marketplace is the PALM desk. wPALM is not a second token you activate. It is wallet PALM plus staked PALM, added together. Credits are that number in another form. Hamrin, Ops, hosting, and crawler spend those credits. Other crypto converts in. The book is a live sketch.",
+    bullets: ["wPALM = PALM in wallet + PALM staked", "Credits are that wPALM", "All PALM services spend the same credits", "Other crypto converts to credits; it does not mint them"],
   },
   {
     id: "imagegen",

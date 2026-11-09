@@ -37,7 +37,7 @@ export default function PalmIdPage() {
   const [txs, setTxs] = useState(null);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
-  const { book, save } = useMarketBook(address, credit);
+  const { book, save } = useMarketBook(address);
 
   useEffect(() => {
     applyTheme(findTheme(readSavedThemeId()), readSavedWallpaper());
@@ -72,9 +72,9 @@ export default function PalmIdPage() {
   const total = held + staked;
   const tier = tierOf(total);
   const next = tier < TIER_AT.length - 1 ? tier + 1 : null;
-  const credits = creditsOf(book);
-  const wpalm = wpalmOf(book);
-  const passportCredit = credit ? { ...credit, remaining: credits } : null;
+  const credits = creditsOf(book, credit);
+  const wpalm = wpalmOf(credit);
+  const passportCredit = credit ? { ...credit, remaining: wpalm } : null;
 
   const copy = async (text, done) => {
     try {
@@ -142,10 +142,10 @@ export default function PalmIdPage() {
                 <div className="pid-lux-balances">
                   <Balance label="Held" value={credit ? money(held) : "—"} />
                   <Balance label="Staked" value={credit ? money(staked) : "—"} />
-                  <Balance label="Credits" value={formatCredits(credits)} hint="Active wPALM" />
-                  <Balance label="wPALM" value={money(wpalm)} hint="You have wPALM if you own $PALM" />
+                  <Balance label="wPALM" value={credit ? money(wpalm) : "—"} hint="Wallet + staked" />
+                  <Balance label="Credits" value={credit ? formatCredits(credits) : "—"} hint="Same PALM, to spend" />
                 </div>
-                <PalmDesk book={book} save={save} compact />
+                <PalmDesk book={book} save={save} credit={credit} compact />
               </aside>
             </div>
 

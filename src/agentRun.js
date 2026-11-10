@@ -1,15 +1,15 @@
 import { readPage, searchWeb, sendTurn, writeBrief } from "./glmChat.js";
 import { createHubProject, deleteHubFile, opsFetch, repoLimit, runHubCommand, writeHubFiles } from "./opsApi.js";
 
-const FENCE = /```(?:ops|json)\s*([\s\S]*?)```/g;
+const FENCE = /```(?:ops|json|javascript|js|tool|tools)?\s*([\s\S]*?)```/g;
 const MAX_STEPS = 8;
 const MAX_FILE = 80000;
 
 const GUIDE = [
   "You can change Ops Hub repositories for this wallet.",
-  "When you need to look, commit, or run a command, end the reply with one or more fences and no text after the last fence:",
+  "When you need to look, commit, or run a command, end the reply with one ```ops fence and no text after it. Put every tool in that fence as a JSON array, then keep going until the user's ask is done:",
   "```ops",
-  '{"tool":"write_file","path":"server.js","content":"full file"}',
+  '[{"tool":"list_files"},{"tool":"write_file","path":"README.md","content":"full file"}]',
   "```",
   "Tools: list_repos. list_files. read_file with path. search_files with query. write_file with path and the full content, which commits on the Hub. edit_file with path, find, and replace. delete_file with path. create_repo with name and about. Most wallets can keep 3 repositories. run_command with command and optional cwd. git_status. git_diff. git_log. git_branch.",
   "The shell is bash inside the open repository. npm install, npm run build, and node script.js work. A command stops after two minutes, and a server is not left running. After you create or edit files, run setup such as npm install yourself with run_command. Do not tell the user to run a command unless it failed.",
@@ -19,17 +19,22 @@ const GUIDE = [
 
 export function parseOpsTools(text) {
   const tools = [];
-  const cleaned = String(text || "")
-    .replace(FENCE, (full, body) => {
+  const fence = new RegExp(FENCE.source, "g");
+  let cleaned = String(text || "")
+    .replace(fence, (full, body) => {
       const calls = readCalls(body);
       if (!calls.length) return full;
       tools.push(...calls);
       return "";
     })
     .replace(/\[ops\][\s\S]*?\[\/ops\]\n?/g, "")
-    .replace(/\[ops-result\][\s\S]*?\[\/ops-result\]\n?/g, "")
-    .trim();
-  return { tools, cleaned };
+    .replace(/\[ops-result\][\s\S]*?\[\/ops-result\]\n?/g, "");
+  const extra = readCalls(cleaned);
+  if (extra.length) {
+    tools.push(...extra);
+    cleaned = stripToolJson(cleaned);
+  }
+  return { tools, cleaned: cleaned.replace(/\n{3,}/g, "\n\n").trim() };
 }
 
 export function presentTurn(message) {
@@ -37,7 +42,7 @@ export function presentTurn(message) {
   if (message.pending) return message;
   const raw = String(message.text || "");
   const hidden = raw.replace(/\[ops\][\s\S]*?\[\/ops\]\n?/g, "").replace(/\[ops-result\][\s\S]*?\[\/ops-result\]\n?/g, "").trim();
-  if (message.role === "user" && !hidden) return null;
+  if (message.role === "user" && (!hidden || /^Continue\.\s(?:If more Hub|Answer from these|The user's original)/.test(hidden))) return null;
   const { tools, cleaned } = parseOpsTools(hidden);
   if (message.trace?.length) {
     const text = cleaned.trim();
@@ -201,10 +206,10 @@ export async function runAgentTurn({
     prompt = [
       "[ops-result]",
       JSON.stringify(executed.results).slice(0, 14000),
-      "[/ops-result]",
       lookedUp && webOnly
         ? "Continue. Answer from these results and cite sources as [Site](url). Emit another lookup fence only if you truly need it. Otherwise do not emit a fence."
-        : "Continue. If more Hub changes, commands, or web lookups are required, emit ops fences. If you are done, say what changed or what you found, with sources, and do not emit a fence.",
+        : "Continue. The user's original request is still open. If you only inspected, now write and commit. If more Hub changes, commands, or web lookups are required, emit ops fences. If you are done, say what changed or what you found, with sources, and do not emit a fence.",
+      "[/ops-result]",
     ].join("\n");
     files = snapshot(tree);
   }
@@ -451,14 +456,111 @@ function snapshot(tree) {
     .slice(0, 6000);
 }
 
-function readCalls(body) {
-  try {
-    const value = JSON.parse(String(body || "").trim());
-    const list = Array.isArray(value) ? value : [value];
-    return list.filter((item) => item && typeof item.tool === "string");
-  } catch {
-    return [];
+const KNOWN_TOOLS = new Set([
+  "list_repos",
+  "list_files",
+  "read_file",
+  "search_files",
+  "write_file",
+  "edit_file",
+  "delete_file",
+  "create_repo",
+  "run_command",
+  "git_status",
+  "git_diff",
+  "git_log",
+  "git_branch",
+  "web_search",
+  "fetch_url",
+]);
+
+function asCalls(value) {
+  const list = Array.isArray(value) ? value : value && typeof value === "object" ? [value] : [];
+  return list.filter((item) => item && typeof item.tool === "string" && KNOWN_TOOLS.has(item.tool));
+}
+
+function readJsonValue(source, start) {
+  const open = source[start];
+  if (open !== "{" && open !== "[") return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < source.length; i += 1) {
+    const ch = source[i];
+    if (inString) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{" || ch === "[") depth += 1;
+    else if (ch === "}" || ch === "]") {
+      depth -= 1;
+      if (depth === 0) return { text: source.slice(start, i + 1), end: i + 1 };
+    }
   }
+  return null;
+}
+
+function readCalls(body) {
+  const text = String(body || "").trim();
+  if (!text) return [];
+  try {
+    return asCalls(JSON.parse(text));
+  } catch {
+    /* concatenated objects, NDJSON, or a fence that is not a single JSON value */
+  }
+  const calls = [];
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch !== "{" && ch !== "[") continue;
+    const slice = readJsonValue(text, i);
+    if (!slice) continue;
+    try {
+      const found = asCalls(JSON.parse(slice.text));
+      if (found.length) {
+        calls.push(...found);
+        i = slice.end - 1;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  return calls;
+}
+
+function stripToolJson(text) {
+  const source = String(text || "");
+  let out = "";
+  let i = 0;
+  while (i < source.length) {
+    if (source[i] === "{" || source[i] === "[") {
+      const slice = readJsonValue(source, i);
+      if (slice) {
+        try {
+          if (asCalls(JSON.parse(slice.text)).length) {
+            i = slice.end;
+            continue;
+          }
+        } catch {
+          /* keep the slice */
+        }
+      }
+    }
+    out += source[i];
+    i += 1;
+  }
+  return out;
 }
 
 function describeTool(call) {

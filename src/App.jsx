@@ -999,6 +999,36 @@ export default function App() {
                       setDraft(text);
                       setView("home");
                     }}
+                    onDemo={(kind) => {
+                      if (kind === "guide") {
+                        setTour(null);
+                        setConnectOpen(false);
+                        setUnlockOpen(false);
+                        setGuideOpen(true);
+                        return;
+                      }
+                      if (kind === "getting-started") {
+                        setTour(null);
+                        setGuideOpen(false);
+                        setUnlockOpen(false);
+                        setConnectOpen(true);
+                        return;
+                      }
+                      if (kind === "unlock") {
+                        setTour(null);
+                        setGuideOpen(false);
+                        setConnectOpen(false);
+                        setUnlockOpen(true);
+                        return;
+                      }
+                      if (kind === "tour") {
+                        startTour();
+                        return;
+                      }
+                      if (String(kind).startsWith("episode:")) {
+                        startTour(kind.slice(8));
+                      }
+                    }}
                   />
                 )}
                 {view === "automations" && (

@@ -18,6 +18,7 @@ const TABS = [
   { id: "privacy", label: "Privacy" },
   { id: "network", label: "Network" },
   { id: "advanced", label: "Advanced" },
+  { id: "debug", label: "Debug" },
 ];
 
 const FONTS = [
@@ -27,7 +28,7 @@ const FONTS = [
 ];
 
 
-export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt, onLayout }) {
+export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt, onLayout, onDemo }) {
   const { custom, reset: resetLayout } = useLayout();
   const { project, model, fontId, setFontId, notice, prefs, togglePref, setPrefs, videos, upsertVideo, deleteVideo } = useAppState();
   const { isConnected } = useAccount();
@@ -375,6 +376,46 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
               </Ghost>
             </Row>
           </Card>
+        </>
+      )}
+
+      {tab === "debug" && (
+        <>
+          <Section title="Show people">
+            <Card>
+              <Row label="First-run card" value="The tutorial invite that new visitors see">
+                <Ghost onClick={() => onDemo?.("guide")}>Show</Ghost>
+              </Row>
+              <Row label="Guided tutorial" value="Wallet, Hub repo, first prompt, first commit">
+                <Ghost onClick={() => onDemo?.("tour")}>Show</Ghost>
+              </Row>
+              <Row label="Getting started" value="Skills, projects, GitHub setup">
+                <Ghost onClick={() => onDemo?.("getting-started")}>Show</Ghost>
+              </Row>
+              <Row label="Unlock overlay" value="The wallet gate">
+                <Ghost onClick={() => onDemo?.("unlock")}>Show</Ghost>
+              </Row>
+            </Card>
+          </Section>
+          <Section title="Episodes">
+            <Card>
+              <Row label="Episode 1 · Ops" value="ops.palmaierc.com walkthrough">
+                <Ghost onClick={() => onDemo?.("episode:ops-1")}>Show</Ghost>
+              </Row>
+              <Row label="Episode 2 · DeFi" value="Whiteboard class">
+                <Ghost onClick={() => onDemo?.("episode:defi-2")}>Show</Ghost>
+              </Row>
+              <Row label="Episode 3 · Workflows" value="Whiteboard class">
+                <Ghost onClick={() => onDemo?.("episode:workflows-3")}>Show</Ghost>
+              </Row>
+              <Row label="Episode 4 · Privacy" value="Whiteboard class">
+                <Ghost onClick={() => onDemo?.("episode:privacy-4")}>Show</Ghost>
+              </Row>
+              <Row label="Episode 5 · Revenue" value="Whiteboard class">
+                <Ghost onClick={() => onDemo?.("episode:revenue-5")}>Show</Ghost>
+              </Row>
+            </Card>
+          </Section>
         </>
       )}
     </Page>

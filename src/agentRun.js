@@ -1,5 +1,5 @@
 import { readPage, searchWeb, sendTurn, writeBrief } from "./glmChat.js";
-import { MAX_REPOS, createHubProject, deleteHubFile, opsFetch, runHubCommand, writeHubFiles } from "./opsApi.js";
+import { createHubProject, deleteHubFile, opsFetch, repoLimit, runHubCommand, writeHubFiles } from "./opsApi.js";
 
 const FENCE = /```(?:ops|json)\s*([\s\S]*?)```/g;
 const MAX_STEPS = 8;
@@ -11,7 +11,7 @@ const GUIDE = [
   "```ops",
   '{"tool":"write_file","path":"server.js","content":"full file"}',
   "```",
-  "Tools: list_repos. list_files. read_file with path. search_files with query. write_file with path and the full content, which commits on the Hub. edit_file with path, find, and replace. delete_file with path. create_repo with name and about. A wallet can keep 3 repositories. run_command with command and optional cwd. git_status. git_diff. git_log. git_branch.",
+  "Tools: list_repos. list_files. read_file with path. search_files with query. write_file with path and the full content, which commits on the Hub. edit_file with path, find, and replace. delete_file with path. create_repo with name and about. Most wallets can keep 3 repositories. run_command with command and optional cwd. git_status. git_diff. git_log. git_branch.",
   "The shell is bash inside the open repository. npm install, npm run build, and node script.js work. A command stops after two minutes, and a server is not left running. After you create or edit files, run setup such as npm install yourself with run_command. Do not tell the user to run a command unless it failed.",
   "Paths are relative. No leading slash, no .., no dot folders. Repository names are lowercase letters, numbers, and hyphens.",
   "Use the open repository when there is one. Commit real changes instead of only describing them. If nothing should change, answer in prose and do not emit a fence.",
@@ -376,7 +376,7 @@ async function executeTools({ address, webOnly = false, lookups = { count: 0 }, 
         }
       } else if (name === "create_repo") {
         await flush();
-        const created = await makeRepo(token, call);
+        const created = await makeRepo(token, call, address);
         current = created.project;
         files = { ...created.files };
         onProject?.(created.project, created.files);
@@ -414,10 +414,10 @@ async function listRepos(token) {
     .map((item) => `${item.owner}/${item.name}`);
 }
 
-async function makeRepo(token, call) {
+async function makeRepo(token, call, address) {
   if (!token) throw new Error("Sign in with the connected wallet before creating a repository.");
   const owned = await listRepos(token);
-  if (owned.length >= MAX_REPOS) throw new Error("A wallet can keep 3 repositories.");
+  if (owned.length >= repoLimit(address)) throw new Error("A wallet can keep 3 repositories.");
   const name = safeRepoName(call.name);
   const about = String(call.about || "A /root project.").slice(0, 280);
   const readme = `# ${name}\n\n${about}\n`;

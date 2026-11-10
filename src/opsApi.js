@@ -32,6 +32,15 @@ export const OPS_PANELS = [
 
 const SESSION_KEY = "root-web-ops-session";
 export const MAX_REPOS = 3;
+export const ABE_WALLET = "0x96bf85e2f144389585eea8fd250e5a8675ff1abe";
+
+export function isAbe(address) {
+  return walletKey(address) === walletKey(ABE_WALLET);
+}
+
+export function repoLimit(address) {
+  return isAbe(address) ? Number.POSITIVE_INFINITY : MAX_REPOS;
+}
 
 export function walletKey(address) {
   return String(address || "").toLowerCase().replace(/^0x/, "");

@@ -33,6 +33,7 @@ export default function HeaderBar({
   onFiles,
   onClear,
   filesOpen,
+  filesFresh = false,
   avatarOn,
   onAvatar,
   onMenu,
@@ -94,7 +95,12 @@ export default function HeaderBar({
     ...(!signedIn ? [{ id: "unlock", label: "Unlock", home: "header", className: "shrink-0", node: <Ghost onClick={onUnlock}>Unlock</Ghost> }] : []),
     { id: "avatar", label: "Avatar", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onAvatar} active={avatarOn}>Avatar</Ghost> },
     { id: "help", label: "Help", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onHelp}>Help</Ghost> },
-    { id: "files", label: "Files", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onFiles} active={filesOpen}>Files</Ghost> },
+    { id: "files", label: "Files", home: "header", className: "hidden shrink-0 sm:block", node: (
+      <Ghost onClick={onFiles} active={filesOpen} tour="files">
+        Files
+        {filesFresh ? <span className="file-fresh-dot" aria-hidden="true" /> : null}
+      </Ghost>
+    ) },
     { id: "clear", label: "Clear", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onClear}>Clear</Ghost> },
   ];
 

@@ -3,7 +3,7 @@ import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
 import { archiveConversation, listConversations, loadConversation, readCredits, removeConversation, reportQuestEvent, sendTurn } from "./glmChat.js";
 import { readCache, writeCache } from "./opsCache.js";
-import { MAX_REPOS, claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
+import { claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, repoLimit, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
 
 function liveEdited(hub, held) {
@@ -51,7 +51,7 @@ import WalletSync from "./components/WalletSync.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
 import Tour from "./components/Tour.jsx";
 import { DockTargets, LayoutBar, useLayout } from "./layout.jsx";
-import HamrinIntro, { hamrinSeen } from "./components/HamrinIntro.jsx";
+import FirstRunGuide, { guideSeen } from "./components/FirstRunGuide.jsx";
 import MobileDock, { useMobileShell } from "./components/MobileDock.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat"]);
@@ -126,13 +126,14 @@ export default function App() {
     return null;
   });
   const [lastCommit, setLastCommit] = useState(null);
-  const [hamrinOpen, setHamrinOpen] = useState(() => {
+  const [guideOpen, setGuideOpen] = useState(() => {
     try {
-      const search = new URLSearchParams(window.location.search); if (search.has("tour") || search.has("episode")) return false;
+      const search = new URLSearchParams(window.location.search);
+      if (search.has("tour") || search.has("episode")) return false;
     } catch {
       /* ignore */
     }
-    return !hamrinSeen();
+    return !guideSeen();
   });
   const theme = useMemo(() => findTheme(themeId), [themeId]);
   const tourLook = useRef(null);
@@ -461,7 +462,7 @@ export default function App() {
   const createOpsProject = async ({ name, about, files: tree }) => {
     const token = readOpsSession(address);
     if (!token || token !== opsToken) throw new Error("Sign in with the connected wallet.");
-    if ((opsProjects || []).length >= MAX_REPOS) throw new Error("A wallet can keep 3 repositories.");
+    if ((opsProjects || []).length >= repoLimit(address)) throw new Error("A wallet can keep 3 repositories.");
     const created = await createHubProject({ token, name, about, files: tree });
     if (created.owner !== walletKey(address)) throw new Error("Ops created that repository for a different wallet.");
     const repoName = created.name || name;
@@ -631,6 +632,8 @@ export default function App() {
             const same = prev && prev.project === projectRow.label && now - prev.at < 120000;
             return { at: now, project: projectRow.label, files: same ? [...new Set([...prev.files, ...names])] : names, message };
           });
+          setFilesOpen(true);
+          window.setTimeout(() => loadRepoRef.current(), 900);
         },
       });
       const result = outcome.result;
@@ -924,6 +927,7 @@ export default function App() {
               sessionTitle={sessionTitle}
               project={activeProject}
               filesOpen={filesOpen}
+              filesFresh={!!lastCommit && Date.now() - lastCommit.at < 120000}
               credit={credit}
               address={isConnected ? address : ""}
               onBilling={() => openView("billing")}
@@ -1091,6 +1095,7 @@ export default function App() {
               {filesOpen && (
                 <FilesInspector
                   project={activeProject}
+                  lastCommit={lastCommit}
                   onClose={() => setFilesOpen(false)}
                   onOpenFile={(name) => {
                     setFilesOpen(false);
@@ -1142,7 +1147,7 @@ export default function App() {
         view={view}
         projectLabel={activeProject?.label || ""}
       />
-      <HamrinIntro open={hamrinOpen && !tour} onClose={() => setHamrinOpen(false)} onTour={startTour} />
+      <FirstRunGuide open={guideOpen && !tour} onClose={() => setGuideOpen(false)} onTour={startTour} />
       <LayoutBar />
       <DockTargets />
       {tour?.classroom && (
@@ -1233,8 +1238,8 @@ export default function App() {
               customizeLayout();
               return;
             }
-            if (id === "hamrin") {
-              setHamrinOpen(true);
+            if (id === "hamrin" || id === "guide") {
+              startTour();
               return;
             }
             openView(id);

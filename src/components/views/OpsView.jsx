@@ -57,6 +57,9 @@ export default function OpsView({ token: boundToken = "", onToken }) {
   const [githubToken, setGithubToken] = useState("");
   const [githubRepos, setGithubRepos] = useState([]);
   const [publishing, setPublishing] = useState(false);
+  const [openSite, setOpenSite] = useState("");
+  const [hubRepo, setHubRepo] = useState("");
+  const [hubPack, setHubPack] = useState("nixpacks");
 
   const loadPublic = useCallback(async () => {
     try {
@@ -272,6 +275,65 @@ export default function OpsView({ token: boundToken = "", onToken }) {
     }
   };
 
+  const publishHub = async () => {
+    if (!token) {
+      notice("Sign in to Ops first.");
+      return;
+    }
+    const repo = yours.find((item) => `${item.owner}/${item.name}` === hubRepo) || yours[0];
+    if (!repo) {
+      notice("Create a Hub repository first.");
+      return;
+    }
+    setPublishing(true);
+    setAccountError("");
+    try {
+      const data = await opsFetch("/api/apps", {
+        token,
+        method: "POST",
+        body: {
+          source: "hub",
+          name: repo.name,
+          repository: `${repo.owner}/${repo.name}`,
+          branch: repo.branch || "main",
+          port: hubPack === "dist" ? "80" : "3000",
+          buildPack: hubPack,
+        },
+      });
+      notice(data.app?.url ? `Build started. It will be at ${data.app.url}` : "Build started.");
+      setOpenSite(data.app?.id || "");
+      await loadAccount(token);
+    } catch (error) {
+      setAccountError(error.message);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const addDomain = async (site, host) => {
+    setAccountError("");
+    try {
+      const data = await opsFetch(`/api/apps/${site.id}/domains`, { token, method: "POST", body: { host } });
+      notice(data.dns ? `Point ${data.dns.host} A to ${data.dns.address}` : `${host} is on ${site.name}.`);
+      await loadAccount(token);
+      return data;
+    } catch (error) {
+      setAccountError(error.message);
+      return null;
+    }
+  };
+
+  const dropDomain = async (site, host) => {
+    setAccountError("");
+    try {
+      await opsFetch(`/api/apps/${site.id}/domains`, { token, method: "DELETE", body: { host } });
+      notice(`${host} was removed.`);
+      await loadAccount(token);
+    } catch (error) {
+      setAccountError(error.message);
+    }
+  };
+
   const siteList = token ? apps : [];
   const orderList = token ? orders : [];
   const repoList = token ? repos : [];
@@ -362,55 +424,70 @@ export default function OpsView({ token: boundToken = "", onToken }) {
           <RowSkeleton rows={2} />
         ) : siteList.length === 0 ? (
           <Card className="px-4 py-3 text-[13px] text-[var(--muted)]">
-            {token ? "This address has no sites yet." : "Sign in to load the sites for this wallet."}
+            {token ? "This address has no sites yet. Publish a Hub repository below." : "Sign in to load the sites for this wallet."}
           </Card>
         ) : (
           <div className="space-y-2">
             {siteList.map((site) => (
-              <Card key={site.id} className="px-4 py-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-[14px]">{site.name}</div>
-                    <div className={`text-[11px] ${site.status === "Live" ? "text-[var(--green)]" : "text-[var(--muted)]"}`}>
-                      {site.status} · {site.source}
-                      {site.branch ? ` · ${site.branch}` : ""}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {site.url && (
-                      <a href={site.url} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center text-[12.5px] underline">
-                        Open
-                      </a>
-                    )}
-                    {site.repository && (
-                      <a
-                        href={`https://github.com/${site.repository}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-9 items-center text-[12.5px] underline"
-                      >
-                        {site.repository}
-                      </a>
-                    )}
-                    {token && <Ghost onClick={() => redeploy(site)}>Redeploy</Ghost>}
-                  </div>
-                </div>
-                {site.domains?.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-3 text-[12px]">
-                    {site.domains.map((item) => (
-                      <a key={item.host} href={item.url} target="_blank" rel="noreferrer" className="underline">
-                        {item.host}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </Card>
+              <SiteCard
+                key={site.id}
+                site={site}
+                token={token}
+                open={openSite === site.id}
+                onOpen={() => setOpenSite((id) => (id === site.id ? "" : site.id))}
+                onRedeploy={() => redeploy(site)}
+                onAddDomain={(host) => addDomain(site, host)}
+                onDropDomain={(host) => dropDomain(site, host)}
+              />
             ))}
           </div>
         )}
       </Section>
 
       </div>
+
+      <Section title="Put a Hub repository on a domain">
+        <Card className="space-y-3 p-4">
+          <p className="text-[12.5px] leading-5 text-[var(--muted)]">
+            Publish a repository from this wallet, then add a domain on the site. Console logs are on each site once it is live.
+          </p>
+          {yours.length === 0 ? (
+            <p className="text-[13px] text-[var(--muted)]">{token ? "Create a repository from Projects + first." : "Sign in to publish from the Hub."}</p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <div className="mb-1.5 text-[11px] text-[var(--faint)]">Repository</div>
+                  <select
+                    value={hubRepo || `${yours[0].owner}/${yours[0].name}`}
+                    onChange={(event) => setHubRepo(event.target.value)}
+                    className="h-10 w-full rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px] outline-none"
+                  >
+                    {yours.map((repo) => (
+                      <option key={`${repo.owner}/${repo.name}`} value={`${repo.owner}/${repo.name}`}>
+                        {repo.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <div className="mb-1.5 text-[11px] text-[var(--faint)]">Build</div>
+                  <select
+                    value={hubPack}
+                    onChange={(event) => setHubPack(event.target.value)}
+                    className="h-10 w-full rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px] outline-none"
+                  >
+                    {PACKS.map((item) => (
+                      <option key={item.id} value={item.id}>{item.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <Primary onClick={publishHub}>{publishing ? "Working…" : "Publish from Hub"}</Primary>
+            </>
+          )}
+        </Card>
+      </Section>
 
       <div data-tour="ops-publish">
       <Section title="Publish a GitHub repository">
@@ -560,6 +637,178 @@ function RepoList({ title, items }) {
           </a>
         </Card>
       ))}
+    </div>
+  );
+}
+
+function SiteCard({ site, token, open, onOpen, onRedeploy, onAddDomain, onDropDomain }) {
+  const [pane, setPane] = useState("site");
+  const [host, setHost] = useState("");
+  const [dns, setDns] = useState(null);
+  const domains = Array.isArray(site.domains) ? site.domains : [];
+  const repoParts = String(site.repository || "").split("/");
+  const repoHref = site.source === "hub" && repoParts.length === 2
+    ? hubRepoUrl(repoParts[0], repoParts[1])
+    : site.repository
+      ? `https://github.com/${site.repository}`
+      : "";
+
+  const attach = async () => {
+    const result = await onAddDomain(host.trim());
+    if (!result) return;
+    setHost("");
+    setDns(result.dns || null);
+  };
+
+  return (
+    <Card className="px-4 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[14px]">{site.name}</div>
+          <div className={`text-[11px] ${site.status === "Live" ? "text-[var(--green)]" : "text-[var(--muted)]"}`}>
+            {site.status} · {site.source}
+            {site.branch ? ` · ${site.branch}` : ""}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {site.url && (
+            <a href={site.url} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center text-[12.5px] underline">
+              Open
+            </a>
+          )}
+          {repoHref && (
+            <a href={repoHref} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center text-[12.5px] underline">
+              Repo
+            </a>
+          )}
+          {token && <Ghost onClick={onRedeploy}>Redeploy</Ghost>}
+          {token && <Ghost onClick={onOpen} active={open}>{open ? "Hide" : "Domain & logs"}</Ghost>}
+        </div>
+      </div>
+      {domains.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-3 text-[12px]">
+          {domains.map((item) => (
+            <a key={item.host} href={item.url} target="_blank" rel="noreferrer" className="underline">
+              {item.host}
+            </a>
+          ))}
+        </div>
+      )}
+      {open && (
+        <div className="mt-3 border-t border-[var(--stroke-soft)] pt-3">
+          <div className="mb-3 flex flex-wrap gap-1">
+            <Ghost active={pane === "site"} onClick={() => setPane("site")}>Domain</Ghost>
+            <Ghost active={pane === "logs"} onClick={() => setPane("logs")}>Logs</Ghost>
+          </div>
+          {pane === "site" ? (
+            <div className="space-y-2">
+              {domains.map((item) => (
+                <div key={item.host} className="flex items-center justify-between gap-3 text-[13px]">
+                  <a href={item.url} target="_blank" rel="noreferrer" className="underline">{item.host}</a>
+                  <Ghost onClick={() => onDropDomain(item.host)}>Remove</Ghost>
+                </div>
+              ))}
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[180px] flex-1">
+                  <Field label="Custom domain" value={host} onChange={setHost} placeholder="app.example.com" />
+                </div>
+                <Ghost onClick={attach}>Add domain</Ghost>
+              </div>
+              <p className="text-[12px] text-[var(--muted)]">
+                {dns
+                  ? `Create an A record for ${dns.host} pointing to ${dns.address}. Leave any proxy off until HTTPS is issued.`
+                  : "A custom domain needs an A record to this host. HTTPS is issued after DNS matches."}
+              </p>
+            </div>
+          ) : (
+            <SiteLogs site={site} token={token} />
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function SiteLogs({ site, token }) {
+  const [kind, setKind] = useState("console");
+  const [rows, setRows] = useState(null);
+  const [logs, setLogs] = useState("");
+  const [openId, setOpenId] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const loadConsole = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const data = await opsFetch(`/api/apps/${site.id}/console`, { token });
+      setLogs(data.logs || "The running site has not printed anything yet.");
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const loadDeploys = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const data = await opsFetch(`/api/apps/${site.id}/deployments`, { token });
+      setRows(data.deployments || []);
+    } catch (failure) {
+      setRows([]);
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (kind === "console") loadConsole();
+    else loadDeploys();
+  }, [kind, site.id, token]);
+
+  const openDeploy = async (id) => {
+    setOpenId(id);
+    setLogs("");
+    setBusy(true);
+    setError("");
+    try {
+      const data = await opsFetch(`/api/apps/${site.id}/deployments/${id}/logs`, { token });
+      setLogs(data.logs || "This deployment has no log yet.");
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1">
+        <Ghost active={kind === "console"} onClick={() => setKind("console")}>Console</Ghost>
+        <Ghost active={kind === "deployment"} onClick={() => setKind("deployment")}>Deployments</Ghost>
+        <Ghost onClick={kind === "console" ? loadConsole : loadDeploys}>{busy ? "Loading…" : "Refresh"}</Ghost>
+      </div>
+      {error && <p className="text-[12.5px] text-[var(--rose)]">{error}</p>}
+      {kind === "deployment" && (
+        <div className="space-y-1">
+          {(rows || []).map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => openDeploy(row.id)}
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-[12.5px] hover:bg-[var(--hover)] ${openId === row.id ? "bg-[var(--sidebar-sel)]" : ""}`}
+            >
+              <span>{row.status}</span>
+              <span className="text-[11px] text-[var(--faint)]">{row.commit || row.createdAt || row.id}</span>
+            </button>
+          ))}
+          {rows?.length === 0 && <p className="text-[12px] text-[var(--faint)]">No deployments yet.</p>}
+        </div>
+      )}
+      <pre className="site-log-view">{logs || (busy ? "Loading…" : kind === "console" ? "Console is empty." : "Pick a deployment.")}</pre>
     </div>
   );
 }

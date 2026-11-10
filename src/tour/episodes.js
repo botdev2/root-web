@@ -189,7 +189,7 @@ function buildOpsBridge() {
       chapter: "The harness connection",
       title: "Every sidebar project is an Ops Hub repository.",
       body:
-        "That's the first link. This list is read from the Hub for your wallet, and the + creates a repository there. Same address, same git, nothing to copy between tools. A wallet keeps up to three.",
+        "That's the first link. This list is read from the Hub for your wallet, and the + creates a repository there. Same address, same git, nothing to copy between tools.",
       target: '[data-tour="projects-head"]',
       enter: (c) => showHarness(c, { nav: true }),
     },

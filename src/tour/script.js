@@ -63,7 +63,7 @@ export function buildScript() {
       id: "projects",
       chapter: "The workspace",
       title: "Projects are real git repositories.",
-      body: "Each one lives on the PALM Ops Hub, keyed to your wallet and nothing else. You can keep three, and the + is how you make one. We'll use it in a minute.",
+      body: "Each one lives on the PALM Ops Hub, keyed to your wallet and nothing else. Most wallets can keep three, and the + is how you make one. We'll use it in a minute.",
       target: '[data-tour="projects-head"]',
     },
     {
@@ -147,10 +147,10 @@ export function buildScript() {
     {
       id: "repo-open",
       chapter: "Your first repository",
-      title: (live) => (live.projects.length >= 3 ? "You already keep three repositories." : "Let's make your first repository."),
+      title: (live) => (live.projects.length >= 3 ? "You already have repositories here." : "Let's make your first repository."),
       body: (live) =>
         live.projects.length >= 3
-          ? "Three is the limit for a wallet, so we'll build in the one you have open. Delete one from the sidebar any time to make room."
+          ? "We'll build in the one you have open. Delete one from the sidebar any time to make room."
           : "Click +, give it a name, and it becomes a real git repository on the Ops Hub. I'll drive.",
       target: '[data-tour="add-project"]',
       enter: async (c) => {

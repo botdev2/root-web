@@ -50,7 +50,7 @@ function editedTitle(value) {
   return new Date(time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-export default function FilesInspector({ onClose, onOpenFile, project }) {
+export default function FilesInspector({ onClose, onOpenFile, project, lastCommit = null }) {
   const { files, fileInfo, commits, charts, upsertChart, deleteChart, notice } = useAppState();
   const [tab, setTab] = useState("files");
   const [query, setQuery] = useState("");
@@ -61,11 +61,17 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (lastCommit && lastCommit.project === project?.label) setTab("files");
+  }, [lastCommit?.at, lastCommit?.project, project?.label]);
   const tree = project ? files[project.id] || {} : {};
   const meta = project ? fileInfo?.[project.id] || {} : {};
   const names = Array.from(new Set([...Object.keys(tree), ...Object.keys(meta)]))
     .filter((name) => name.toLowerCase().includes(query.toLowerCase()))
     .sort((left, right) => {
+      const leftFresh = lastCommit?.files?.includes(left) ? 1 : 0;
+      const rightFresh = lastCommit?.files?.includes(right) ? 1 : 0;
+      if (rightFresh !== leftFresh) return rightFresh - leftFresh;
       const leftAt = Date.parse(meta[left]?.edited || "") || 0;
       const rightAt = Date.parse(meta[right]?.edited || "") || 0;
       if (rightAt !== leftAt) return rightAt - leftAt;
@@ -74,6 +80,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
   const history = project ? commits[project.id] || [] : [];
   const projectCharts = project ? charts.filter((item) => item.project === project.id) : [];
   const chart = charts.find((item) => item.id === chartId);
+  const live = lastCommit && lastCommit.project === project?.label && now - lastCommit.at < 180000;
 
   return (
     <aside data-tour="inspector" className="absolute inset-0 z-20 flex flex-col bg-[color-mix(in_srgb,var(--bg)_40%,transparent)] md:static md:inset-auto md:z-auto md:mb-3 md:mr-3 md:mt-2 md:w-[320px] md:shrink-0 md:bg-transparent">
@@ -96,6 +103,15 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
         {tab === "files" && (
           <>
             <div className="mb-2 text-[12px] text-[var(--muted)]">{project ? project.label : "No repository"}</div>
+            {live && (
+              <div className="file-live mb-3">
+                <div className="text-[11px] tracking-[0.14em] text-[var(--faint)]">JUST COMMITTED</div>
+                <div className="mt-1 text-[13px]">{lastCommit.message || "Update from /root"}</div>
+                <div className="mt-0.5 text-[11px] text-[var(--muted)]">
+                  {lastCommit.files.length} file{lastCommit.files.length === 1 ? "" : "s"} · {formatElapsed(now - lastCommit.at) || "now"}
+                </div>
+              </div>
+            )}
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -112,6 +128,7 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
                 const removed = info.status === "deleted";
                 const when = editedAge(info.edited, now);
                 const title = [info.message, editedTitle(info.edited)].filter(Boolean).join(" · ");
+                const fresh = live && lastCommit.files.includes(name);
                 return (
                   <li key={name}>
                     <button
@@ -122,13 +139,13 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
                       onClick={() => {
                         if (!removed) onOpenFile?.(name);
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-[var(--hover)] disabled:hover:bg-transparent"
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-[var(--hover)] disabled:hover:bg-transparent ${fresh ? "file-row-fresh" : ""}`}
                     >
                       <span className={`min-w-0 flex-1 truncate ${removed ? "line-through" : ""}`}>
                         {dir && <span className="text-[var(--faint)]">{dir}</span>}
                         <span className={tone ? `${tone} font-medium` : ""}>{base}</span>
                       </span>
-                      {when && <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-[var(--faint)]">{when}</span>}
+                      {when && <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-[var(--faint)]">{fresh ? "now" : when}</span>}
                     </button>
                   </li>
                 );
@@ -148,9 +165,23 @@ export default function FilesInspector({ onClose, onOpenFile, project }) {
               <li key={commit.hash + commit.msg} className="rounded-lg border border-[var(--stroke-soft)] px-3 py-2">
                 <div>{commit.msg}</div>
                 <div className="mt-0.5 text-[11px] text-[var(--faint)]">
-                  {commit.hash} · {editedAge(commit.when, now) || commit.when}
+                  {String(commit.hash || "").slice(0, 7)} · {editedAge(commit.when, now) || commit.when}
                   {commit.files?.length ? ` · ${commit.files.length} file${commit.files.length === 1 ? "" : "s"}` : ""}
                 </div>
+                {commit.files?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {commit.files.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        className="max-w-full truncate rounded-md border border-[var(--stroke-soft)] px-1.5 py-0.5 text-[11px] text-[var(--muted)] hover:text-[var(--ink)]"
+                        onClick={() => onOpenFile?.(name)}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

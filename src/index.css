@@ -343,6 +343,56 @@ textarea {
 .chat-md blockquote { margin: 0.4em 0; padding-left: 0.7em; border-left: 2px solid var(--stroke); color: var(--muted); }
 .chat-md a { text-decoration: underline; }
 
+.guide-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: color-mix(in srgb, #000 45%, transparent);
+}
+.guide-card {
+  width: min(520px, 100%);
+  padding: 28px 26px;
+  border-radius: 20px;
+  border: 1px solid var(--stroke);
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: 0 28px 80px rgb(0 0 0 / 0.4);
+}
+.file-fresh-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--green);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--green) 70%, transparent);
+}
+.file-live {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--green) 35%, var(--stroke));
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+}
+.file-row-fresh {
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+}
+.site-log-view {
+  max-height: 280px;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke-soft);
+  background: var(--code);
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Hamrin 1.0 welcome */
 
 .hamrin-backdrop {

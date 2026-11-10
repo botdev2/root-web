@@ -74,7 +74,7 @@ export function Ghost({ children, onClick, active, tour }) {
       type="button"
       data-tour={tour}
       onClick={onClick}
-      className={`h-9 rounded-lg border px-3 text-[12.5px] ${
+      className={`relative h-9 rounded-lg border px-3 text-[12.5px] ${
         active ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--stroke)] hover:bg-[var(--hover)]"
       }`}
     >

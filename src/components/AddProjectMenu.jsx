@@ -109,7 +109,7 @@ export default function AddProjectMenu({ open, token, onToken, onCreate, onTempl
         className="w-full max-w-[440px] rounded-[18px] border border-[var(--stroke)] bg-[var(--panel)] p-5 shadow-lg"
       >
         <div className="text-[18px]">New repository</div>
-        <p className="mt-1 text-[13px] text-[var(--muted)]">Creates a git repository on the Ops Hub for this wallet. A wallet can keep 3.</p>
+        <p className="mt-1 text-[13px] text-[var(--muted)]">Creates a git repository on the Ops Hub for this wallet. Most wallets can keep 3.</p>
         {created ? (
           <div className="mt-4 space-y-3">
             <div className="text-[14px]">{created.label} is on the Ops Hub.</div>

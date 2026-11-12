@@ -16,7 +16,8 @@ function liveEdited(hub, held) {
 }
 import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
 import { applyTheme, DEFAULT_THEME_ID, findTheme, MARKET_THEME_ID, readSavedThemeId, readSavedWallpaper } from "./themes.js";
-import { tapeText, useMarketQuotes } from "./market.js";
+import { formatUsd, tapeText, useMarketQuotes } from "./market.js";
+import { canFire, crossed, ordersTape, useTradeBook } from "./trades.js";
 import { useAppState } from "./AppState.jsx";
 import TitleBar from "./components/TitleBar.jsx";
 import Sidebar from "./components/Sidebar.jsx";
@@ -48,6 +49,7 @@ import QuestsView from "./components/views/QuestsView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
 import MarketplaceView from "./components/views/MarketplaceView.jsx";
 import MarketsView from "./components/views/MarketsView.jsx";
+import TradesView, { TradesIntro } from "./components/views/TradesView.jsx";
 import MarketTape from "./components/MarketTape.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
@@ -57,12 +59,12 @@ import { DockTargets, LayoutBar, useLayout } from "./layout.jsx";
 import FirstRunGuide, { guideSeen } from "./components/FirstRunGuide.jsx";
 import MobileDock, { useMobileShell } from "./components/MobileDock.jsx";
 
-const CHAT_VIEWS = new Set(["home", "chat", "markets"]);
+const CHAT_VIEWS = new Set(["home", "chat", "markets", "trades"]);
 
 export default function App() {
   const state = useAppState();
   const { layout, setEditing, reset: resetLayout } = useLayout();
-  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref, setPrefs } = state || {};
+  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, setMode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref, setPrefs } = state || {};
   // One switch for the composer pill and Settings; the Brain flag also counts.
   const autoPrompt = !!(prefs?.autoprompt || brainEnabled?.["autoprompt.rewrite"]);
   const webOn = prefs?.web !== false;
@@ -140,8 +142,22 @@ export default function App() {
   });
   const theme = useMemo(() => findTheme(themeId), [themeId]);
   const marketOn = !!prefs?.marketMode;
-  const board = useMarketQuotes(marketOn || view === "markets");
-  const marketTape = marketOn ? tapeText(board) : "";
+  const tradesOn = view === "trades";
+  const [book, saveBook] = useTradeBook();
+  const board = useMarketQuotes(marketOn || view === "markets" || tradesOn);
+  const marketTape =
+    marketOn || tradesOn
+      ? [
+          tapeText(board),
+          tradesOn
+            ? "Limits: " +
+              ordersTape(book) +
+              ". Safeguards: wallet must sign Uniswap V2 PALM/WETH; no keys stored; limits only fire while /root is open; not financial advice."
+            : "",
+        ]
+          .filter(Boolean)
+          .join("  |  ")
+      : "";
   const tourLook = useRef(null);
   const touring = !!tour && !tour.classroom;
 
@@ -187,6 +203,36 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.market = marketOn ? "on" : "off";
   }, [marketOn]);
+
+  useEffect(() => {
+    if (!book.guards.live || book.guards.halt) return;
+    const palm = board.quotes.find((item) => item.symbol === "PALM");
+    const eth = board.quotes.find((item) => item.symbol === "ETH");
+    if (!palm?.price || !board.updatedAt) return;
+    if (Date.now() - board.updatedAt > (book.guards.staleMs || 120000)) return;
+    let firstHit = null;
+    const orders = book.orders.map((order) => {
+      if (order.status !== "armed") return order;
+      if ((order.skipUntil || 0) > Date.now()) return order;
+      if (!crossed(order, palm.price)) return order;
+      const check = canFire(book, order, palm.price, eth?.price);
+      if (!check.ok) {
+        return { ...order, warn: check.reasons[0], skipUntil: Date.now() + 45000 };
+      }
+      if (!firstHit) firstHit = order;
+      return { ...order, status: "triggered", firedAt: new Date().toISOString(), warn: "" };
+    });
+    if (orders.every((order, index) => order === book.orders[index])) return;
+    saveBook({ ...book, orders });
+    if (firstHit) {
+      notice?.(
+        (firstHit.side === "buy" ? "Buy" : "Sell") +
+          " limit hit at " +
+          formatUsd(palm.price) +
+          ". Sign the Uniswap swap in Trades.",
+      );
+    }
+  }, [board.updatedAt]);
 
   useEffect(() => {
     if (marketOn && themeId !== MARKET_THEME_ID) setThemeId(MARKET_THEME_ID);
@@ -597,6 +643,18 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    if (view !== "trades") return;
+    setSessionTitle("Trades");
+    setMode?.("ask");
+    const sid = book.sessionId;
+    if (sid) {
+      if (sid !== sessionId) openSession(sid, "Trades", "trades");
+      return;
+    }
+    if (sessionId) setSessionId(null);
+  }, [view]);
+
   const fileSnapshot = () => {
     const tree = files?.[activeProject?.id];
     if (!tree || typeof tree !== "object") return "";
@@ -627,7 +685,8 @@ export default function App() {
     }
     const known = /^[a-f0-9]{24}$/.test(sessionId || "");
     const id = known ? sessionId : "pending-" + Date.now();
-    const title = sessionTitle === "New Agent" && value ? value.slice(0, 42) : sessionTitle;
+    const desk = view === "trades";
+    const title = desk ? "Trades" : sessionTitle === "New Agent" && value ? value.slice(0, 42) : sessionTitle;
     const replyId = "glm-" + Date.now();
     setSending(true);
     setBusy({ sessionId: id, projectId: activeProject?.id || "" });
@@ -641,7 +700,7 @@ export default function App() {
           role: "assistant",
           text: "",
           pending: true,
-          mode,
+          mode: desk ? "ask" : mode,
           startedAt: Date.now(),
           trace: [{ title: thinkingTitle(mode, 0), state: "active", kind: "spark", detail: "" }],
         },
@@ -651,21 +710,21 @@ export default function App() {
     setSessionTitle(title);
     setDraft("");
     setAttachments([]);
-    setView("chat");
+    setView(desk ? "trades" : "chat");
     try {
       const outcome = await runAgentTurn({
         address,
         conversationId: known ? sessionId : "",
         project: activeProject,
         token: readOpsSession(address),
-        mode,
-        allowTools: mode === "agent",
+        mode: desk ? "ask" : mode,
+        allowTools: desk ? false : mode === "agent",
         text: value || "Attached files",
         brain: brainEnabled || {},
         files: fileSnapshot(),
         fileTree: files?.[activeProject?.id] || {},
-        autoprompt: autoPrompt,
-        web: webOn,
+        autoprompt: desk ? false : autoPrompt,
+        web: desk ? true : webOn,
         marketTape,
         title,
         onTrace: ({ steps, startedAt, elapsedMs }) => {
@@ -707,13 +766,14 @@ export default function App() {
       if (lastAssistant >= 0) {
         turns[lastAssistant] = {
           ...turns[lastAssistant],
-          mode,
+          mode: desk ? "ask" : mode,
           trace: outcome.trace || [],
           startedAt: outcome.startedAt,
           elapsedMs: outcome.elapsedMs,
         };
       }
       setSessionId(cloudId);
+      if (desk) saveBook((current) => ({ ...current, sessionId: cloudId }));
       setLocal((prev) => {
         const next = { ...prev };
         for (const dropId of result.dropped || []) delete next[dropId];
@@ -975,7 +1035,7 @@ export default function App() {
                 setSessionId(null);
                 setSessionTitle("New Agent");
               }}
-              onSession={(id, title) => openSession(id, title)}
+              onSession={(id, title) => openSession(id, title, title === "Trades" ? "trades" : "chat")}
               onDeleteChat={removeChat}
               onDeleteProject={removeProject}
             />
@@ -1034,7 +1094,7 @@ export default function App() {
                 notice("Thread cleared.");
               }}
             />
-            {marketOn && (
+            {(marketOn || tradesOn) && (
               <MarketTape
                 quotes={board.quotes}
                 global={board.global}
@@ -1055,6 +1115,22 @@ export default function App() {
                   />
                 )}
                 {view === "chat" && <ChatView sessionId={sessionId} extras={local[sessionId] || []} />}
+                {view === "trades" && (
+                  <div className="relative flex min-h-0 flex-1 flex-col xl:flex-row">
+                    {(local[sessionId] || []).length ? (
+                      <ChatView sessionId={sessionId} extras={local[sessionId] || []} />
+                    ) : (
+                      <TradesIntro onAsk={(text) => send(text)} />
+                    )}
+                    <TradesView
+                      book={book}
+                      onBook={saveBook}
+                      quotes={board.quotes}
+                      updatedAt={board.updatedAt}
+                      error={board.error}
+                    />
+                  </div>
+                )}
                 {view === "settings" && (
                   <SettingsView
                     key={settingsTab}
@@ -1203,6 +1279,7 @@ export default function App() {
                     onRemoveAttach={(name) => setAttachments((prev) => prev.filter((file) => file.name !== name))}
                     onFiles={() => setFilesOpen((open) => !open)}
                     marketOn={marketOn}
+                    tradesOn={tradesOn}
                     onOpenSettings={() => {
                       setSettingsTab("models");
                       openView("settings");

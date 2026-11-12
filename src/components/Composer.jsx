@@ -32,6 +32,7 @@ export default function Composer({
   archived = false,
   onNewChat,
   marketOn = false,
+  tradesOn = false,
 }) {
   const { mode, setMode } = useAppState();
   const { isConnected } = useAccount();
@@ -248,7 +249,9 @@ export default function Composer({
           rows={1}
           placeholder={
             isConnected
-              ? marketOn
+              ? tradesOn
+                ? "Ask Hamrin about PALM, a trigger, or this tape…"
+                : marketOn
                 ? "Ask about a pair, a print, or PALM…"
                 : mode === "ask"
                   ? "Ask about this project…"

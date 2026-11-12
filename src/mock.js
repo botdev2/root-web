@@ -218,6 +218,21 @@ export const HELP = [
     ],
   },
   {
+    id: "trades",
+    section: "Ship",
+    title: "Trades",
+    summary: "A Hamrin session plus local PALM/ETH limits that ask the wallet to sign on Uniswap V2.",
+    body: "Trades is a desk, not a 24/7 bot. Uniswap V2 has no order book. You arm a buy or sell on PALM versus ETH. While /root is open, a DexScreener print can open a wallet prompt. You still sign. Caps, a kill switch, exact allowances, and an allowlist of PALM/WETH are on the rail. Closing the tab stops watching. Not financial advice, and /root does not hold keys.",
+    bullets: [
+      "Dedicated Hamrin thread titled Trades",
+      "Buy PALM with ETH or sell PALM for ETH",
+      "Per-order and daily USD caps, slippage cap, kill switch",
+      "Exact Uniswap V2 allowance — no infinite approve",
+      "Limits only fire while the app is open",
+      "Not financial advice",
+    ],
+  },
+  {
     id: "marketplace",
     section: "Ship",
     title: "Marketplace",

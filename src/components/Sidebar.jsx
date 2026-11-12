@@ -7,6 +7,7 @@ import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 const NAV = [
   { id: "home", label: "New Agent" },
   { id: "markets", label: "Markets" },
+  { id: "trades", label: "Trades" },
   { id: "quests", label: "Achievements" },
   { id: "reasoning", label: "Reasoning" },
   { id: "ops", label: "Ops" },
@@ -187,7 +188,7 @@ export default function Sidebar({
             <div className="px-2 py-1.5 text-[12.5px] text-[var(--muted)]">{walletReady ? "No chats yet." : "Sign in to see chats."}</div>
           )}
           {chats.map((session) => {
-            const active = view === "chat" && sessionId === session.id;
+            const active = (view === "chat" || view === "trades") && sessionId === session.id;
             return (
               <div
                 key={session.id}

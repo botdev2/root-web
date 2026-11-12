@@ -2127,6 +2127,18 @@ textarea {
   overflow: visible;
 }
 
+.trades-rail {
+  max-height: 46vh;
+  background: color-mix(in srgb, var(--code) 55%, transparent);
+}
+
+@media (min-width: 1280px) {
+  .trades-rail {
+    max-height: none;
+    height: 100%;
+  }
+}
+
 @keyframes market-tape {
   from {
     transform: translateX(0);

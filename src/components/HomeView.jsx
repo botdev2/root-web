@@ -8,7 +8,14 @@ const CHIPS = [
   "Add a small feature",
 ];
 
-export default function HomeView({ onChip, onTemplates, clockOn, project }) {
+const MARKET_CHIPS = [
+  "What's PALM doing versus ETH today?",
+  "Why is BTC moving? Cite live sources.",
+  "Compare SOL and BNB over 24 hours",
+  "Price this wallet's PALM in USD",
+];
+
+export default function HomeView({ onChip, onTemplates, clockOn, project, marketOn = false }) {
   const { dayGoals, toggleDayGoal } = useAppState();
 
   return (
@@ -21,12 +28,16 @@ export default function HomeView({ onChip, onTemplates, clockOn, project }) {
             <button type="button" onClick={onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
               Create from Template <span className="text-[11px] text-[var(--faint)]">?</span>
             </button>
-            <h1 className="home-title mt-3.5 text-[22px] font-normal md:text-[23px]">What should we build?</h1>
+            <h1 className="home-title mt-3.5 text-[22px] font-normal md:text-[23px]">
+              {marketOn ? "What is the tape saying?" : "What should we build?"}
+            </h1>
             <p className="mx-auto mt-2 max-w-[520px] text-[13px] text-[var(--muted)]">
-              Coding agent ready{project ? ` on ${project.label}` : ""}. Ask anything about this project.
+              {marketOn
+                ? "Live prints on PALM and majors. Ask about a pair, a move, or this wallet."
+                : `Coding agent ready${project ? ` on ${project.label}` : ""}. Ask anything about this project.`}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
-              {CHIPS.map((chip) => (
+              {(marketOn ? MARKET_CHIPS : CHIPS).map((chip) => (
                 <button
                   key={chip}
                   type="button"

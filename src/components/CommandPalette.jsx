@@ -10,6 +10,8 @@ const HITS = [
   { id: "quests", label: "Achievements", hint: "Daily challenges, achievements, and credits you can earn" },
   { id: "reasoning", label: "Reasoning", hint: "Agent brain graph" },
   { id: "ops", label: "Ops", hint: "PALM Ops console" },
+  { id: "markets", label: "Markets", hint: "Live PALM and crypto prices" },
+  { id: "market-mode", label: "PALM Market Mode", hint: "Trading-desk theme, tape, and quotes" },
   { id: "marketplace", label: "Marketplace", hint: "wPALM mockups · same USD as PALM" },
   { id: "notes", label: "Notes", hint: "Daily goals" },
   { id: "billing", label: "Billing", hint: "Credits and when they reset" },

@@ -204,6 +204,19 @@ export const HELP = [
     bullets: ["Sign in with the wallet, then the authenticator code", "Publish uses a GitHub token once and does not store it", "Hosting, Domains, Ops Hub, Plans, and the palm-ops repos"],
   },
   {
+    id: "markets",
+    section: "Ship",
+    title: "PALM Market Mode",
+    summary: "A trading-desk look with live crypto prints.",
+    body: "Turn on PALM Market Mode from Settings → Appearance, the header Market control, or the command palette. It applies the PALM Market theme, a live tape, and a Markets board. PALM prints come from DexScreener. Majors come from CoinGecko. The tape is fed to Hamrin when you ask about prices. Nothing here is financial advice, and nothing spends.",
+    bullets: [
+      "Header Market toggle and Settings → Appearance",
+      "Markets tab: PALM, watchlist, search, 24h ticks",
+      "Quotes refresh about every 30 seconds",
+      "Not financial advice",
+    ],
+  },
+  {
     id: "marketplace",
     section: "Ship",
     title: "Marketplace",
@@ -265,7 +278,7 @@ export const HELP = [
     title: "Settings",
     summary: "Appearance, models, privacy.",
     body: "Nine tabs match the desktop. Theme and wallpaper apply live. Font changes the UI face — PALM is the default.",
-    bullets: ["32 themes, light and dark, searchable and paged", "24 wallpapers, 20 of them 4K photos", "Search /root also finds themes and wallpapers", "Hamrin 1.0 after a wallet is connected"],
+    bullets: ["PALM Market Mode is a dedicated trading-desk theme", "Themes, light and dark, searchable and paged", "24 wallpapers, 20 of them 4K photos", "Search /root also finds themes, wallpapers, and Market Mode", "Hamrin 1.0 after a wallet is connected"],
   },
   {
     id: "telemetry",

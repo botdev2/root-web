@@ -13,6 +13,7 @@ const HEADERS = {
   reasoning: { title: "Reasoning", subtitle: "Intake to Output — click a node" },
   ops: { title: "PALM Ops", subtitle: "Hosting, domains, and Ops Hub" },
   marketplace: { title: "Marketplace", subtitle: "WIP · wPALM mockups, same USD as PALM" },
+  markets: { title: "Markets", subtitle: "Live crypto prints · PALM on DexScreener" },
   notes: { title: "Notes", subtitle: "Daily goals and markdown" },
   quests: { title: "Achievements", subtitle: "Daily challenges and achievements that earn Hamrin credits" },
   billing: { title: "Billing", subtitle: "Credits, $PALM, and when they reset" },
@@ -42,6 +43,8 @@ export default function HeaderBar({
   credit = null,
   onBilling,
   address = "",
+  marketOn = false,
+  onMarket,
 }) {
   const { signedIn } = useAppState();
   const [more, setMore] = useState(false);
@@ -80,6 +83,17 @@ export default function HeaderBar({
           },
         ]
       : []),
+    {
+      id: "market",
+      label: "Market",
+      home: "header",
+      className: "hidden shrink-0 sm:block",
+      node: (
+        <Ghost onClick={onMarket} active={marketOn} tour="market-mode">
+          Market
+        </Ghost>
+      ),
+    },
     {
       id: "wallet",
       label: "Wallet",
@@ -158,6 +172,14 @@ export default function HeaderBar({
         </button>
         {more && (
           <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-[220px] rounded-[14px] border border-[var(--stroke)] bg-[var(--panel)] p-1.5 shadow-[0_18px_40px_rgb(0_0_0_/_0.35)]">
+            <MoreItem
+              onClick={() => {
+                setMore(false);
+                onMarket?.();
+              }}
+            >
+              PALM Market {marketOn ? "· on" : ""}
+            </MoreItem>
             <MoreItem
               onClick={() => {
                 setMore(false);

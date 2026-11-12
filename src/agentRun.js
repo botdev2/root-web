@@ -90,6 +90,7 @@ export async function runAgentTurn({
   web = false,
   title = "",
   allowTools = false,
+  marketTape = "",
   onStatus,
   onTrace,
   onProject,
@@ -99,7 +100,7 @@ export async function runAgentTurn({
   let current = project || null;
   let tree = { ...(fileTree || {}) };
   let convo = conversationId || "";
-  let prompt = allowTools ? wrapGuide(current, text) : text;
+  let prompt = allowTools ? wrapGuide(current, text, marketTape) : withTape(text, marketTape);
   let last = null;
   const actions = [];
   const startedAt = Date.now();
@@ -118,7 +119,7 @@ export async function runAgentTurn({
       const brief = String(out?.brief || "").trim();
       if (brief) {
         const combined = `${text}\n\n[Auto-Prompt brief]\n${brief}`;
-        prompt = allowTools ? wrapGuide(current, combined) : combined;
+        prompt = allowTools ? wrapGuide(current, combined, marketTape) : withTape(combined, marketTape);
         briefed = true;
         steps[0] = { title: "Auto-Prompt brief", state: "done", kind: "spark", detail: brief.replace(/\s+/g, " ").slice(0, 320) };
       } else {
@@ -444,9 +445,17 @@ async function makeRepo(token, call, address) {
   };
 }
 
-function wrapGuide(project, text) {
+function withTape(text, marketTape) {
+  if (!marketTape) return text;
+  return `[ops]\nLive USD tape: ${marketTape}\nPrints are DexScreener (PALM) and CoinGecko (majors). Use them for price questions. Not financial advice.\n[/ops]\n${text}`;
+}
+
+function wrapGuide(project, text, marketTape) {
   const open = project?.id ? `Open repository: ${project.id}` : "Open repository: none";
-  return `[ops]\n${GUIDE}\n${open}\n[/ops]\n${text}`;
+  const tape = marketTape
+    ? `\nLive USD tape: ${marketTape}\nPrints are DexScreener (PALM) and CoinGecko (majors). Use them for price questions. Not financial advice.`
+    : "";
+  return `[ops]\n${GUIDE}${tape}\n${open}\n[/ops]\n${text}`;
 }
 
 function snapshot(tree) {

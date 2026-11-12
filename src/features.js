@@ -159,6 +159,7 @@ export const SEED_VIDEOS = [
 export const DEFAULT_PREFS = {
   privacy: true,
   autoprompt: false,
+  marketMode: false,
   web: true,
   telemetry: true,
   imagegen: false,

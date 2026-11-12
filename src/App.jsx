@@ -15,7 +15,8 @@ function liveEdited(hub, held) {
   return hub || held || "";
 }
 import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
-import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "./themes.js";
+import { applyTheme, DEFAULT_THEME_ID, findTheme, MARKET_THEME_ID, readSavedThemeId, readSavedWallpaper } from "./themes.js";
+import { tapeText, useMarketQuotes } from "./market.js";
 import { useAppState } from "./AppState.jsx";
 import TitleBar from "./components/TitleBar.jsx";
 import Sidebar from "./components/Sidebar.jsx";
@@ -46,6 +47,8 @@ import BillingView from "./components/views/BillingView.jsx";
 import QuestsView from "./components/views/QuestsView.jsx";
 import EditorView from "./components/views/EditorView.jsx";
 import MarketplaceView from "./components/views/MarketplaceView.jsx";
+import MarketsView from "./components/views/MarketsView.jsx";
+import MarketTape from "./components/MarketTape.jsx";
 import SignupOverlay from "./components/SignupOverlay.jsx";
 import WalletSync from "./components/WalletSync.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
@@ -54,12 +57,12 @@ import { DockTargets, LayoutBar, useLayout } from "./layout.jsx";
 import FirstRunGuide, { guideSeen } from "./components/FirstRunGuide.jsx";
 import MobileDock, { useMobileShell } from "./components/MobileDock.jsx";
 
-const CHAT_VIEWS = new Set(["home", "chat"]);
+const CHAT_VIEWS = new Set(["home", "chat", "markets"]);
 
 export default function App() {
   const state = useAppState();
   const { layout, setEditing, reset: resetLayout } = useLayout();
-  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref } = state || {};
+  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref, setPrefs } = state || {};
   // One switch for the composer pill and Settings; the Brain flag also counts.
   const autoPrompt = !!(prefs?.autoprompt || brainEnabled?.["autoprompt.rewrite"]);
   const webOn = prefs?.web !== false;
@@ -136,6 +139,9 @@ export default function App() {
     return !guideSeen();
   });
   const theme = useMemo(() => findTheme(themeId), [themeId]);
+  const marketOn = !!prefs?.marketMode;
+  const board = useMarketQuotes(marketOn || view === "markets");
+  const marketTape = marketOn ? tapeText(board.quotes) : "";
   const tourLook = useRef(null);
   const touring = !!tour && !tour.classroom;
 
@@ -177,6 +183,58 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme, wallpaperId);
   }, [theme, wallpaperId]);
+
+  useEffect(() => {
+    document.documentElement.dataset.market = marketOn ? "on" : "off";
+  }, [marketOn]);
+
+  useEffect(() => {
+    if (marketOn && themeId !== MARKET_THEME_ID) setThemeId(MARKET_THEME_ID);
+  }, [marketOn]);
+
+  const enableMarket = (on) => {
+    if (on && !marketOn) {
+      try {
+        const already = JSON.parse(localStorage.getItem("root-web-market-prev") || "null");
+        const prevTheme = themeId === MARKET_THEME_ID ? already?.themeId : themeId;
+        const prevWall = themeId === MARKET_THEME_ID ? already?.wallpaperId : wallpaperId;
+        localStorage.setItem(
+          "root-web-market-prev",
+          JSON.stringify({ themeId: prevTheme || DEFAULT_THEME_ID, wallpaperId: prevWall || "none" }),
+        );
+      } catch {
+        /* ignore */
+      }
+      setPrefs?.({ marketMode: true });
+      setThemeId(MARKET_THEME_ID);
+      setWallpaperId("none");
+      setView("markets");
+      notice?.("PALM Market Mode on.");
+      return;
+    }
+    if (!on && marketOn) {
+      setPrefs?.({ marketMode: false });
+      let prev = null;
+      try {
+        prev = JSON.parse(localStorage.getItem("root-web-market-prev") || "null");
+      } catch {
+        /* ignore */
+      }
+      if (prev?.themeId && prev.themeId !== MARKET_THEME_ID) setThemeId(prev.themeId);
+      else if (themeId === MARKET_THEME_ID) setThemeId(DEFAULT_THEME_ID);
+      if (prev?.wallpaperId != null) setWallpaperId(prev.wallpaperId);
+      notice?.("PALM Market Mode off.");
+    }
+  };
+
+  const pickTheme = (id) => {
+    if (id === MARKET_THEME_ID) {
+      enableMarket(true);
+      return;
+    }
+    if (marketOn) setPrefs?.({ marketMode: false });
+    setThemeId(id);
+  };
 
   useEffect(() => {
     if (dayTasksEnabled || view !== "home" || sessionId) {
@@ -608,6 +666,7 @@ export default function App() {
         fileTree: files?.[activeProject?.id] || {},
         autoprompt: autoPrompt,
         web: webOn,
+        marketTape,
         title,
         onTrace: ({ steps, startedAt, elapsedMs }) => {
           setLocal((prev) => ({
@@ -863,7 +922,7 @@ export default function App() {
     <div className="relative isolate h-full min-h-0 overflow-hidden">
       {wallpaperId !== "none" && <div className="wallpaper-layer" />}
       <div className="shell relative z-[1] flex h-full min-h-0 flex-col text-[var(--ink)]">
-        <TitleBar />
+            <TitleBar marketOn={marketOn} />
         <div className="relative flex min-h-0 flex-1">
           {navOpen && (
             <button
@@ -930,6 +989,8 @@ export default function App() {
               filesFresh={!!lastCommit && Date.now() - lastCommit.at < 120000}
               credit={credit}
               address={isConnected ? address : ""}
+              marketOn={marketOn}
+              onMarket={() => enableMarket(!marketOn)}
               onBilling={() => openView("billing")}
               onMenu={() => {
                 setFilesOpen(false);
@@ -973,12 +1034,14 @@ export default function App() {
                 notice("Thread cleared.");
               }}
             />
+            {marketOn && <MarketTape quotes={board.quotes} onOpen={() => openView("markets")} />}
             <div className="relative flex min-h-0 flex-1">
               <div className="relative flex min-w-0 flex-1 flex-col">
                 {view === "home" && (
                   <HomeView
                     project={activeProject}
                     clockOn={dayTasksEnabled || dayTasksIdle}
+                    marketOn={marketOn}
                     onTemplates={() => openView("templates")}
                     onChip={(chip) => send(chip)}
                   />
@@ -988,7 +1051,9 @@ export default function App() {
                   <SettingsView
                     key={settingsTab}
                     theme={theme}
-                    onTheme={setThemeId}
+                    onTheme={pickTheme}
+                    marketOn={marketOn}
+                    onMarket={enableMarket}
                     wallpaperId={wallpaperId}
                     onWallpaper={setWallpaperId}
                     initialTab={settingsTab}
@@ -1040,6 +1105,17 @@ export default function App() {
                 {view === "billing" && <BillingView credit={credit} token={opsToken} onRefresh={refreshCredits} />}
                 {view === "quests" && <QuestsView token={opsToken} onRefresh={refreshCredits} />}
                 {view === "marketplace" && <MarketplaceView credit={credit} />}
+                {view === "markets" && (
+                  <MarketsView
+                    quotes={board.quotes}
+                    updatedAt={board.updatedAt}
+                    error={board.error}
+                    credit={credit}
+                    marketOn={marketOn}
+                    onToggleMode={() => enableMarket(!marketOn)}
+                    onAsk={(text) => send(text)}
+                  />
+                )}
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}
@@ -1114,6 +1190,7 @@ export default function App() {
                     onAttach={(files) => setAttachments((prev) => [...prev, ...files])}
                     onRemoveAttach={(name) => setAttachments((prev) => prev.filter((file) => file.name !== name))}
                     onFiles={() => setFilesOpen((open) => !open)}
+                    marketOn={marketOn}
                     onOpenSettings={() => {
                       setSettingsTab("models");
                       openView("settings");
@@ -1244,9 +1321,13 @@ export default function App() {
           onClose={() => setPaletteOpen(false)}
           onPick={(id) => {
             setPaletteOpen(false);
+            if (id === "market-mode") {
+              enableMarket(!marketOn);
+              return;
+            }
             if (id.startsWith("theme:")) {
               const next = findTheme(id.slice(6));
-              setThemeId(next.id);
+              pickTheme(next.id);
               notice?.(next.name + " theme.");
               return;
             }

@@ -6,6 +6,7 @@ import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 
 const NAV = [
   { id: "home", label: "New Agent" },
+  { id: "markets", label: "Markets" },
   { id: "quests", label: "Achievements" },
   { id: "reasoning", label: "Reasoning" },
   { id: "ops", label: "Ops" },

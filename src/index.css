@@ -2016,3 +2016,89 @@ textarea {
     touch-action: manipulation;
   }
 }
+
+[data-market="on"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "kern" 1;
+}
+
+[data-market="on"] body {
+  letter-spacing: 0.01em;
+}
+
+[data-market="on"] .frost,
+[data-market="on"] .frost-header,
+[data-market="on"] .frost-panel,
+[data-market="on"] .frost-input {
+  backdrop-filter: blur(10px) saturate(1.05);
+}
+
+[data-market="on"] .frost-input.composer-shadow {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--stroke));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+[data-market="on"] .shell {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 18%, transparent), color-mix(in srgb, var(--bg) 55%, transparent)),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 23px,
+      color-mix(in srgb, var(--accent) 5%, transparent) 24px
+    );
+}
+
+[data-wallpaper="off"][data-market="on"] .shell {
+  background:
+    var(--shell),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 23px,
+      color-mix(in srgb, var(--accent) 6%, transparent) 24px
+    );
+  background-blend-mode: normal;
+}
+
+.market-tape {
+  overflow: hidden;
+  border-bottom: 1px solid var(--stroke-soft);
+  background: color-mix(in srgb, var(--code) 88%, transparent);
+}
+
+.market-tape-track {
+  display: flex;
+  width: max-content;
+  gap: 0;
+  animation: market-tape 42s linear infinite;
+}
+
+.market-tape:hover .market-tape-track {
+  animation-play-state: paused;
+}
+
+.market-tape-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.35rem 1.1rem 0.4rem;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.market-spark {
+  display: block;
+  overflow: visible;
+}
+
+@keyframes market-tape {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}

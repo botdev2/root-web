@@ -1,4 +1,38 @@
+export const MARKET_THEME_ID = "palm-market";
+
 export const THEMES = [
+  {
+    id: "palm-market",
+    name: "PALM Market",
+    description: "Trading desk — tape, ticks, PALM green",
+    isDark: true,
+    wallpaper: false,
+    swatches: ["#070A08", "#D8EBDA", "#3EE08A", "#FF5D6C"],
+    vars: {
+      "--bg": "#070A08",
+      "--top": "#0B100C",
+      "--sidebar": "#0C120E",
+      "--sidebar-sel": "#142018",
+      "--panel": "#101710",
+      "--panel-soft": "#141C16",
+      "--input": "#0A0F0B",
+      "--stroke": "#1E3224",
+      "--stroke-soft": "#17261C",
+      "--ink": "#D8EBDA",
+      "--muted": "#8AA894",
+      "--faint": "#5E7364",
+      "--accent": "#3EE08A",
+      "--accent-soft": "#143322",
+      "--hover": "#16261C",
+      "--tab": "#1A2E22",
+      "--code": "#0A100C",
+      "--bubble": "#142018",
+      "--green": "#3EE08A",
+      "--amber": "#E7B64A",
+      "--rose": "#FF5D6C",
+      "--shell": "linear-gradient(160deg, #0B100C, #070A08 55%, #0C1610)",
+    },
+  },
   {
     id: "default",
     name: "Default",

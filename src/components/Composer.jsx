@@ -31,6 +31,7 @@ export default function Composer({
   projectLabel = "",
   archived = false,
   onNewChat,
+  marketOn = false,
 }) {
   const { mode, setMode } = useAppState();
   const { isConnected } = useAccount();
@@ -245,7 +246,17 @@ export default function Composer({
             }
           }}
           rows={1}
-          placeholder={isConnected ? (mode === "ask" ? "Ask about this project…" : mode === "plan" ? "Describe what to plan…" : "Type a message here...") : "Connect a wallet to use Hamrin 1.0"}
+          placeholder={
+            isConnected
+              ? marketOn
+                ? "Ask about a pair, a print, or PALM…"
+                : mode === "ask"
+                  ? "Ask about this project…"
+                  : mode === "plan"
+                    ? "Describe what to plan…"
+                    : "Type a message here..."
+              : "Connect a wallet to use Hamrin 1.0"
+          }
           className="min-h-[26px] w-full resize-none bg-transparent text-[16px] outline-none placeholder:text-[var(--faint)] md:text-[14px]"
         />
         <div className="mt-2 flex items-center gap-2">

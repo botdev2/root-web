@@ -28,7 +28,7 @@ const FONTS = [
 ];
 
 
-export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt, onLayout, onDemo }) {
+export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper, initialTab, onPrompt, onLayout, onDemo, marketOn = false, onMarket }) {
   const { custom, reset: resetLayout } = useLayout();
   const { project, model, fontId, setFontId, notice, prefs, togglePref, setPrefs, videos, upsertVideo, deleteVideo } = useAppState();
   const { isConnected } = useAccount();
@@ -93,6 +93,14 @@ export default function SettingsView({ theme, onTheme, wallpaperId, onWallpaper,
 
       {tab === "appearance" && (
         <>
+          <Card className="mb-5">
+            <Row
+              label="PALM Market Mode"
+              value="Trading-desk theme, live tape, and a Markets board for PALM and majors. Quotes are DexScreener and CoinGecko — not advice."
+            >
+              <Toggle on={marketOn} onClick={() => onMarket?.(!marketOn)} />
+            </Row>
+          </Card>
           <div className="mb-5 flex flex-wrap items-center gap-2">
             <div className="relative min-w-[200px] flex-1">
               <input

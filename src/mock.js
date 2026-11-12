@@ -208,10 +208,11 @@ export const HELP = [
     section: "Ship",
     title: "PALM Market Mode",
     summary: "A trading-desk look with live crypto prints.",
-    body: "Turn on PALM Market Mode from Settings → Appearance, the header Market control, or the command palette. It applies the PALM Market theme, a live tape, and a Markets board. PALM prints come from DexScreener. Majors come from CoinGecko. The tape is fed to Hamrin when you ask about prices. Nothing here is financial advice, and nothing spends.",
+    body: "Turn on PALM Market Mode from Settings → Appearance, the header Market control, or the command palette. It applies the PALM Market theme, a live tape with logos, and a Markets board. Quotes are fetched in the browser from DexScreener, CoinCap, Binance, CoinGecko, CoinPaprika, alternative.me, and mempool.space. The tape is fed to Hamrin when you ask about prices. Nothing here is financial advice, and nothing spends.",
     bullets: [
       "Header Market toggle and Settings → Appearance",
-      "Markets tab: PALM, watchlist, search, 24h ticks",
+      "Logos from CoinCap and cryptocurrency-icons",
+      "Fear & Greed, BTC.D, funding, BTC fees, heatmap",
       "Quotes refresh about every 30 seconds",
       "Not financial advice",
     ],

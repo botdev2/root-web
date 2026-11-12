@@ -141,7 +141,7 @@ export default function App() {
   const theme = useMemo(() => findTheme(themeId), [themeId]);
   const marketOn = !!prefs?.marketMode;
   const board = useMarketQuotes(marketOn || view === "markets");
-  const marketTape = marketOn ? tapeText(board.quotes) : "";
+  const marketTape = marketOn ? tapeText(board) : "";
   const tourLook = useRef(null);
   const touring = !!tour && !tour.classroom;
 
@@ -1034,7 +1034,15 @@ export default function App() {
                 notice("Thread cleared.");
               }}
             />
-            {marketOn && <MarketTape quotes={board.quotes} onOpen={() => openView("markets")} />}
+            {marketOn && (
+              <MarketTape
+                quotes={board.quotes}
+                global={board.global}
+                fng={board.fng}
+                fees={board.fees}
+                onOpen={() => openView("markets")}
+              />
+            )}
             <div className="relative flex min-h-0 flex-1">
               <div className="relative flex min-w-0 flex-1 flex-col">
                 {view === "home" && (
@@ -1108,6 +1116,10 @@ export default function App() {
                 {view === "markets" && (
                   <MarketsView
                     quotes={board.quotes}
+                    global={board.global}
+                    fng={board.fng}
+                    funding={board.funding}
+                    fees={board.fees}
                     updatedAt={board.updatedAt}
                     error={board.error}
                     credit={credit}

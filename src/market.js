@@ -113,11 +113,38 @@ export function tickClass(value) {
   return amount > 0 ? "text-[var(--green)]" : "text-[var(--rose)]";
 }
 
-export function tapeText(quotes) {
-  return (quotes || [])
+export function logoCandidates(symbol, extra) {
+  const sym = String(symbol || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const rows = [];
+  if (sym === "palm") rows.push("/palm.png");
+  if (extra) rows.push(extra);
+  if (sym) {
+    rows.push("https://assets.coincap.io/assets/icons/" + sym + "@2x.png");
+    rows.push("https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/" + sym + ".svg");
+    rows.push("https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/" + sym + ".png");
+  }
+  return [...new Set(rows.filter(Boolean))];
+}
+
+export function tapeText(snapshot) {
+  const quotes = Array.isArray(snapshot) ? snapshot : snapshot?.quotes || [];
+  const prints = quotes
     .filter((item) => item?.symbol && item.price)
-    .map((item) => `${item.symbol} ${formatUsd(item.price)} ${formatPct(item.change24h)}`)
-    .join("  ·  ");
+    .slice(0, 18)
+    .map((item) => `${item.symbol} ${formatUsd(item.price)} ${formatPct(item.change24h)}`);
+  const extra = [];
+  const global = snapshot?.global;
+  if (Number.isFinite(global?.btcDom)) extra.push("BTC.D " + global.btcDom.toFixed(1) + "%");
+  if (Number.isFinite(global?.ethDom)) extra.push("ETH.D " + global.ethDom.toFixed(1) + "%");
+  if (Number.isFinite(global?.mcap)) extra.push("mcap " + formatVol(global.mcap));
+  if (snapshot?.fng?.value) extra.push("F&G " + snapshot.fng.value + " " + (snapshot.fng.label || ""));
+  if (snapshot?.fees?.fastestFee) extra.push("BTC fee " + snapshot.fees.fastestFee + " sat/vB");
+  const ranked = quotes.filter((item) => item.symbol !== "PALM" && Number.isFinite(item.change24h)).slice().sort((a, b) => b.change24h - a.change24h);
+  if (ranked[0]) extra.push("lead " + ranked[0].symbol + " " + formatPct(ranked[0].change24h));
+  if (ranked.length) extra.push("lag " + ranked[ranked.length - 1].symbol + " " + formatPct(ranked[ranked.length - 1].change24h));
+  const fund = (snapshot?.funding || []).find((item) => item.symbol === "BTC");
+  if (fund && Number.isFinite(fund.rate)) extra.push("BTC fund " + (fund.rate * 100).toFixed(4) + "%");
+  return [...extra, ...prints].filter(Boolean).join("  ·  ");
 }
 
 export function readWatchlist() {
@@ -138,10 +165,50 @@ export function writeWatchlist(ids) {
   }
 }
 
+const BINANCE_PAIRS = [
+  ["BTC", "BTCUSDT"],
+  ["ETH", "ETHUSDT"],
+  ["SOL", "SOLUSDT"],
+  ["BNB", "BNBUSDT"],
+  ["XRP", "XRPUSDT"],
+  ["DOGE", "DOGEUSDT"],
+  ["ADA", "ADAUSDT"],
+  ["TRX", "TRXUSDT"],
+  ["AVAX", "AVAXUSDT"],
+  ["LINK", "LINKUSDT"],
+  ["SUI", "SUIUSDT"],
+  ["UNI", "UNIUSDT"],
+  ["DOT", "DOTUSDT"],
+  ["NEAR", "NEARUSDT"],
+  ["PEPE", "PEPEUSDT"],
+];
+
+function quoteShape(partial) {
+  return {
+    id: "",
+    symbol: "",
+    name: "",
+    price: 0,
+    change24h: NaN,
+    volume: 0,
+    liquidity: 0,
+    high24h: NaN,
+    low24h: NaN,
+    rank: 0,
+    logo: "",
+    url: "",
+    source: "",
+    featured: false,
+    spark: [],
+    ...partial,
+  };
+}
+
 function pairToQuote(pair, extra = {}) {
   const price = Number(pair?.priceUsd);
   if (!Number.isFinite(price) || price <= 0) return null;
-  return {
+  const logo = pair.info?.imageUrl || pair.baseToken?.icon || extra.logo || "";
+  return quoteShape({
     id: extra.id || pair.pairAddress || pair.baseToken?.address || "",
     symbol: String(extra.symbol || pair.baseToken?.symbol || "").toUpperCase(),
     name: extra.name || pair.baseToken?.name || pair.baseToken?.symbol || "",
@@ -149,30 +216,44 @@ function pairToQuote(pair, extra = {}) {
     change24h: Number(pair.priceChange?.h24),
     volume: Number(pair.volume?.h24) || 0,
     liquidity: Number(pair.liquidity?.usd) || 0,
+    logo,
     url: pair.url || "",
     source: extra.source || "dex",
     featured: extra.featured === true,
     spark: extra.spark || [],
-  };
+  });
+}
+
+async function getJson(url, ms = 8000) {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), ms);
+  try {
+    const response = await fetch(url, { signal: ctrl.signal });
+    if (!response.ok) throw new Error(String(response.status));
+    return await response.json();
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+function settled(value) {
+  return value?.status === "fulfilled" ? value.value : null;
 }
 
 export async function fetchPalmQuote() {
-  const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/" + PALM_TOKEN);
-  const data = await response.json().catch(() => ({}));
+  const data = await getJson("https://api.dexscreener.com/latest/dex/tokens/" + PALM_TOKEN);
   const pairs = Array.isArray(data.pairs) ? data.pairs.slice() : [];
   pairs.sort((a, b) => (Number(b.liquidity?.usd) || 0) - (Number(a.liquidity?.usd) || 0));
-  return pairToQuote(pairs[0], { id: "palm", symbol: "PALM", name: "PALM", featured: true, source: "dex" });
+  return pairToQuote(pairs[0], { id: "palm", symbol: "PALM", name: "PALM", featured: true, source: "dex", logo: "/palm.png" });
 }
 
 async function fetchGeckoMajors() {
   const ids = MAJORS.map((item) => item.id).join(",");
-  const response = await fetch(
+  const rows = await getJson(
     "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=" +
       encodeURIComponent(ids) +
       "&order=market_cap_desc&sparkline=true&price_change_percentage=24h",
   );
-  if (!response.ok) throw new Error("gecko");
-  const rows = await response.json();
   if (!Array.isArray(rows)) throw new Error("gecko");
   const byId = Object.fromEntries(MAJORS.map((item) => [item.id, item]));
   return rows
@@ -180,7 +261,7 @@ async function fetchGeckoMajors() {
       const meta = byId[row.id] || { id: row.id, symbol: row.symbol, name: row.name };
       const price = Number(row.current_price);
       if (!Number.isFinite(price) || price <= 0) return null;
-      return {
+      return quoteShape({
         id: meta.id,
         symbol: String(meta.symbol || row.symbol || "").toUpperCase(),
         name: meta.name || row.name,
@@ -188,20 +269,129 @@ async function fetchGeckoMajors() {
         change24h: Number(row.price_change_percentage_24h),
         volume: Number(row.total_volume) || 0,
         liquidity: Number(row.market_cap) || 0,
+        high24h: Number(row.high_24h),
+        low24h: Number(row.low_24h),
+        rank: Number(row.market_cap_rank) || 0,
+        logo: row.image || "",
         url: "https://www.coingecko.com/en/coins/" + row.id,
         source: "gecko",
-        featured: false,
         spark: Array.isArray(row.sparkline_in_7d?.price) ? row.sparkline_in_7d.price : [],
-      };
+      });
     })
     .filter(Boolean);
+}
+
+async function fetchCoinCap() {
+  const data = await getJson("https://api.coincap.io/v2/assets?limit=40");
+  const rows = Array.isArray(data.data) ? data.data : [];
+  return rows
+    .map((row) => {
+      const price = Number(row.priceUsd);
+      if (!Number.isFinite(price) || price <= 0) return null;
+      const symbol = String(row.symbol || "").toUpperCase();
+      return quoteShape({
+        id: row.id,
+        symbol,
+        name: row.name || symbol,
+        price,
+        change24h: Number(row.changePercent24Hr),
+        volume: Number(row.volumeUsd24Hr) || 0,
+        liquidity: Number(row.marketCapUsd) || 0,
+        rank: Number(row.rank) || 0,
+        logo: "https://assets.coincap.io/assets/icons/" + String(symbol).toLowerCase() + "@2x.png",
+        url: "https://coincap.io/assets/" + row.id,
+        source: "coincap",
+      });
+    })
+    .filter(Boolean);
+}
+
+async function fetchBinanceTickers() {
+  const symbols = BINANCE_PAIRS.map((item) => item[1]);
+  const rows = await getJson("https://api.binance.com/api/v3/ticker/24hr?symbols=" + encodeURIComponent(JSON.stringify(symbols)));
+  const list = Array.isArray(rows) ? rows : [];
+  const byPair = Object.fromEntries(BINANCE_PAIRS);
+  const invert = Object.fromEntries(BINANCE_PAIRS.map(([sym, pair]) => [pair, sym]));
+  return list
+    .map((row) => {
+      const symbol = invert[row.symbol];
+      const price = Number(row.lastPrice);
+      if (!symbol || !Number.isFinite(price) || price <= 0) return null;
+      return quoteShape({
+        id: byPair[symbol],
+        symbol,
+        name: symbol,
+        price,
+        change24h: Number(row.priceChangePercent),
+        volume: Number(row.quoteVolume) || 0,
+        high24h: Number(row.highPrice),
+        low24h: Number(row.lowPrice),
+        url: "https://www.binance.com/en/trade/" + row.symbol,
+        source: "binance",
+      });
+    })
+    .filter(Boolean);
+}
+
+async function fetchBinanceSparks() {
+  const wanted = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"];
+  const rows = await Promise.all(
+    wanted.map(async (pair) => {
+      const klines = await getJson("https://api.binance.com/api/v3/klines?symbol=" + pair + "&interval=1h&limit=48", 7000);
+      return { pair, spark: Array.isArray(klines) ? klines.map((item) => Number(item[4])).filter(Number.isFinite) : [] };
+    }),
+  );
+  const invert = Object.fromEntries(BINANCE_PAIRS.map(([sym, pair]) => [pair, sym]));
+  return Object.fromEntries(rows.map((row) => [invert[row.pair], row.spark]).filter((item) => item[0]));
+}
+
+async function fetchFunding() {
+  const rows = await getJson("https://fapi.binance.com/fapi/v1/premiumIndex");
+  const list = Array.isArray(rows) ? rows : [];
+  const wanted = new Set(BINANCE_PAIRS.map((item) => item[1]));
+  const invert = Object.fromEntries(BINANCE_PAIRS.map(([sym, pair]) => [pair, sym]));
+  return list
+    .filter((row) => wanted.has(row.symbol))
+    .map((row) => ({
+      symbol: invert[row.symbol],
+      rate: Number(row.lastFundingRate),
+      mark: Number(row.markPrice),
+    }))
+    .filter((row) => row.symbol && Number.isFinite(row.rate));
+}
+
+async function fetchFearGreed() {
+  const data = await getJson("https://api.alternative.me/fng/?limit=1");
+  const row = data.data?.[0];
+  const value = Number(row?.value);
+  if (!Number.isFinite(value)) return null;
+  return { value, label: row.value_classification || "" };
+}
+
+async function fetchPaprikaGlobal() {
+  const data = await getJson("https://api.coinpaprika.com/v1/global");
+  return {
+    mcap: Number(data.market_cap_usd) || 0,
+    volume: Number(data.volume_24h_usd) || 0,
+    btcDom: Number(data.bitcoin_dominance_percentage) || 0,
+    coins: Number(data.cryptocurrencies_number) || 0,
+    ethDom: 0,
+  };
+}
+
+async function fetchMempoolFees() {
+  const data = await getJson("https://mempool.space/api/v1/fees/recommended");
+  return {
+    fastestFee: Number(data.fastestFee) || 0,
+    halfHourFee: Number(data.halfHourFee) || 0,
+    hourFee: Number(data.hourFee) || 0,
+  };
 }
 
 export async function searchDexQuotes(query) {
   const needle = String(query || "").trim();
   if (needle.length < 2) return [];
-  const response = await fetch("https://api.dexscreener.com/latest/dex/search?q=" + encodeURIComponent(needle));
-  const data = await response.json().catch(() => ({}));
+  const data = await getJson("https://api.dexscreener.com/latest/dex/search?q=" + encodeURIComponent(needle));
   const pairs = Array.isArray(data.pairs) ? data.pairs.slice() : [];
   pairs.sort((a, b) => (Number(b.liquidity?.usd) || 0) - (Number(a.liquidity?.usd) || 0));
   const seen = new Set();
@@ -216,28 +406,103 @@ export async function searchDexQuotes(query) {
   return rows;
 }
 
-async function fetchDexMajors() {
-  const wanted = ["BTC", "ETH", "SOL", "BNB", "XRP"];
-  const rows = await Promise.all(wanted.map((symbol) => searchDexQuotes(symbol).then((list) => list[0] || null)));
-  return rows.filter(Boolean);
+function mergeQuote(into, from) {
+  if (!from) return into;
+  if (!into) return from;
+  const next = { ...into };
+  if (!next.price && from.price) next.price = from.price;
+  if (from.source === "binance" && from.price) {
+    next.price = from.price;
+    next.change24h = from.change24h;
+    next.high24h = from.high24h;
+    next.low24h = from.low24h;
+    if (from.volume) next.volume = from.volume;
+  }
+  if (!Number.isFinite(next.change24h) && Number.isFinite(from.change24h)) next.change24h = from.change24h;
+  if ((!next.volume || from.volume > next.volume) && from.source !== "binance") next.volume = from.volume || next.volume;
+  if (!next.liquidity && from.liquidity) next.liquidity = from.liquidity;
+  if (!next.rank && from.rank) next.rank = from.rank;
+  if (!next.logo && from.logo) next.logo = from.logo;
+  if (!next.spark?.length && from.spark?.length) next.spark = from.spark;
+  if (!Number.isFinite(next.high24h) && Number.isFinite(from.high24h)) next.high24h = from.high24h;
+  if (!Number.isFinite(next.low24h) && Number.isFinite(from.low24h)) next.low24h = from.low24h;
+  if (!next.name || next.name === next.symbol) next.name = from.name || next.name;
+  if (from.source && next.source !== "dex") next.source = next.source || from.source;
+  return next;
 }
 
 export async function loadMarketBoard() {
-  const palm = await fetchPalmQuote().catch(() => null);
-  let majors = [];
-  try {
-    majors = await fetchGeckoMajors();
-  } catch {
-    majors = await fetchDexMajors().catch(() => []);
+  const jobs = await Promise.allSettled([
+    fetchPalmQuote(),
+    fetchCoinCap(),
+    fetchGeckoMajors(),
+    fetchBinanceTickers(),
+    fetchBinanceSparks(),
+    fetchPaprikaGlobal(),
+    fetchFearGreed(),
+    fetchFunding(),
+    fetchMempoolFees(),
+  ]);
+  const palm = settled(jobs[0]);
+  const coincap = settled(jobs[1]) || [];
+  const gecko = settled(jobs[2]) || [];
+  const binance = settled(jobs[3]) || [];
+  const sparks = settled(jobs[4]) || {};
+  const global = settled(jobs[5]) || { mcap: 0, volume: 0, btcDom: 0, ethDom: 0, coins: 0 };
+  const fng = settled(jobs[6]);
+  const funding = settled(jobs[7]) || [];
+  const fees = settled(jobs[8]);
+
+  const map = new Map();
+  const put = (row) => {
+    if (!row?.symbol) return;
+    map.set(row.symbol, mergeQuote(map.get(row.symbol), row));
+  };
+  coincap.forEach(put);
+  gecko.forEach(put);
+  binance.forEach(put);
+  if (palm) put(palm);
+
+  for (const [symbol, spark] of Object.entries(sparks)) {
+    const row = map.get(symbol);
+    if (row && (!row.spark || row.spark.length < 8) && spark?.length) row.spark = spark;
   }
-  const rows = [];
-  if (palm) rows.push(palm);
-  rows.push(...majors.filter((item) => item.symbol !== "PALM"));
-  return rows;
+
+  const btc = map.get("BTC");
+  const eth = map.get("ETH");
+  if (btc?.liquidity && global.mcap) {
+    /* keep paprika dominance when present */
+  } else if (btc?.liquidity) {
+    const total = [...map.values()].reduce((sum, item) => sum + (Number(item.liquidity) || 0), 0);
+    if (total > 0) {
+      global.mcap = global.mcap || total;
+      global.btcDom = global.btcDom || (btc.liquidity / total) * 100;
+      global.ethDom = eth?.liquidity ? (eth.liquidity / total) * 100 : 0;
+    }
+  }
+  if (eth?.liquidity && global.mcap && !global.ethDom) global.ethDom = (eth.liquidity / global.mcap) * 100;
+
+  const preferred = new Set(["PALM", ...MAJORS.map((item) => item.symbol)]);
+  const quotes = [...map.values()]
+    .filter((item) => item.price)
+    .sort((a, b) => {
+      if (a.symbol === "PALM") return -1;
+      if (b.symbol === "PALM") return 1;
+      const aPref = preferred.has(a.symbol) ? 1 : 0;
+      const bPref = preferred.has(b.symbol) ? 1 : 0;
+      if (aPref !== bPref) return bPref - aPref;
+      return (a.rank || 999) - (b.rank || 999);
+    });
+
+  return { quotes, global, fng, funding, fees };
 }
 
 export function useMarketQuotes(active = true) {
   const [quotes, setQuotes] = useState([]);
+  const [global, setGlobal] = useState(null);
+  const [fng, setFng] = useState(null);
+  const [funding, setFunding] = useState([]);
+  const [fees, setFees] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(0);
   const [error, setError] = useState("");
 
@@ -246,10 +511,14 @@ export function useMarketQuotes(active = true) {
     let cancelled = false;
     const load = () =>
       loadMarketBoard()
-        .then((rows) => {
+        .then((data) => {
           if (cancelled) return;
-          if (rows.length) {
-            setQuotes(rows);
+          if (data.quotes?.length) {
+            setQuotes(data.quotes);
+            setGlobal(data.global || null);
+            setFng(data.fng || null);
+            setFunding(data.funding || []);
+            setFees(data.fees || null);
             setUpdatedAt(Date.now());
             setError("");
           } else {
@@ -267,5 +536,5 @@ export function useMarketQuotes(active = true) {
     };
   }, [active]);
 
-  return { quotes, updatedAt, error };
+  return { quotes, global, fng, funding, fees, updatedAt, error };
 }

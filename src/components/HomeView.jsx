@@ -9,10 +9,10 @@ const CHIPS = [
 ];
 
 const MARKET_CHIPS = [
-  "What's PALM doing versus ETH today?",
-  "Why is BTC moving? Cite live sources.",
-  "Compare SOL and BNB over 24 hours",
-  "Price this wallet's PALM in USD",
+  "Read the tape: F&G, BTC.D, PALM vs ETH. What's the regime?",
+  "What are BTC funding and fees saying about leverage?",
+  "Name today's lead gainer and laggard from the prints.",
+  "Is PALM holding its ground versus BTC on this tape?",
 ];
 
 export default function HomeView({ onChip, onTemplates, clockOn, project, marketOn = false }) {

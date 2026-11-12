@@ -11,15 +11,39 @@ import {
   wpalmOf,
   writeWatchlist,
 } from "../../market.js";
+import MarketLogo from "../MarketLogo.jsx";
 import { Card, Ghost, Page, Primary } from "../ui.jsx";
 
-export default function MarketsView({ quotes = [], updatedAt = 0, error = "", credit = null, marketOn = false, onToggleMode, onAsk }) {
+const SORTS = [
+  { id: "watch", label: "Watch" },
+  { id: "change", label: "24h" },
+  { id: "volume", label: "Volume" },
+  { id: "mcap", label: "Mcap" },
+];
+
+export default function MarketsView({
+  quotes = [],
+  global = null,
+  fng = null,
+  funding = [],
+  fees = null,
+  updatedAt = 0,
+  error = "",
+  credit = null,
+  marketOn = false,
+  onToggleMode,
+  onAsk,
+}) {
   const { isConnected } = useAccount();
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("watch");
   const [watch, setWatch] = useState(readWatchlist);
   const [hits, setHits] = useState([]);
   const palm = quotes.find((item) => item.symbol === "PALM");
+  const btc = quotes.find((item) => item.symbol === "BTC");
+  const eth = quotes.find((item) => item.symbol === "ETH");
   const wpalm = wpalmOf(credit);
+  const fundBtc = funding.find((item) => item.symbol === "BTC");
 
   useEffect(() => {
     const needle = query.trim();
@@ -43,6 +67,13 @@ export default function MarketsView({ quotes = [], updatedAt = 0, error = "", cr
     };
   }, [query]);
 
+  const ranked = useMemo(() => {
+    return quotes
+      .filter((item) => item.symbol !== "PALM" && Number.isFinite(item.change24h))
+      .slice()
+      .sort((a, b) => b.change24h - a.change24h);
+  }, [quotes]);
+
   const board = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const known = new Set(quotes.map((item) => item.symbol));
@@ -53,13 +84,16 @@ export default function MarketsView({ quotes = [], updatedAt = 0, error = "", cr
       : rows;
     const starred = new Set(watch);
     return filtered.slice().sort((a, b) => {
+      if (sort === "change") return (Number(b.change24h) || -999) - (Number(a.change24h) || -999);
+      if (sort === "volume") return (b.volume || 0) - (a.volume || 0);
+      if (sort === "mcap") return (b.liquidity || 0) - (a.liquidity || 0);
       const aStar = starred.has(a.symbol) ? 1 : 0;
       const bStar = starred.has(b.symbol) ? 1 : 0;
       if (aStar !== bStar) return bStar - aStar;
       if (a.featured !== b.featured) return a.featured ? -1 : 1;
-      return 0;
+      return (a.rank || 999) - (b.rank || 999);
     });
-  }, [quotes, hits, query, watch]);
+  }, [quotes, hits, query, watch, sort]);
 
   const toggleStar = (symbol) => {
     setWatch((prev) => {
@@ -72,15 +106,17 @@ export default function MarketsView({ quotes = [], updatedAt = 0, error = "", cr
   const stamp = updatedAt
     ? new Date(updatedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })
     : "";
+  const palmBtc = palm?.price && btc?.price ? palm.price / btc.price : 0;
+  const heat = ranked.slice(0, 12);
 
   return (
     <Page wide>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM MARKET</div>
-          <div className="mt-1 text-[22px]">Live prices</div>
-          <p className="mt-1 max-w-[640px] text-[13px] leading-5 text-[var(--muted)]">
-            PALM from DexScreener. Majors from CoinGecko. Prints refresh about every 30 seconds. Not financial advice.
+          <div className="mt-1 text-[22px]">Live tape</div>
+          <p className="mt-1 max-w-[680px] text-[13px] leading-5 text-[var(--muted)]">
+            PALM on DexScreener. Majors from CoinCap, Binance, and CoinGecko. Dominance from CoinPaprika. Fear & Greed from alternative.me. BTC fees from mempool.space. Client-side only. Not advice.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -91,32 +127,88 @@ export default function MarketsView({ quotes = [], updatedAt = 0, error = "", cr
         </div>
       </div>
 
-      <div className="mb-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <Hero
-          label="PALM"
-          value={formatUsd(palm?.price)}
-          change={palm?.change24h}
-          note={palm ? `${formatVol(palm.volume)} 24h vol` : error || "Waiting on DexScreener"}
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        <Stat label="Crypto mcap" value={formatVol(global?.mcap)} note={global?.coins ? global.coins + " coins" : ""} />
+        <Stat label="BTC.D" value={Number.isFinite(global?.btcDom) ? global.btcDom.toFixed(1) + "%" : "—"} note="CoinPaprika" />
+        <Stat label="ETH.D" value={Number.isFinite(global?.ethDom) && global.ethDom ? global.ethDom.toFixed(1) + "%" : "—"} />
+        <Stat label="Fear & Greed" value={fng?.value ?? "—"} note={fng?.label || "alternative.me"} tone={fng?.value >= 55 ? "up" : fng?.value <= 45 ? "down" : ""} />
+        <Stat
+          label="BTC funding"
+          value={fundBtc && Number.isFinite(fundBtc.rate) ? (fundBtc.rate * 100).toFixed(4) + "%" : "—"}
+          note="Binance perp"
+          tone={fundBtc?.rate > 0 ? "up" : fundBtc?.rate < 0 ? "down" : ""}
         />
-        <Hero label="wPALM" value={isConnected ? wpalm.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"} note={isConnected ? usd(wpalm, palm?.price) : "Connect a wallet"} />
-        <Hero label="BTC" value={formatUsd(quotes.find((item) => item.symbol === "BTC")?.price)} change={quotes.find((item) => item.symbol === "BTC")?.change24h} note="Bitcoin" />
-        <Hero label="ETH" value={formatUsd(quotes.find((item) => item.symbol === "ETH")?.price)} change={quotes.find((item) => item.symbol === "ETH")?.change24h} note="Ethereum" />
+        <Stat label="BTC fee" value={fees?.fastestFee ? fees.fastestFee + " sat" : "—"} note={fees?.halfHourFee ? "30m " + fees.halfHourFee : "mempool.space"} />
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="mb-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <Hero item={palm} label="PALM" fallback={error || "Waiting on DexScreener"} extra={palm ? formatVol(palm.volume) + " 24h vol" : ""} />
+        <Hero
+          label="wPALM"
+          value={isConnected ? wpalm.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"}
+          extra={isConnected ? usd(wpalm, palm?.price) : "Connect a wallet"}
+          logo="/palm.png"
+          symbol="PALM"
+        />
+        <Hero item={btc} label="BTC" extra={btc && Number.isFinite(btc.high24h) ? "hi " + formatUsd(btc.high24h) : "Bitcoin"} />
+        <Hero
+          item={eth}
+          label="ETH"
+          extra={palmBtc ? "PALM/BTC " + palmBtc.toExponential(2) : "Ethereum"}
+        />
+      </div>
+
+      {heat.length > 0 && (
+        <div className="market-heat mb-5">
+          {heat.map((item) => (
+            <button
+              key={item.symbol}
+              type="button"
+              onClick={onAsk ? () => onAsk(`What's moving ${item.symbol} today? Print ${formatUsd(item.price)} (${formatPct(item.change24h)}). Cite live sources.`) : undefined}
+              className="market-heat-cell"
+              style={{
+                background:
+                  Number(item.change24h) >= 0
+                    ? "color-mix(in srgb, var(--green) " + Math.min(42, 12 + Math.abs(item.change24h) * 2) + "%, var(--panel))"
+                    : "color-mix(in srgb, var(--rose) " + Math.min(42, 12 + Math.abs(item.change24h) * 2) + "%, var(--panel))",
+              }}
+            >
+              <MarketLogo symbol={item.symbol} src={item.logo} size={16} />
+              <div className="mt-1 text-[11px] tracking-[0.08em]">{item.symbol}</div>
+              <div className={`text-[12px] tabular-nums ${tickClass(item.change24h)}`}>{formatPct(item.change24h)}</div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search a ticker or name"
+          placeholder="Search a ticker, then DexScreener fills gaps"
           className="h-10 min-w-[220px] flex-1 rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px] outline-none placeholder:text-[var(--faint)]"
         />
+        {SORTS.map((item) => (
+          <Ghost key={item.id} active={sort === item.id} onClick={() => setSort(item.id)}>
+            {item.label}
+          </Ghost>
+        ))}
         {onAsk && (
           <Primary
             onClick={() =>
               onAsk(
-                palm
-                  ? `What's moving PALM, BTC, and ETH right now? PALM is ${formatUsd(palm.price)} (${formatPct(palm.change24h)}). Cite live sources.`
-                  : "What's moving PALM, BTC, and ETH right now? Cite live sources.",
+                [
+                  "Read this tape and say what risk is doing.",
+                  fng ? `Fear & Greed ${fng.value} ${fng.label}.` : "",
+                  Number.isFinite(global?.btcDom) ? `BTC.D ${global.btcDom.toFixed(1)}%.` : "",
+                  palm ? `PALM ${formatUsd(palm.price)} (${formatPct(palm.change24h)}).` : "",
+                  ranked[0] ? `Lead ${ranked[0].symbol} ${formatPct(ranked[0].change24h)}.` : "",
+                  ranked.length ? `Lag ${ranked[ranked.length - 1].symbol} ${formatPct(ranked[ranked.length - 1].change24h)}.` : "",
+                  fees?.fastestFee ? `BTC fee ${fees.fastestFee} sat/vB.` : "",
+                  "Cite the prints. Not a trade idea.",
+                ]
+                  .filter(Boolean)
+                  .join(" "),
               )
             }
           >
@@ -126,14 +218,16 @@ export default function MarketsView({ quotes = [], updatedAt = 0, error = "", cr
       </div>
 
       <Card className="overflow-hidden">
-        <div className="hidden grid-cols-[auto_4.5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem] gap-2 border-b border-[var(--stroke-soft)] px-3 py-2 text-[10.5px] tracking-[0.16em] text-[var(--faint)] sm:grid">
+        <div className="hidden grid-cols-[auto_auto_5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem_5.5rem] gap-2 border-b border-[var(--stroke-soft)] px-3 py-2 text-[10.5px] tracking-[0.16em] text-[var(--faint)] lg:grid">
+          <span />
           <span />
           <span>SYM</span>
           <span>Name</span>
           <span className="text-right">Price</span>
           <span className="text-right">24h</span>
           <span className="text-right">Volume</span>
-          <span className="text-right">7d</span>
+          <span className="text-right">Mcap</span>
+          <span className="text-right">Range</span>
         </div>
         {board.length === 0 && (
           <div className="px-4 py-8 text-center text-[13px] text-[var(--muted)]">{error || "Waiting on quotes."}</div>
@@ -144,7 +238,14 @@ export default function MarketsView({ quotes = [], updatedAt = 0, error = "", cr
             item={item}
             starred={watch.includes(item.symbol)}
             onStar={() => toggleStar(item.symbol)}
-            onAsk={onAsk ? () => onAsk(`What's moving ${item.symbol} (${item.name}) today? Last print ${formatUsd(item.price)} (${formatPct(item.change24h)}). Cite live sources.`) : null}
+            onAsk={
+              onAsk
+                ? () =>
+                    onAsk(
+                      `What's moving ${item.symbol} (${item.name}) today? Last print ${formatUsd(item.price)} (${formatPct(item.change24h)}). Cite live sources.`,
+                    )
+                : null
+            }
           />
         ))}
       </Card>
@@ -152,24 +253,44 @@ export default function MarketsView({ quotes = [], updatedAt = 0, error = "", cr
   );
 }
 
-function Hero({ label, value, change, note }) {
+function Stat({ label, value, note, tone }) {
+  return (
+    <Card className="px-3 py-3">
+      <div className="text-[10px] tracking-[0.16em] text-[var(--faint)]">{label}</div>
+      <div className={`mt-1 text-[16px] tabular-nums leading-none ${tone === "up" ? "text-[var(--green)]" : tone === "down" ? "text-[var(--rose)]" : ""}`}>
+        {value}
+      </div>
+      {note && <div className="mt-1 text-[10.5px] text-[var(--muted)]">{note}</div>}
+    </Card>
+  );
+}
+
+function Hero({ item, label, value, extra, fallback, logo, symbol }) {
+  const change = item?.change24h;
   return (
     <Card className="px-3 py-3.5">
-      <div className="text-[10px] tracking-[0.16em] text-[var(--faint)]">{label}</div>
-      <div className="mt-1.5 text-[20px] tabular-nums leading-none">{value}</div>
+      <div className="flex items-center gap-2">
+        <MarketLogo symbol={symbol || item?.symbol || label} src={logo || item?.logo} size={20} />
+        <div className="text-[10px] tracking-[0.16em] text-[var(--faint)]">{label}</div>
+      </div>
+      <div className="mt-1.5 text-[20px] tabular-nums leading-none">{value || (item?.price ? formatUsd(item.price) : fallback) || "—"}</div>
       {Number.isFinite(Number(change)) ? (
         <div className={`mt-1 text-[12px] tabular-nums ${tickClass(change)}`}>{formatPct(change)}</div>
       ) : (
-        note && <div className="mt-1 text-[11px] text-[var(--muted)]">{note}</div>
+        extra && <div className="mt-1 text-[11px] text-[var(--muted)]">{extra}</div>
       )}
-      {Number.isFinite(Number(change)) && note && <div className="mt-0.5 text-[11px] text-[var(--muted)]">{note}</div>}
+      {Number.isFinite(Number(change)) && extra && <div className="mt-0.5 text-[11px] text-[var(--muted)]">{extra}</div>}
     </Card>
   );
 }
 
 function Row({ item, starred, onStar, onAsk }) {
+  const range =
+    Number.isFinite(item.low24h) && Number.isFinite(item.high24h) && item.high24h > 0
+      ? ((item.price - item.low24h) / (item.high24h - item.low24h || 1)) * 100
+      : null;
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-[var(--stroke-soft)] px-3 py-2.5 last:border-b-0 sm:grid-cols-[auto_4.5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem]">
+    <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-[var(--stroke-soft)] px-3 py-2.5 last:border-b-0 lg:grid-cols-[auto_auto_5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem_5.5rem]">
       <button
         type="button"
         onClick={onStar}
@@ -178,16 +299,26 @@ function Row({ item, starred, onStar, onAsk }) {
       >
         {starred ? "★" : "☆"}
       </button>
-      <button type="button" onClick={onAsk || undefined} className="text-left">
+      <MarketLogo symbol={item.symbol} src={item.logo} size={20} />
+      <button type="button" onClick={onAsk || undefined} className="min-w-0 text-left">
         <div className="text-[13px] tracking-[0.08em]">{item.symbol}</div>
-        <div className="text-[11px] text-[var(--muted)] sm:hidden">{item.name}</div>
+        <div className="truncate text-[11px] text-[var(--muted)] lg:hidden">{item.name}</div>
       </button>
-      <div className="hidden truncate text-[13px] text-[var(--muted)] sm:block">{item.name}</div>
+      <div className="hidden truncate text-[13px] text-[var(--muted)] lg:block">{item.name}</div>
       <div className="text-right text-[13px] tabular-nums">{formatUsd(item.price)}</div>
       <div className={`text-right text-[13px] tabular-nums ${tickClass(item.change24h)}`}>{formatPct(item.change24h)}</div>
-      <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] sm:block">{formatVol(item.volume)}</div>
-      <div className="hidden justify-end sm:flex">
-        <Spark values={item.spark} up={Number(item.change24h) >= 0} />
+      <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] lg:block">{formatVol(item.volume)}</div>
+      <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] lg:block">{formatVol(item.liquidity)}</div>
+      <div className="hidden lg:block">
+        {range == null ? (
+          <Spark values={item.spark} up={Number(item.change24h) >= 0} />
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--stroke-soft)]">
+              <div className="h-full bg-[var(--accent)]" style={{ width: Math.max(4, Math.min(100, range)) + "%" }} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

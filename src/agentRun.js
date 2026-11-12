@@ -447,13 +447,13 @@ async function makeRepo(token, call, address) {
 
 function withTape(text, marketTape) {
   if (!marketTape) return text;
-  return `[ops]\nLive USD tape: ${marketTape}\nPrints are DexScreener (PALM) and CoinGecko (majors). Use them for price questions. Not financial advice.\n[/ops]\n${text}`;
+  return `[ops]\nLive market tape: ${marketTape}\nPrints mix DexScreener (PALM), Binance, CoinCap, CoinGecko, CoinPaprika dominance, alternative.me Fear & Greed, and mempool.space BTC fees. Use them for price and tape questions. Not financial advice.\n[/ops]\n${text}`;
 }
 
 function wrapGuide(project, text, marketTape) {
   const open = project?.id ? `Open repository: ${project.id}` : "Open repository: none";
   const tape = marketTape
-    ? `\nLive USD tape: ${marketTape}\nPrints are DexScreener (PALM) and CoinGecko (majors). Use them for price questions. Not financial advice.`
+    ? `\nLive market tape: ${marketTape}\nPrints mix DexScreener (PALM), Binance, CoinCap, CoinGecko, CoinPaprika dominance, alternative.me Fear & Greed, and mempool.space BTC fees. Use them for price and tape questions. Not financial advice.`
     : "";
   return `[ops]\n${GUIDE}${tape}\n${open}\n[/ops]\n${text}`;
 }

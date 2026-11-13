@@ -221,11 +221,10 @@ export function PalmHero({ palm, wpalm, connected, extra, fallback, vs = [] }) {
   const up = Number(palm?.change24h) >= 0;
   return (
     <div className={`market-palm ${up ? "market-pane-up" : "market-pane-down"}`}>
-      <SparkArea values={palm?.spark} up={up} className="market-pane-spark" w={420} h={140} />
-      <div className="market-palm-orb" aria-hidden="true" />
-      <img src={PALM_MARK} alt="" className="market-palm-mark" width="96" height="96" />
+      <SparkArea values={palm?.spark} up={up} className="market-palm-spark" w={640} h={180} />
       <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-between gap-3">
         <div className="flex items-center gap-2.5">
+          <MarketLogo symbol="PALM" src={palm?.logo || PALM_MARK} size={22} />
           <span className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM</span>
           <span className="market-live">live</span>
         </div>

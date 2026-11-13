@@ -211,6 +211,9 @@ function quoteShape(partial) {
     source: "",
     featured: false,
     spark: [],
+    chainId: "",
+    pairAddress: "",
+    changes: null,
     ...partial,
   };
 }
@@ -232,6 +235,9 @@ function pairToQuote(pair, extra = {}) {
     source: extra.source || "dex",
     featured: extra.featured === true,
     spark: extra.spark || [],
+    chainId: String(pair.chainId || extra.chainId || ""),
+    pairAddress: String(pair.pairAddress || extra.pairAddress || ""),
+    changes: pair.priceChange || extra.changes || null,
   });
 }
 
@@ -256,6 +262,118 @@ export async function fetchPalmQuote() {
   return desk;
 }
 
+const GT_NET = {
+  ethereum: "eth",
+  eth: "eth",
+  bsc: "bsc",
+  "binance-smart-chain": "bsc",
+  polygon: "polygon_pos",
+  arbitrum: "arbitrum",
+  optimism: "optimism",
+  base: "base",
+  avalanche: "avax",
+  solana: "solana",
+  fantom: "ftm",
+  blast: "blast",
+  linea: "linea",
+  scroll: "scroll",
+  zksync: "zksync",
+  sonic: "sonic",
+  hyperevm: "hyperevm",
+  robinhood: "robinhood",
+  "robinhood-chain": "robinhood",
+};
+
+const PAPRIKA_NET = {
+  ethereum: "ethereum",
+  eth: "ethereum",
+  bsc: "bsc",
+  polygon: "polygon",
+  arbitrum: "arbitrum",
+  optimism: "optimism",
+  base: "base",
+  avalanche: "avalanche",
+  avax: "avalanche",
+  solana: "solana",
+  robinhood: "robinhood",
+  "robinhood-chain": "robinhood",
+};
+
+function closesFromOhlcv(list) {
+  if (!Array.isArray(list) || list.length < 2) return [];
+  const rows = list
+    .map((row) => {
+      const ts = Number(Array.isArray(row) ? row[0] : row?.time_open ? Date.parse(row.time_open) : row?.timestamp);
+      const close = Number(Array.isArray(row) ? row[4] : row?.close);
+      return { ts: Number.isFinite(ts) ? ts : 0, close };
+    })
+    .filter((row) => Number.isFinite(row.close) && row.close > 0);
+  rows.sort((a, b) => a.ts - b.ts);
+  return rows.map((row) => row.close);
+}
+
+function sparkFromChanges(quote) {
+  const price = Number(quote?.price);
+  if (!Number.isFinite(price) || price <= 0) return [];
+  const ch = quote?.changes || {};
+  const pts = [];
+  for (const key of ["h24", "h6", "h1", "m5"]) {
+    const pct = Number(ch[key]);
+    if (!Number.isFinite(pct)) continue;
+    const past = price / (1 + pct / 100);
+    if (past > 0) pts.push(past);
+  }
+  pts.push(price);
+  return pts.length >= 2 ? pts : [];
+}
+
+const sparkCache = new Map();
+
+async function fetchPairSpark(chainId, pairAddress) {
+  const chain = String(chainId || "").toLowerCase();
+  const pool = String(pairAddress || "").toLowerCase();
+  if (!pool) return [];
+  const key = chain + ":" + pool;
+  const hit = sparkCache.get(key);
+  if (hit && Date.now() - hit.at < 120000) return hit.spark;
+  const gt = GT_NET[chain] || chain;
+  const paprika = PAPRIKA_NET[chain] || chain;
+  const urls = [
+    "https://api.geckoterminal.com/api/v2/networks/" + gt + "/pools/" + pool + "/ohlcv/hour",
+    "https://api.dexpaprika.com/networks/" + paprika + "/pools/" + pool + "/ohlcv?start=-24h&interval=1h",
+  ];
+  for (const url of urls) {
+    try {
+      const data = await getJson(url, 7000);
+      const gtList = data?.data?.attributes?.ohlcv_list;
+      const paprikaList = Array.isArray(data) ? data : data?.ohlcv;
+      const closes = closesFromOhlcv(gtList || paprikaList);
+      if (closes.length >= 2) {
+        const spark = closes.length > 48 ? closes.slice(-48) : closes;
+        sparkCache.set(key, { at: Date.now(), spark });
+        return spark;
+      }
+    } catch {
+      /* next source */
+    }
+  }
+  return [];
+}
+
+async function fillDeskSpark(quote) {
+  if (!quote) return quote;
+  if (quote.spark?.length >= 8) return quote;
+  const spark = await fetchPairSpark(quote.chainId, quote.pairAddress).catch(() => []);
+  quote.spark = spark.length >= 2 ? spark : sparkFromChanges(quote);
+  if (quote.spark.length) {
+    const hi = Math.max(...quote.spark);
+    const lo = Math.min(...quote.spark);
+    if (!Number.isFinite(quote.high24h)) quote.high24h = hi;
+    if (!Number.isFinite(quote.low24h)) quote.low24h = lo;
+  }
+  return quote;
+}
+
 async function fetchDeskQuote(token) {
   const data = await getJson("https://api.dexscreener.com/latest/dex/tokens/" + token.address);
   const pairs = Array.isArray(data.pairs) ? data.pairs.slice() : [];
@@ -271,8 +389,9 @@ async function fetchDeskQuote(token) {
 }
 
 async function fetchDeskTokens() {
-  const rows = await Promise.all(DESK_TOKENS.map((token) => fetchDeskQuote(token).catch(() => null)));
-  return rows.filter(Boolean);
+  const rows = (await Promise.all(DESK_TOKENS.map((token) => fetchDeskQuote(token).catch(() => null)))).filter(Boolean);
+  await Promise.all(rows.map((row) => fillDeskSpark(row).catch(() => row)));
+  return rows;
 }
 
 async function fetchGeckoMajors() {

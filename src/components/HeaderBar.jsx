@@ -13,7 +13,7 @@ const HEADERS = {
   reasoning: { title: "Reasoning", subtitle: "Intake to Output — click a node" },
   ops: { title: "PALM Ops", subtitle: "Hosting, domains, and Ops Hub" },
   marketplace: { title: "Marketplace", subtitle: "WIP · wPALM mockups, same USD as PALM" },
-  markets: { title: "Markets", subtitle: "Live crypto prints · PALM on DexScreener" },
+  markets: { title: "Markets", subtitle: "PALM vs majors" },
   trades: { title: "Trades", subtitle: "Hamrin on the tape · local PALM/ETH limits" },
   notes: { title: "Notes", subtitle: "Daily goals and markdown" },
   quests: { title: "Achievements", subtitle: "Daily challenges and achievements that earn Hamrin credits" },

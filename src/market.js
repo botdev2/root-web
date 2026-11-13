@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
 export const PALM_TOKEN = "0xf1df7305E4BAB3885caB5B1e4dFC338452a67891";
+export const PALM_MARK = "/palm-token.png";
+export const DESK_TOKENS = [
+  { id: "palm", symbol: "PALM", name: "PALM", address: PALM_TOKEN, logo: PALM_MARK },
+  { id: "spectre", symbol: "SPECTRE", name: "SPECTRE AI", address: "0x9Cf0ED013e67DB12cA3AF8e7506fE401aA14dAd6" },
+  { id: "ryft", symbol: "RYFT", name: "RYFT Corp", address: "0xb0007D59fE4050A1636c2fa19038973d16481337" },
+];
 export const HAMRIN = 10;
 export const OPS_MONTH = 2500;
 export const CRAWLER = 1000;
@@ -113,10 +119,15 @@ export function tickClass(value) {
   return amount > 0 ? "text-[var(--green)]" : "text-[var(--rose)]";
 }
 
+export function vsChange(palm, other) {
+  if (!Number.isFinite(palm?.change24h) || !Number.isFinite(other?.change24h)) return NaN;
+  return palm.change24h - other.change24h;
+}
+
 export function logoCandidates(symbol, extra) {
   const sym = String(symbol || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const rows = [];
-  if (sym === "palm") rows.push("/palm.png");
+  if (sym === "palm") rows.push(PALM_MARK);
   if (extra) rows.push(extra);
   if (sym) {
     rows.push("https://assets.coincap.io/assets/icons/" + sym + "@2x.png");
@@ -154,7 +165,7 @@ export function readWatchlist() {
   } catch {
     /* ignore */
   }
-  return ["PALM", "BTC", "ETH", "SOL"];
+  return ["PALM", "SPECTRE", "RYFT", "BTC", "ETH"];
 }
 
 export function writeWatchlist(ids) {
@@ -207,7 +218,7 @@ function quoteShape(partial) {
 function pairToQuote(pair, extra = {}) {
   const price = Number(pair?.priceUsd);
   if (!Number.isFinite(price) || price <= 0) return null;
-  const logo = pair.info?.imageUrl || pair.baseToken?.icon || extra.logo || "";
+  const logo = extra.logo || pair.info?.imageUrl || pair.baseToken?.icon || "";
   return quoteShape({
     id: extra.id || pair.pairAddress || pair.baseToken?.address || "",
     symbol: String(extra.symbol || pair.baseToken?.symbol || "").toUpperCase(),
@@ -241,10 +252,27 @@ function settled(value) {
 }
 
 export async function fetchPalmQuote() {
-  const data = await getJson("https://api.dexscreener.com/latest/dex/tokens/" + PALM_TOKEN);
+  const desk = await fetchDeskQuote(DESK_TOKENS[0]);
+  return desk;
+}
+
+async function fetchDeskQuote(token) {
+  const data = await getJson("https://api.dexscreener.com/latest/dex/tokens/" + token.address);
   const pairs = Array.isArray(data.pairs) ? data.pairs.slice() : [];
   pairs.sort((a, b) => (Number(b.liquidity?.usd) || 0) - (Number(a.liquidity?.usd) || 0));
-  return pairToQuote(pairs[0], { id: "palm", symbol: "PALM", name: "PALM", featured: true, source: "dex", logo: "/palm.png" });
+  return pairToQuote(pairs[0], {
+    id: token.id,
+    symbol: token.symbol,
+    name: token.name,
+    featured: true,
+    source: "dex",
+    logo: token.logo || "",
+  });
+}
+
+async function fetchDeskTokens() {
+  const rows = await Promise.all(DESK_TOKENS.map((token) => fetchDeskQuote(token).catch(() => null)));
+  return rows.filter(Boolean);
 }
 
 async function fetchGeckoMajors() {
@@ -422,7 +450,11 @@ function mergeQuote(into, from) {
   if ((!next.volume || from.volume > next.volume) && from.source !== "binance") next.volume = from.volume || next.volume;
   if (!next.liquidity && from.liquidity) next.liquidity = from.liquidity;
   if (!next.rank && from.rank) next.rank = from.rank;
-  if (!next.logo && from.logo) next.logo = from.logo;
+  if (from.featured) {
+    next.featured = true;
+    if (from.logo) next.logo = from.logo;
+    if (from.name) next.name = from.name;
+  } else if (!next.logo && from.logo) next.logo = from.logo;
   if (!next.spark?.length && from.spark?.length) next.spark = from.spark;
   if (!Number.isFinite(next.high24h) && Number.isFinite(from.high24h)) next.high24h = from.high24h;
   if (!Number.isFinite(next.low24h) && Number.isFinite(from.low24h)) next.low24h = from.low24h;
@@ -433,7 +465,7 @@ function mergeQuote(into, from) {
 
 export async function loadMarketBoard() {
   const jobs = await Promise.allSettled([
-    fetchPalmQuote(),
+    fetchDeskTokens(),
     fetchCoinCap(),
     fetchGeckoMajors(),
     fetchBinanceTickers(),
@@ -443,7 +475,7 @@ export async function loadMarketBoard() {
     fetchFunding(),
     fetchMempoolFees(),
   ]);
-  const palm = settled(jobs[0]);
+  const desk = settled(jobs[0]) || [];
   const coincap = settled(jobs[1]) || [];
   const gecko = settled(jobs[2]) || [];
   const binance = settled(jobs[3]) || [];
@@ -461,7 +493,7 @@ export async function loadMarketBoard() {
   coincap.forEach(put);
   gecko.forEach(put);
   binance.forEach(put);
-  if (palm) put(palm);
+  desk.forEach(put);
 
   for (const [symbol, spark] of Object.entries(sparks)) {
     const row = map.get(symbol);
@@ -482,17 +514,14 @@ export async function loadMarketBoard() {
   }
   if (eth?.liquidity && global.mcap && !global.ethDom) global.ethDom = (eth.liquidity / global.mcap) * 100;
 
-  const preferred = new Set(["PALM", ...MAJORS.map((item) => item.symbol)]);
+  const preferred = ["PALM", "SPECTRE", "RYFT", ...MAJORS.map((item) => item.symbol)];
+  const rankOf = (symbol) => {
+    const at = preferred.indexOf(symbol);
+    return at === -1 ? 1000 : at;
+  };
   const quotes = [...map.values()]
     .filter((item) => item.price)
-    .sort((a, b) => {
-      if (a.symbol === "PALM") return -1;
-      if (b.symbol === "PALM") return 1;
-      const aPref = preferred.has(a.symbol) ? 1 : 0;
-      const bPref = preferred.has(b.symbol) ? 1 : 0;
-      if (aPref !== bPref) return bPref - aPref;
-      return (a.rank || 999) - (b.rank || 999);
-    });
+    .sort((a, b) => rankOf(a.symbol) - rankOf(b.symbol) || (a.rank || 999) - (b.rank || 999));
 
   return { quotes, global, fng, funding, fees };
 }

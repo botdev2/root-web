@@ -2121,9 +2121,15 @@ textarea {
   gap: 10px;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .market-hero {
-    grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.85fr) minmax(0, 0.85fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  .market-hero {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -2143,7 +2149,39 @@ textarea {
 .market-palm {
   display: flex;
   gap: 16px;
-  min-height: 196px;
+  min-height: 228px;
+  grid-column: 1 / -1;
+}
+
+.market-palm-mark {
+  position: relative;
+  z-index: 1;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  align-self: center;
+  object-fit: cover;
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #ff7a2a 45%, transparent),
+    0 18px 40px color-mix(in srgb, #ff3b6b 28%, transparent);
+}
+
+.market-vs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.market-vs-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 5px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--code) 70%, transparent);
+  border: 1px solid var(--stroke-soft);
 }
 
 .market-pane-spark {
@@ -2157,13 +2195,14 @@ textarea {
 
 .market-palm-orb {
   position: absolute;
-  right: 18%;
-  top: -30%;
-  width: 220px;
-  height: 220px;
+  left: 4%;
+  top: -36%;
+  width: 260px;
+  height: 260px;
   border-radius: 999px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 28%, transparent), transparent 68%);
-  filter: blur(8px);
+  background: radial-gradient(circle, #ffb347 0%, #ff5a3c 38%, #c4297a 62%, transparent 72%);
+  filter: blur(10px);
+  opacity: 0.55;
   pointer-events: none;
   animation: market-pulse 4.8s ease-in-out infinite;
 }
@@ -2463,6 +2502,11 @@ textarea {
 .market-heat-down {
   border-color: color-mix(in srgb, var(--rose) 28%, var(--stroke-soft));
   background: linear-gradient(180deg, color-mix(in srgb, var(--rose) 20%, var(--panel)), var(--panel));
+}
+
+.market-heat-palm {
+  min-height: 118px;
+  border-color: color-mix(in srgb, #ff7a2a 40%, var(--stroke-soft));
 }
 
 .market-heat-spark {

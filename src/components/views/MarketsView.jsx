@@ -50,8 +50,11 @@ export default function MarketsView({
   const [watch, setWatch] = useState(readWatchlist);
   const [hits, setHits] = useState([]);
   const palm = quotes.find((item) => item.symbol === "PALM");
+  const spectre = quotes.find((item) => item.symbol === "SPECTRE");
+  const ryft = quotes.find((item) => item.symbol === "RYFT");
   const btc = quotes.find((item) => item.symbol === "BTC");
   const eth = quotes.find((item) => item.symbol === "ETH");
+  const sol = quotes.find((item) => item.symbol === "SOL");
   const wpalm = wpalmOf(credit);
   const fundBtc = funding.find((item) => item.symbol === "BTC");
 
@@ -117,30 +120,24 @@ export default function MarketsView({
     ? new Date(updatedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })
     : "";
   const palmBtc = palm?.price && btc?.price ? palm.price / btc.price : 0;
-  const heat = ranked.slice(0, 14);
+  const vs = [btc, eth, sol, spectre, ryft].filter(Boolean);
+  const heat = [palm, spectre, ryft, ...ranked.filter((item) => !["PALM", "SPECTRE", "RYFT"].includes(item.symbol))]
+    .filter(Boolean)
+    .slice(0, 14);
 
   return (
     <Page wide desk>
       <div className="market-desk">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM MARKET</div>
-            <div className="mt-1 text-[22px]">Live tape</div>
-            <p className="mt-1 max-w-[680px] text-[13px] leading-5 text-[var(--muted)]">
-              PALM on DexScreener. Majors from CoinCap, Binance, and CoinGecko. Dominance from CoinPaprika. Fear & Greed from alternative.me. BTC fees from mempool.space. Client-side only. Not advice.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {stamp && (
-              <span className="flex items-center gap-1.5 text-[11px] tabular-nums text-[var(--faint)]">
-                <span className="market-live">live</span>
-                {stamp}
-              </span>
-            )}
-            <Ghost active={marketOn} onClick={onToggleMode}>
-              {marketOn ? "Mode on" : "Market Mode"}
-            </Ghost>
-          </div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          {stamp && (
+            <span className="flex items-center gap-1.5 text-[11px] tabular-nums text-[var(--faint)]">
+              <span className="market-live">live</span>
+              {stamp}
+            </span>
+          )}
+          <Ghost active={marketOn} onClick={onToggleMode}>
+            {marketOn ? "Mode on" : "Market Mode"}
+          </Ghost>
         </div>
 
         <div className="market-hero mb-4">
@@ -148,7 +145,8 @@ export default function MarketsView({
             palm={palm}
             wpalm={wpalm}
             connected={isConnected}
-            fallback={error || "Waiting on DexScreener"}
+            vs={vs}
+            fallback={error || "—"}
             extra={
               [
                 palm?.volume ? formatVol(palm.volume) + " 24h vol" : "",
@@ -158,6 +156,8 @@ export default function MarketsView({
                 .join(" · ")
             }
           />
+          <QuotePane item={spectre} label="SPECTRE AI" extra="Ethereum" />
+          <QuotePane item={ryft} label="RYFT Corp" extra="Robinhood Chain" />
           <QuotePane item={btc} label="BTC" extra={btc && Number.isFinite(btc.high24h) ? "hi " + formatUsd(btc.high24h) : "Bitcoin"} />
           <QuotePane item={eth} label="ETH" extra={eth && Number.isFinite(eth.high24h) ? "hi " + formatUsd(eth.high24h) : "Ethereum"} />
         </div>
@@ -187,8 +187,13 @@ export default function MarketsView({
                           )
                       : undefined
                   }
-                  className={`market-heat-cell ${up ? "market-heat-up" : "market-heat-down"}`}
-                  style={{ flex: `${(1.2 + mag).toFixed(2)} 1 ${72 + mag * 10}px` }}
+                  className={`market-heat-cell ${up ? "market-heat-up" : "market-heat-down"} ${item.symbol === "PALM" ? "market-heat-palm" : ""}`}
+                  style={{
+                    flex:
+                      item.symbol === "PALM"
+                        ? "3.2 1 168px"
+                        : `${(1.2 + mag).toFixed(2)} 1 ${72 + mag * 10}px`,
+                  }}
                 >
                   <SparkArea values={item.spark} up={up} className="market-heat-spark" w={120} h={44} />
                   <div className="relative z-[1] flex items-center gap-1.5">

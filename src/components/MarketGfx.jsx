@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { formatPct, formatUsd, formatVol, tickClass } from "../market.js";
+import { formatPct, formatUsd, formatVol, PALM_MARK, tickClass, vsChange } from "../market.js";
 import MarketLogo from "./MarketLogo.jsx";
 
 function polar(cx, cy, r, deg) {
@@ -198,28 +198,48 @@ export function QuotePane({ item, label, extra }) {
   );
 }
 
-export function PalmHero({ palm, wpalm, connected, extra, fallback }) {
+export function PalmVs({ palm, quotes = [] }) {
+  const peers = quotes.filter((item) => item?.symbol && item.symbol !== "PALM" && Number.isFinite(item.change24h));
+  if (!peers.length || !Number.isFinite(palm?.change24h)) return null;
+  return (
+    <div className="market-vs">
+      {peers.map((item) => {
+        const delta = vsChange(palm, item);
+        return (
+          <div key={item.symbol} className="market-vs-cell">
+            <MarketLogo symbol={item.symbol} src={item.logo} size={14} />
+            <span className="text-[10px] tracking-[0.12em] text-[var(--faint)]">vs {item.symbol}</span>
+            <span className={`text-[13px] tabular-nums ${tickClass(delta)}`}>{formatPct(delta)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function PalmHero({ palm, wpalm, connected, extra, fallback, vs = [] }) {
   const up = Number(palm?.change24h) >= 0;
   return (
     <div className={`market-palm ${up ? "market-pane-up" : "market-pane-down"}`}>
       <SparkArea values={palm?.spark} up={up} className="market-pane-spark" w={420} h={140} />
       <div className="market-palm-orb" aria-hidden="true" />
+      <img src={PALM_MARK} alt="" className="market-palm-mark" width="96" height="96" />
       <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <MarketLogo symbol="PALM" src="/palm.png" size={28} />
           <span className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM</span>
           <span className="market-live">live</span>
         </div>
         <div>
-          <div className="text-[34px] tabular-nums leading-none md:text-[40px]">
+          <div className="text-[34px] tabular-nums leading-none md:text-[42px]">
             {palm?.price ? formatUsd(palm.price) : fallback || "—"}
           </div>
           <div className={`mt-2 text-[15px] tabular-nums ${tickClass(palm?.change24h)}`}>{formatPct(palm?.change24h)}</div>
         </div>
         {extra && <div className="text-[12px] text-[var(--muted)]">{extra}</div>}
         <RangeTrack low={palm?.low24h} high={palm?.high24h} price={palm?.price} />
+        <PalmVs palm={palm} quotes={vs} />
       </div>
-      <div className="relative z-[1] flex shrink-0 flex-col justify-end border-l border-[color-mix(in_srgb,var(--stroke)_70%,transparent)] pl-4">
+      <div className="relative z-[1] flex w-[132px] shrink-0 flex-col justify-end border-l border-[color-mix(in_srgb,var(--stroke)_70%,transparent)] pl-4">
         <div className="text-[10px] tracking-[0.18em] text-[var(--faint)]">wPALM</div>
         <div className="mt-1 text-[22px] tabular-nums leading-none">
           {connected ? wpalm.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"}

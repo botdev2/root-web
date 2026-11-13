@@ -29,7 +29,7 @@ import Composer from "./components/Composer.jsx";
 import AvatarOverlay from "./components/AvatarOverlay.jsx";
 import FilesInspector from "./components/FilesInspector.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
-import GettingStarted from "./components/GettingStarted.jsx";
+import ShipFlow from "./components/ShipFlow.jsx";
 import Toast from "./components/Toast.jsx";
 import AchievementToasts from "./components/AchievementToasts.jsx";
 import AutomationsView from "./components/views/AutomationsView.jsx";
@@ -56,7 +56,7 @@ import WalletSync from "./components/WalletSync.jsx";
 import DayTasksToggle from "./components/DayTasksToggle.jsx";
 import Tour from "./components/Tour.jsx";
 import { DockTargets, LayoutBar, useLayout } from "./layout.jsx";
-import FirstRunGuide, { guideSeen } from "./components/FirstRunGuide.jsx";
+import { guideSeen } from "./components/FirstRunGuide.jsx";
 import MobileDock, { useMobileShell } from "./components/MobileDock.jsx";
 
 const CHAT_VIEWS = new Set(["home", "chat", "markets", "trades"]);
@@ -94,7 +94,15 @@ export default function App() {
   });
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const [connectOpen, setConnectOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(() => {
+    try {
+      const search = new URLSearchParams(window.location.search);
+      if (search.has("tour") || search.has("episode")) return false;
+    } catch {
+      /* ignore */
+    }
+    return !guideSeen();
+  });
   const [settingsTab, setSettingsTab] = useState("appearance");
   const [attachments, setAttachments] = useState([]);
   const [unlockOpen, setUnlockOpen] = useState(false);
@@ -131,15 +139,6 @@ export default function App() {
     return null;
   });
   const [lastCommit, setLastCommit] = useState(null);
-  const [guideOpen, setGuideOpen] = useState(() => {
-    try {
-      const search = new URLSearchParams(window.location.search);
-      if (search.has("tour") || search.has("episode")) return false;
-    } catch {
-      /* ignore */
-    }
-    return !guideSeen();
-  });
   const theme = useMemo(() => findTheme(themeId), [themeId]);
   const marketOn = !!prefs?.marketMode;
   const tradesOn = view === "trades";
@@ -565,7 +564,9 @@ export default function App() {
 
   const createOpsProject = async ({ name, about, files: tree }) => {
     const token = readOpsSession(address);
-    if (!token || token !== opsToken) throw new Error("Sign in with the connected wallet.");
+    if (!token) throw new Error("Sign in with the connected wallet.");
+    if (opsToken && token !== opsToken) throw new Error("Sign in with the connected wallet.");
+    if (!opsToken) setOpsToken(token);
     if ((opsProjects || []).length >= repoLimit(address)) throw new Error("A wallet can keep 3 repositories.");
     const created = await createHubProject({ token, name, about, files: tree });
     if (created.owner !== walletKey(address)) throw new Error("Ops created that repository for a different wallet.");
@@ -1111,6 +1112,7 @@ export default function App() {
                     clockOn={dayTasksEnabled || dayTasksIdle}
                     marketOn={marketOn}
                     onTemplates={() => openView("templates")}
+                    onShip={() => setConnectOpen(true)}
                     onChip={(chip) => send(chip)}
                     onNotes={() => openView("notes")}
                   />
@@ -1211,7 +1213,14 @@ export default function App() {
                 {view === "account" && <AccountView />}
                 {view === "updates" && <UpdatesView />}
                 {view === "telemetry" && <TelemetryView />}
-                {view === "help" && <HelpView onOpen={openView} onTour={() => startTour()} onEpisode={startTour} />}
+                {view === "help" && (
+                  <HelpView
+                    onOpen={openView}
+                    onTour={() => startTour()}
+                    onEpisode={startTour}
+                    onShip={() => setConnectOpen(true)}
+                  />
+                )}
                 {view === "templates" && (
                   <TemplatesView
                     onCreate={async (item) => {
@@ -1347,7 +1356,6 @@ export default function App() {
         view={view}
         projectLabel={activeProject?.label || ""}
       />
-      <FirstRunGuide open={guideOpen && !tour} onClose={() => setGuideOpen(false)} onTour={startTour} />
       <LayoutBar />
       <DockTargets />
       {tour?.classroom && (
@@ -1446,6 +1454,10 @@ export default function App() {
               startTour();
               return;
             }
+            if (id === "ship") {
+              setConnectOpen(true);
+              return;
+            }
             openView(id);
             if (id === "home") {
               setSessionId(null);
@@ -1454,7 +1466,14 @@ export default function App() {
           }}
         />
       )}
-      {connectOpen && <GettingStarted onClose={() => setConnectOpen(false)} />}
+      <ShipFlow
+        open={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        opsToken={opsToken}
+        onOpsToken={setOpsToken}
+        onCreateProject={createOpsProject}
+        onOpenOps={() => openView("ops")}
+      />
       <Toast />
       <AchievementToasts
         address={address}

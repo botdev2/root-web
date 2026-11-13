@@ -5,7 +5,7 @@ import { findEpisode } from "../../tour/episodes.js";
 import { findClassroom } from "../../classroom/episodes.js";
 import { gradeOf, readProgress } from "../../classroom/progress.js";
 
-export default function HelpView({ onOpen, onTour, onEpisode }) {
+export default function HelpView({ onOpen, onTour, onEpisode, onShip }) {
   const [id, setId] = useState("welcome");
   const [query, setQuery] = useState("");
   const page = HELP.find((item) => item.id === id) || HELP[0];
@@ -23,11 +23,20 @@ export default function HelpView({ onOpen, onTour, onEpisode }) {
     <Page wide>
       <div className="grid gap-4 md:grid-cols-[240px_1fr]">
         <Card className="h-fit p-2">
+          {onShip && (
+            <button
+              type="button"
+              onClick={onShip}
+              className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] text-[13px] text-[var(--bg)]"
+            >
+              Ship an app
+            </button>
+          )}
           {onTour && (
             <button
               type="button"
               onClick={onTour}
-              className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] text-[13px] text-[var(--bg)]"
+              className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[var(--stroke)] text-[13px]"
             >
               Take the tour
             </button>

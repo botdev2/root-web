@@ -148,7 +148,7 @@ export const HELP = [
     bullets: [
       "Sidebar: New Agent, Markets, Achievements, Reasoning, Ops, Marketplace",
       "Composer: Agent / Ask / Plan, Auto-Prompt, model, Attach, Files, send",
-      "Projects use GitHub remotes — github.com/you/…",
+      "Projects live on Ops Hub for this wallet. No GitHub username.",
     ],
   },
   {
@@ -156,10 +156,10 @@ export const HELP = [
     section: "Introduction",
     title: "Quick start",
     summary: "From this tab to a useful first answer.",
-    body: "Click New Agent, type a question, press Enter on desktop or tap send on a phone. Without a project you get general Q&A. Import a GitHub project from Getting Started when you want file, git, or Ops tools.",
+    body: "Click New Agent, type a question, press Enter on desktop or tap send on a phone. Without a project you get general Q&A. Ship an app from the popup when you want a compiling repo on Ops Hub and a live URL.",
     bullets: [
       "Green Agent is full coding (default). Blue Ask is read-only. Amber Plan writes a plan without edits.",
-      "Getting Started is three steps: Skills, Projects, GitHub.",
+      "Ship an app is three steps: make a compiling app, connect the Hub repo, push live. Wallet only.",
       "Ctrl+K (⌘K) opens the command palette.",
     ],
   },
@@ -200,8 +200,8 @@ export const HELP = [
     section: "Ship",
     title: "PALM Ops",
     summary: "Anonymous hosting signed with the Root wallet.",
-    body: "The tab calls the Ops API for this wallet: sites, domain search, Hub git, and a GitHub publish. The same pages open on ops.palmaierc.com.",
-    bullets: ["Sign in with the wallet, then the authenticator code", "Publish uses a GitHub token once and does not store it", "Hosting, Domains, Ops Hub, Plans, and the palm-ops repos"],
+    body: "The tab calls the Ops API for this wallet: sites, domain search, Hub git, and Hub publish. Ship an app from chat.useroot.sh does the same publish without leaving this page.",
+    bullets: ["Sign in with the wallet, then the authenticator on this site", "Publish from Hub — no GitHub token", "Hosting, Domains, Ops Hub, Plans, and the palm-ops repos"],
   },
   {
     id: "markets",
@@ -312,7 +312,7 @@ export const HELP = [
     title: "Keyboard",
     summary: "Shortcuts for this chrome.",
     body: "The palette is the fastest way to every destination. Escape closes overlays.",
-    bullets: ["Ctrl+K / ⌘K — command palette", "Escape — close menu, files, palette, Getting Started", "Enter — send on desktop"],
+    bullets: ["Ctrl+K / ⌘K — command palette", "Escape — close menu, files, palette, Ship popup", "Enter — send on desktop"],
   },
 ];
 

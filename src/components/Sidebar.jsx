@@ -106,7 +106,7 @@ export default function Sidebar({
     onNavigate?.();
   };
 
-  const nextLabel = !onboarding.skills ? "Bridge Skills" : !onboarding.repos ? "Connect a project" : "Connect GitHub";
+  const nextLabel = !onboarding.skills ? "Make an app" : !onboarding.repos ? "Connect the repo" : "Push live";
 
   const linkPool = [
     ...NAV.map((item) => ({
@@ -334,7 +334,7 @@ export default function Sidebar({
         {onboarding.visible && doneCount < 3 && (
           <div className="mb-2.5 border border-[var(--stroke)] bg-[var(--panel)] px-3 py-3">
             <div className="mb-2.5 flex items-center justify-between">
-              <span className="text-[12px] text-[var(--muted)]">Getting Started</span>
+              <span className="text-[12px] text-[var(--muted)]">Ship an app</span>
               <span className="flex items-center gap-1.5 text-[11px] text-[var(--faint)]">
                 {doneCount}/3
                 <span className="relative h-4 w-4">

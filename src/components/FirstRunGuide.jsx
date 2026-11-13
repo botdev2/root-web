@@ -11,7 +11,7 @@ export function guideSeen() {
   }
 }
 
-export default function FirstRunGuide({ open, onClose, onTour }) {
+export default function FirstRunGuide({ open, onClose, onTour, onShip }) {
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
@@ -31,6 +31,7 @@ export default function FirstRunGuide({ open, onClose, onTour }) {
     }
     onClose?.();
     if (then === "tour") onTour?.();
+    if (then === "ship") onShip?.();
   };
 
   useEffect(() => {
@@ -45,25 +46,32 @@ export default function FirstRunGuide({ open, onClose, onTour }) {
   if (!open || !shown) return null;
 
   return createPortal(
-    <div className="guide-backdrop" role="dialog" aria-modal="true" aria-label="Take the tutorial" onClick={() => close()}>
+    <div className="guide-backdrop" role="dialog" aria-modal="true" aria-label="Ship a live app" onClick={() => close()}>
       <div className="guide-card" onClick={(event) => event.stopPropagation()}>
         <div className="text-[10.5px] uppercase tracking-[0.22em] text-[var(--faint)]">First time here</div>
-        <h2 className="mt-2 text-[clamp(24px,4vw,32px)] leading-[1.12] tracking-[-0.02em] text-[var(--ink)]">Start with the tutorial.</h2>
+        <h2 className="mt-2 text-[clamp(24px,4vw,32px)] leading-[1.12] tracking-[-0.02em] text-[var(--ink)]">Ship a live app.</h2>
         <p className="mt-3 text-[14px] leading-[1.65] text-[var(--muted)]">
-          It walks a real repository: connect a wallet, create a Hub project, send a first prompt, and watch the files land as commits. Nothing in it is a mock-up.
+          Make an app that compiles, connect it to Ops through the Hub repo, and push it live. Wallet only. Stay on this page.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={() => close("tour")}
+            onClick={() => close("ship")}
             className="h-10 rounded-xl bg-[var(--accent)] px-5 text-[13.5px] text-[var(--bg)]"
           >
-            Take the tutorial
+            Ship an app
+          </button>
+          <button
+            type="button"
+            onClick={() => close("tour")}
+            className="h-10 rounded-xl border border-[var(--stroke)] px-4 text-[13.5px] text-[var(--ink)] hover:bg-[var(--hover)]"
+          >
+            Tutorial
           </button>
           <button
             type="button"
             onClick={() => close()}
-            className="h-10 rounded-xl border border-[var(--stroke)] px-4 text-[13.5px] text-[var(--ink)] hover:bg-[var(--hover)]"
+            className="h-10 px-3 text-[13.5px] text-[var(--muted)]"
           >
             Skip
           </button>

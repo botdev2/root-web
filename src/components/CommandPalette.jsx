@@ -6,6 +6,7 @@ const PAGE_SIZE = 8;
 
 const HITS = [
   { id: "home", label: "New Agent", hint: "Start a draft chat" },
+  { id: "ship", label: "Ship an app", hint: "Compile, Hub repo, go live. Wallet only." },
   { id: "templates", label: "Create from Template", hint: "Scaffold a project" },
   { id: "quests", label: "Achievements", hint: "Daily challenges, achievements, and credits you can earn" },
   { id: "reasoning", label: "Reasoning", hint: "Agent brain graph" },

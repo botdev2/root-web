@@ -1,3 +1,5 @@
+import { compileReadyFiles, SHIP_KINDS } from "./shipScaffold.js";
+
 export const PLUGINS = [
   { id: "cloudflare-assistant", name: "Cloudflare", category: "Hosting", version: "0.1.0", comingSoon: true, flairs: ["Cloudflare", "Hosting", "Preview"], description: "Visual preview of Cloudflare hosting and edge tooling — Workers, Pages, DNS, and CDN. Functionality coming soon.", commits: [["cf1000", "Add Hosting category + Cloudflare visual plugin card"]] },
   { id: "one-prompt-pipeline", name: "One Prompt Pipeline", category: "Agent mode", version: "1.0.0", bundled: true, flairs: ["Mode", "Planning", "Progress"], description: "Checklist-first agent mode with visible progress under Thinking. Intermediate reasoning stays out of chat.", commits: [["opp1000", "Ship One Prompt Pipeline mode toggle"]] },
@@ -42,9 +44,18 @@ export const TEMPLATES = [
 
 export const TEMPLATE_CATEGORIES = ["All", "Web", "Full stack", "Backend", "Apps", "Mobile"];
 
+function shipKindFor(template) {
+  if (template.id.includes("dashboard")) return SHIP_KINDS.find((item) => item.id === "dashboard");
+  if (template.id.includes("webapp") || template.id.includes("fullstack")) return SHIP_KINDS.find((item) => item.id === "webapp");
+  return SHIP_KINDS[0];
+}
+
 export function scaffoldTemplate(template) {
   const readme = `# ${template.title}\n\n${template.subtitle}\n\nStack: ${template.stack}\n\nDev: \`${template.dev}\`\n\nFirst pass: ${template.goal}\n`;
   const pkg = `{\n  "name": "${template.folder}",\n  "private": true\n}\n`;
+  if (template.cat === "Web" || template.cat === "Full stack") {
+    return compileReadyFiles(template.folder, shipKindFor(template));
+  }
   if (template.cat === "Backend" && template.id === "python-fastapi") {
     return {
       "README.md": readme,

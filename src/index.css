@@ -361,6 +361,50 @@ textarea {
   background: color-mix(in srgb, var(--panel) 96%, transparent);
   box-shadow: 0 28px 80px rgb(0 0 0 / 0.4);
 }
+.ship-card {
+  width: min(560px, 100%);
+}
+.ship-rail {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin: 18px 0 20px;
+}
+.ship-rail button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+}
+.ship-rail button span {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  font-size: 11px;
+}
+.ship-rail button.on {
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--hover);
+}
+.ship-rail button.done {
+  color: var(--ink);
+}
+.ship-rail button.on span,
+.ship-rail button.done span {
+  border-color: var(--accent);
+  color: var(--bg);
+  background: var(--accent);
+}
 .file-fresh-dot {
   position: absolute;
   top: 6px;

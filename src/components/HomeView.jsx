@@ -15,7 +15,7 @@ const MARKET_CHIPS = [
   "Is PALM holding its ground versus BTC on this tape?",
 ];
 
-export default function HomeView({ onChip, onTemplates, clockOn, project, marketOn = false, onNotes }) {
+export default function HomeView({ onChip, onTemplates, onShip, clockOn, project, marketOn = false, onNotes }) {
   const { dayGoals, toggleDayGoal } = useAppState();
 
   return (
@@ -25,8 +25,8 @@ export default function HomeView({ onChip, onTemplates, clockOn, project, market
           <DayTasksPanel goals={dayGoals} onToggleGoal={toggleDayGoal} onEdit={onNotes} />
         ) : (
           <div className="max-w-[560px] text-center">
-            <button type="button" onClick={onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
-              Create from Template <span className="text-[11px] text-[var(--faint)]">?</span>
+            <button type="button" onClick={onShip || onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
+              Ship an app <span className="text-[11px] text-[var(--faint)]">3 steps</span>
             </button>
             <h1 className="home-title mt-3.5 text-[22px] font-normal md:text-[23px]">
               {marketOn ? "What is the tape saying?" : "What should we build?"}

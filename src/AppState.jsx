@@ -69,7 +69,7 @@ export function AppStateProvider({ children }) {
   const [mode, setMode] = useState(() => readStored("root-web-mode", "agent"));
   const [fontId, setFontId] = useState(() => readStored("root-web-font", "palm"));
   const [onboarding, setOnboarding] = useState(() =>
-    readStored("root-web-onboarding", { visible: true, skills: true, repos: false, github: false }),
+    readStored("root-web-onboarding", { visible: true, skills: false, repos: false, github: false }),
   );
   const [automations, setAutomations] = useState(() => withoutIds(readStored("root-web-automations", []), SAMPLE_AUTOMATIONS));
   const [runs, setRuns] = useState(() => withoutIds(readStored("root-web-runs", []), SAMPLE_RUNS));

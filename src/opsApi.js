@@ -185,6 +185,28 @@ export async function createHubProject({ token, name, about, files }) {
   return created;
 }
 
+export async function publishHubSite({ token, name, owner, repo, branch, buildPack = "dockerfile", port = "3000" }) {
+  if (!token) throw new Error("Sign in with the connected wallet.");
+  if (!owner || !repo) throw new Error("Create the Hub repository first.");
+  return opsFetch("/api/apps", {
+    token,
+    method: "POST",
+    body: {
+      source: "hub",
+      name: name || repo,
+      repository: `${owner}/${repo}`,
+      branch: branch || "main",
+      port,
+      buildPack,
+    },
+  });
+}
+
+export async function readHubApps(token) {
+  const data = await opsFetch("/api/apps", { token });
+  return Array.isArray(data?.apps) ? data.apps : [];
+}
+
 export async function writeHubFiles({ token, owner, name, branch, message, files }) {
   const paths = Object.keys(files || {});
   if (!owner || !name || !paths.length) throw new Error("Name the repository and the files to commit.");

@@ -249,7 +249,253 @@ function buildOpsBridge() {
   ];
 }
 
+export const SHIP_PROMPT =
+  "Change the hero headline and the short pitch on this landing page so it feels like a real product. Keep the layout. Commit the files.";
+
+function pickShipName(live) {
+  const taken = new Set((live.projects || []).map((name) => String(name).toLowerCase()));
+  if (!taken.has("demo-app")) return "demo-app";
+  for (let n = 2; n < 50; n += 1) {
+    const name = `demo-app-${n}`;
+    if (!taken.has(name)) return name;
+  }
+  return `demo-app-${Date.now().toString(36).slice(-4)}`;
+}
+
+async function clickShipGo(c, timeout = 8000) {
+  const go = await c.waitFor(() => {
+    const node = c.q('[data-tour="ship-go"]');
+    return node && !node.disabled ? node : null;
+  }, timeout);
+  if (!go) return false;
+  await c.click(go);
+  return true;
+}
+
+function buildShipDemo() {
+  return [
+    {
+      id: "hello",
+      chapter: "Ship",
+      title: "Three buttons. Then one prompt.",
+      body: "Make an app that compiles, connect it to Ops through the Hub repo, push it live, and send a real Agent prompt. I'll click. You press Next.",
+      target: null,
+      cta: "Show me",
+      enter: async (c) => {
+        c.flags.canShip = (c.live().projects || []).length < (c.live().repoCap || 3);
+      },
+    },
+    {
+      id: "wallet",
+      chapter: "Wallet",
+      title: (live) => (live.isConnected ? "Wallet is already on." : "Connect the wallet first."),
+      body: (live) =>
+        live.isConnected
+          ? "That address is the account. No GitHub, no host dashboard."
+          : "Connect it from here. I'll wait. Nothing else to log into.",
+      target: '[data-tour="wallet"]',
+      interactive: true,
+      enter: async (c) => {
+        c.controls.setConnectOpen?.(false);
+        c.controls.setNavOpen(true);
+        await c.sleep(300);
+      },
+      wait: { text: "Waiting for your wallet…", until: (live) => live.isConnected },
+    },
+    {
+      id: "session",
+      chapter: "Wallet",
+      title: "Sign once for Ops.",
+      body: "Approve the free message. It opens the Hub session for this wallet.",
+      target: '[data-tour="wallet"]',
+      interactive: true,
+      skipIf: (live) => !!live.opsToken,
+      wait: { text: "Waiting for your signature…", until: (live) => !!live.opsToken },
+    },
+    {
+      id: "full",
+      chapter: "Ship",
+      title: "This wallet already has three repos.",
+      body: "Most wallets keep three. Delete one from the sidebar, then run this demo again. We'll still send a prompt in the open project.",
+      target: '[data-tour="projects-head"]',
+      skipIf: (live, flags) => flags.canShip !== false,
+      enter: async (c) => c.controls.setNavOpen(true),
+      cta: "Skip to the prompt",
+      act: async () => ({ goto: "prompt" }),
+    },
+    {
+      id: "open",
+      chapter: "Ship",
+      title: "This is the popup.",
+      body: "App, repo, live. Stay on this page. I'll type a name, then you press the three buttons.",
+      target: '[data-tour="ship-card"]',
+      skipIf: (live, flags) => flags.canShip === false,
+      enter: async (c) => {
+        c.controls.setNavOpen(false);
+        c.controls.setConnectOpen?.(false);
+        await c.sleep(220);
+        c.controls.setConnectOpen?.(true);
+        const card = await c.waitFor(() => c.q('[data-tour="ship-card"]'), 5000);
+        if (!card) return;
+        const name = pickShipName(c.live());
+        c.flags.repoName = name;
+        const input = c.q('[data-tour="ship-name"]');
+        if (input) await c.typeInto(input, name, { speed: 55 });
+        const landing = c.q('[data-tour="ship-kind-landing"]');
+        if (landing) await c.click(landing);
+      },
+      cta: "First button",
+    },
+    {
+      id: "app",
+      chapter: "1 · App",
+      title: "Make this app.",
+      body: "Vite, React, and a Dockerfile that compiles. Not a stub. Press the button and I'll click it.",
+      target: '[data-tour="ship-go"]',
+      skipIf: (live, flags) => flags.canShip === false,
+      cta: "Make this app",
+      act: async (c) => {
+        if (!(await clickShipGo(c))) return "stay";
+        const moved = await c.waitFor(() => c.q('[data-ship-step="2"]'), 8000);
+        return moved ? undefined : "stay";
+      },
+    },
+    {
+      id: "repo",
+      chapter: "2 · Repo",
+      title: "Connect the repo.",
+      body: "Creates the Hub repository for this wallet and commits the files that compile.",
+      target: '[data-tour="ship-go"]',
+      skipIf: (live, flags) => flags.canShip === false,
+      cta: "Connect the repo",
+      act: async (c) => {
+        if (!(await clickShipGo(c))) return "stay";
+        c.caption("Creating it on the Hub…");
+        const moved = await c.waitFor(() => c.q('[data-ship-step="3"]'), 45000);
+        if (!moved) {
+          c.caption(c.q("[data-tour='ship-status']")?.textContent || "That didn't go through. Sign in if it asked, then press again.");
+          return "stay";
+        }
+        c.caption("");
+        return undefined;
+      },
+    },
+    {
+      id: "live",
+      chapter: "3 · Live",
+      title: "Push live.",
+      body: "Ops builds the Docker image from that Hub repo. Same page. No other login.",
+      target: '[data-tour="ship-go"]',
+      skipIf: (live, flags) => flags.canShip === false,
+      cta: "Push live",
+      act: async (c) => {
+        if (!(await clickShipGo(c))) return "stay";
+        c.caption("Ops is compiling…");
+        const url = await c.waitFor(() => c.q('[data-tour="ship-url"]'), 180000);
+        if (!url) {
+          c.caption(c.q("[data-tour='ship-status']")?.textContent || "Build started. Open Ops if you want the logs, or press Next.");
+          return undefined;
+        }
+        c.caption("");
+        return undefined;
+      },
+    },
+    {
+      id: "live-url",
+      chapter: "3 · Live",
+      title: "It's building, or it's already up.",
+      body: "That URL is the site. Next I'll send a real Agent prompt against this repo, the same way the tour does.",
+      target: ['[data-tour="ship-url"]', '[data-tour="ship-card"]'],
+      skipIf: (live, flags) => flags.canShip === false,
+      cta: "Send a prompt",
+    },
+    {
+      id: "prompt",
+      chapter: "Prompt",
+      title: "Now the first prompt.",
+      body: "Agent mode. Plain language. I'll type. You send.",
+      target: '[data-tour="composer"]',
+      place: "top",
+      enter: async (c) => {
+        c.controls.setConnectOpen?.(false);
+        c.controls.setNavOpen(false);
+        c.controls.setFilesOpen(false);
+        c.controls.setMode("agent");
+        c.controls.newChat();
+        await c.sleep(700);
+        const box = c.q('[data-tour="prompt"]');
+        if (box) await c.typeInto(box, SHIP_PROMPT, { speed: 18 });
+      },
+      cta: "Send it",
+      act: async (c) => {
+        const live = c.live();
+        if (live.credit && live.credit.remaining <= 0) {
+          c.flags.blocked = "credits";
+          return { goto: "blocked" };
+        }
+        c.flags.sawSending = false;
+        const send = c.q('[data-tour="send"]');
+        if (!send) return "stay";
+        await c.sleep(400);
+        await c.click(send);
+        const started = await c.waitFor(() => c.flags.sawSending || c.live().sending, 5000);
+        if (!started) {
+          c.flags.blocked = "send";
+          return { goto: "blocked" };
+        }
+        return undefined;
+      },
+    },
+    {
+      id: "watch",
+      chapter: "Prompt",
+      title: "Watch it work.",
+      body: "It reads the repo, edits the landing page, and commits. Same loop as the long tour, after three buttons.",
+      target: '[data-tour="thread"]',
+      place: "dock",
+      wait: {
+        text: "The agent is working…",
+        settle: 1200,
+        until: (live, flags) => flags.sawSending && !live.sending,
+      },
+    },
+    {
+      id: "blocked",
+      chapter: "Prompt",
+      title: (live, flags) => (flags.blocked === "credits" ? "Credits come first." : "That prompt didn't send."),
+      body: (live, flags) =>
+        flags.blocked === "credits"
+          ? "This wallet has no Hamrin credits left in this window. Hold or stake $PALM, then send."
+          : "Something stopped the message. Check the wallet and that a repository is open, then press send.",
+      target: ['[data-tour="credits"]', '[data-tour="meters"]'],
+      skipIf: (live, flags) => !flags.blocked,
+    },
+  ];
+}
+
 export const EPISODES = {
+  "ship-demo": {
+    id: "ship-demo",
+    number: "",
+    title: "Ship an app",
+    label: "Ship demo — three buttons, then a prompt",
+    minutes: 2,
+    meta: {
+      word: "Ship",
+      kicker: "Three buttons · one prompt",
+      lines: ["Make an app that compiles. Connect the Hub repo. Push live.", "Then send a real Agent prompt. Wallet only."],
+      begin: "Watch the demo",
+      outroKicker: "That's the loop",
+      outroBig: "Three clicks. One prompt.",
+      outroLine: () => "The repo is on Ops Hub, the site is compiling or live, and the agent can keep editing it. No GitHub. No other login.",
+      endView: "home",
+      endCta: "Keep building",
+      hideStars: true,
+      autoplay: true,
+    },
+    chapters: ["Ship", "Prompt"],
+    build: () => buildShipDemo(),
+  },
   "ops-1": {
     id: "ops-1",
     number: 1,

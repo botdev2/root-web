@@ -23,7 +23,11 @@ function markGuideSeen() {
   }
 }
 
-export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreateProject, onOpenOps }) {
+function tourRunning() {
+  return !!document.querySelector(".tour-root, .tour-cinema");
+}
+
+export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreateProject, onOpenOps, onDemo }) {
   const { completeOnboarding, notice } = useAppState();
   const { address, isConnected } = useAccount();
   const { open: openWallet } = useAppKit();
@@ -50,7 +54,7 @@ export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreate
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (event) => {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape" && !tourRunning()) close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -235,13 +239,36 @@ export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreate
           };
 
   return createPortal(
-    <div className="guide-backdrop" role="dialog" aria-modal="true" aria-label="Ship a live app" onMouseDown={close}>
-      <div className="guide-card ship-card" onMouseDown={(event) => event.stopPropagation()}>
+    <div
+      className="guide-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Ship a live app"
+      onMouseDown={() => {
+        if (!tourRunning()) close();
+      }}
+    >
+      <div
+        className="guide-card ship-card"
+        data-tour="ship-card"
+        data-ship-step={step}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="text-[10.5px] uppercase tracking-[0.22em] text-[var(--faint)]">From this page</div>
         <h2 className="mt-2 text-[clamp(24px,4vw,32px)] leading-[1.12] tracking-[-0.02em] text-[var(--ink)]">Ship a live app.</h2>
         <p className="mt-3 text-[14px] leading-[1.65] text-[var(--muted)]">
           Three steps. Wallet only. The repo lives on Ops Hub. Ops compiles it. You never log into GitHub or a host dashboard.
         </p>
+        {onDemo && !tourRunning() && (
+          <button
+            type="button"
+            data-tour="ship-demo"
+            onClick={onDemo}
+            className="mt-4 h-10 w-full rounded-xl border border-[var(--stroke)] text-[13.5px] text-[var(--ink)] hover:bg-[var(--hover)]"
+          >
+            Watch a demo
+          </button>
+        )}
 
         <div className="ship-rail" role="tablist" aria-label="Ship steps">
           {STEPS.map((item) => (
@@ -266,6 +293,7 @@ export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreate
             <label className="block">
               <div className="mb-1.5 text-[11px] text-[var(--faint)]">App name</div>
               <input
+                data-tour="ship-name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 onKeyDown={(event) => {
@@ -281,6 +309,7 @@ export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreate
                 <button
                   key={item.id}
                   type="button"
+                  data-tour={`ship-kind-${item.id}`}
                   onClick={() => setKindId(item.id)}
                   className={`rounded-xl border px-3 py-3 text-left ${
                     kindId === item.id ? "border-[var(--accent)] bg-[var(--hover)]" : "border-[var(--stroke)] hover:bg-[var(--hover)]"
@@ -342,7 +371,13 @@ export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreate
                 <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--faint)]">
                   {String(site.status || "").toLowerCase() === "live" ? "Live" : site.status || "Building"}
                 </div>
-                <a href={site.url} target="_blank" rel="noreferrer" className="mt-1 block break-all text-[15px] underline">
+                <a
+                  href={site.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-tour="ship-url"
+                  className="mt-1 block break-all text-[15px] underline"
+                >
                   {site.url}
                 </a>
               </div>
@@ -353,6 +388,7 @@ export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreate
         <div className="mt-6 flex flex-wrap items-center gap-2.5">
           <button
             type="button"
+            data-tour="ship-go"
             onClick={primary.run}
             disabled={primary.disabled}
             className="h-10 rounded-xl bg-[var(--accent)] px-5 text-[13.5px] text-[var(--bg)] disabled:opacity-50"
@@ -381,11 +417,17 @@ export default function ShipFlow({ open, onClose, opsToken, onOpsToken, onCreate
               Ops
             </button>
           )}
-          <button type="button" onClick={close} className="h-10 px-3 text-[13.5px] text-[var(--muted)]">
-            Later
-          </button>
+          {!tourRunning() && (
+            <button type="button" onClick={close} className="h-10 px-3 text-[13.5px] text-[var(--muted)]">
+              Later
+            </button>
+          )}
         </div>
-        {status && <div className="mt-3 text-[12.5px] leading-5 text-[var(--muted)]">{status}</div>}
+        {status && (
+          <div data-tour="ship-status" className="mt-3 text-[12.5px] leading-5 text-[var(--muted)]">
+            {status}
+          </div>
+        )}
       </div>
     </div>,
     document.body,

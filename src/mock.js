@@ -160,6 +160,7 @@ export const HELP = [
     bullets: [
       "Green Agent is full coding (default). Blue Ask is read-only. Amber Plan writes a plan without edits.",
       "Ship an app is three steps: make a compiling app, connect the Hub repo, push live. Wallet only.",
+      "Watch a demo to have the tour click those three buttons, then send a prompt.",
       "Ctrl+K (⌘K) opens the command palette.",
     ],
   },
@@ -196,12 +197,30 @@ export const HELP = [
     bullets: ["Web, Full stack, Backend, Apps, and Mobile", "Create writes the starter files into the project", "The first-pass goal lands in the composer"],
   },
   {
+    id: "ship",
+    section: "Ship",
+    title: "Ship an app",
+    summary: "Three buttons, then a prompt. Wallet only.",
+    body: "From chat.useroot.sh: make an app that compiles, connect it to Ops through the Hub repo, and push it live. Watch a demo to have the tour click those three buttons, then send a real Agent prompt the same way the first-run tour does.",
+    bullets: [
+      "Watch a demo — Next three times, then Send it",
+      "No GitHub token and no host dashboard",
+      "The authenticator stays on this site",
+    ],
+    episode: "ship-demo",
+  },
+  {
     id: "ops",
     section: "Ship",
     title: "PALM Ops",
     summary: "Anonymous hosting signed with the Root wallet.",
     body: "The tab calls the Ops API for this wallet: sites, domain search, Hub git, and Hub publish. Ship an app from chat.useroot.sh does the same publish without leaving this page.",
-    bullets: ["Sign in with the wallet, then the authenticator on this site", "Publish from Hub — no GitHub token", "Hosting, Domains, Ops Hub, Plans, and the palm-ops repos"],
+    bullets: [
+      "Sign in with the wallet, then the authenticator on this site",
+      "Publish from Hub — no GitHub token",
+      "Watch a demo on the Ship popup: three buttons, then a guided Agent prompt",
+      "Hosting, Domains, Ops Hub, Plans, and the palm-ops repos",
+    ],
   },
   {
     id: "markets",

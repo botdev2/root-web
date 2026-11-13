@@ -15,7 +15,7 @@ const MARKET_CHIPS = [
   "Is PALM holding its ground versus BTC on this tape?",
 ];
 
-export default function HomeView({ onChip, onTemplates, onShip, clockOn, project, marketOn = false, onNotes }) {
+export default function HomeView({ onChip, onTemplates, onShip, onShipDemo, clockOn, project, marketOn = false, onNotes }) {
   const { dayGoals, toggleDayGoal } = useAppState();
 
   return (
@@ -25,9 +25,16 @@ export default function HomeView({ onChip, onTemplates, onShip, clockOn, project
           <DayTasksPanel goals={dayGoals} onToggleGoal={toggleDayGoal} onEdit={onNotes} />
         ) : (
           <div className="max-w-[560px] text-center">
-            <button type="button" onClick={onShip || onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
-              Ship an app <span className="text-[11px] text-[var(--faint)]">3 steps</span>
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              <button type="button" onClick={onShip || onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
+                Ship an app <span className="text-[11px] text-[var(--faint)]">3 steps</span>
+              </button>
+              {onShipDemo && (
+                <button type="button" onClick={onShipDemo} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">
+                  Watch a demo
+                </button>
+              )}
+            </div>
             <h1 className="home-title mt-3.5 text-[22px] font-normal md:text-[23px]">
               {marketOn ? "What is the tape saying?" : "What should we build?"}
             </h1>

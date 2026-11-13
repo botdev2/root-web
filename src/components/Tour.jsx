@@ -169,10 +169,9 @@ export default function Tour({ live, controls, onClose, autoplay = false, episod
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
       }
       markSeen();
-      // An episode starts from Help, so it ends there unless the outro sends you on.
       if (episode) {
         if (finished) saveProgress(episodeId, stars.length, WIDGET_STARS.length);
-        controls.openView?.(dest || "help");
+        controls.openView?.(dest || episode.meta?.endView || "help");
       }
       onClose?.(!!finished);
     },
@@ -514,27 +513,27 @@ export default function Tour({ live, controls, onClose, autoplay = false, episod
                     ? "Your first file is committed to the PALM Ops Hub, signed by a wallet and nobody else. Nobody asked who you are. Keep it that way."
                     : "A wallet, a repository, a prompt. That's all it takes. No account, no name. Go build something."}
               </p>
-              {meta && (
-                <ul className="ep-stars" style={{ animationDelay: "2.7s" }}>
-                  {WIDGET_STARS.map((item) => (
-                    <li key={item.id} className={stars.includes(item.id) ? "is-on" : ""}>
-                      <span aria-hidden="true">★</span> {item.label}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <button
-                  type="button"
-                  className="tour-begin"
-                  style={{ animationDelay: "3.2s" }}
-                  onClick={() => {
-                    setLeaving(true);
-                    window.setTimeout(() => exit(true, meta ? "help" : undefined), 800);
-                  }}
-                >
-                  {meta ? "Back to Help" : "Keep building"}
-                </button>
+                  {meta && !meta.hideStars && (
+                    <ul className="ep-stars" style={{ animationDelay: "2.7s" }}>
+                      {WIDGET_STARS.map((item) => (
+                        <li key={item.id} className={stars.includes(item.id) ? "is-on" : ""}>
+                          <span aria-hidden="true">★</span> {item.label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      className="tour-begin"
+                      style={{ animationDelay: "3.2s" }}
+                      onClick={() => {
+                        setLeaving(true);
+                        window.setTimeout(() => exit(true, meta?.endView || (meta ? "help" : undefined)), 800);
+                      }}
+                    >
+                      {meta?.endCta || (meta ? "Back to Help" : "Keep building")}
+                    </button>
                 {meta && (
                   <button
                     type="button"
@@ -615,11 +614,11 @@ export default function Tour({ live, controls, onClose, autoplay = false, episod
                       Back
                     </button>
                   )}
-                  {!episode && (
+                  {(!episode || meta?.autoplay) && (
                   <button
                     type="button"
                     onClick={() => setAuto((value) => !value)}
-                    title="Autoplay also creates the repository and sends the prompt"
+                    title="Autoplay clicks the three buttons and sends the prompt"
                     className={`h-9 rounded-lg border px-2.5 text-[12px] ${
                       auto ? "border-[var(--accent)] text-[var(--accent)]" : "border-[var(--stroke)] text-[var(--muted)] hover:bg-[var(--hover)]"
                     }`}

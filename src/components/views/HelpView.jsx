@@ -86,11 +86,13 @@ export default function HelpView({ onOpen, onTour, onEpisode, onShip }) {
                 onClick={() => onEpisode(page.episode)}
                 className="h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] text-[var(--bg)]"
               >
-                {done ? "Replay" : "Start"} Episode {info?.number}
+                {info?.number
+                  ? `${done ? "Replay" : "Start"} Episode ${info.number}`
+                  : `${done ? "Replay" : "Watch"} ${info?.title || "the demo"}`}
               </button>
               <span className="text-[12px] text-[var(--faint)]">
                 About {info?.minutes} minutes. Leave any time with Esc.
-                {done ? ` Last result: grade ${gradeOf(done.stars, done.total)}, ${done.stars}/${done.total} stars.` : ""}
+                {done && !info?.meta?.hideStars ? ` Last result: grade ${gradeOf(done.stars, done.total)}, ${done.stars}/${done.total} stars.` : ""}
               </span>
             </div>
           )}

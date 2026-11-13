@@ -1113,6 +1113,7 @@ export default function App() {
                     marketOn={marketOn}
                     onTemplates={() => openView("templates")}
                     onShip={() => setConnectOpen(true)}
+                    onShipDemo={() => startTour("ship-demo")}
                     onChip={(chip) => send(chip)}
                     onNotes={() => openView("notes")}
                   />
@@ -1387,6 +1388,7 @@ export default function App() {
             opsToken,
             projects: listedProjects.map((item) => item.label),
             activeProject: activeProject?.label || "",
+            repoCap: repoLimit(address),
             credit,
             sending,
             lastCommit,
@@ -1394,6 +1396,7 @@ export default function App() {
           controls={{
             setNavOpen,
             setFilesOpen,
+            setConnectOpen,
             openView,
             newChat: () => {
               setView("home");
@@ -1458,6 +1461,10 @@ export default function App() {
               setConnectOpen(true);
               return;
             }
+            if (id === "ship-demo") {
+              startTour("ship-demo");
+              return;
+            }
             openView(id);
             if (id === "home") {
               setSessionId(null);
@@ -1473,6 +1480,7 @@ export default function App() {
         onOpsToken={setOpsToken}
         onCreateProject={createOpsProject}
         onOpenOps={() => openView("ops")}
+        onDemo={() => startTour("ship-demo")}
       />
       <Toast />
       <AchievementToasts

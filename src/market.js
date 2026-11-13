@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 
 export const PALM_TOKEN = "0xf1df7305E4BAB3885caB5B1e4dFC338452a67891";
 export const PALM_MARK = "/palm-token.png";
+export const SPECTRE_MARK = "/spectre-token.png";
+export const RYFT_MARK = "/ryft-token.png";
 export const DESK_TOKENS = [
   { id: "palm", symbol: "PALM", name: "PALM", address: PALM_TOKEN, logo: PALM_MARK },
-  { id: "spectre", symbol: "SPECTRE", name: "SPECTRE AI", address: "0x9Cf0ED013e67DB12cA3AF8e7506fE401aA14dAd6" },
-  { id: "ryft", symbol: "RYFT", name: "RYFT Corp", address: "0xb0007D59fE4050A1636c2fa19038973d16481337" },
+  { id: "spectre", symbol: "SPECTRE", name: "SPECTRE AI", address: "0x9Cf0ED013e67DB12cA3AF8e7506fE401aA14dAd6", logo: SPECTRE_MARK },
+  { id: "ryft", symbol: "RYFT", name: "RYFT Corp", address: "0xb0007D59fE4050A1636c2fa19038973d16481337", logo: RYFT_MARK },
 ];
 export const HAMRIN = 10;
 export const OPS_MONTH = 2500;
@@ -128,6 +130,8 @@ export function logoCandidates(symbol, extra) {
   const sym = String(symbol || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const rows = [];
   if (sym === "palm") rows.push(PALM_MARK);
+  if (sym === "spectre") rows.push(SPECTRE_MARK);
+  if (sym === "ryft") rows.push(RYFT_MARK);
   if (extra) rows.push(extra);
   if (sym) {
     rows.push("https://assets.coincap.io/assets/icons/" + sym + "@2x.png");

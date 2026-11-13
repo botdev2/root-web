@@ -2133,7 +2133,8 @@ textarea {
   }
 }
 
-.market-palm,
+.market-palm-main,
+.market-wpalm,
 .market-pane {
   position: relative;
   overflow: hidden;
@@ -2148,9 +2149,37 @@ textarea {
 
 .market-palm {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   min-height: 228px;
   grid-column: 1 / -1;
+  padding: 0;
+  border: none;
+  background: none;
+  overflow: visible;
+  box-shadow: none;
+}
+
+.market-palm-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 228px;
+}
+
+.market-wpalm {
+  display: flex;
+  width: 176px;
+  flex-shrink: 0;
+  flex-direction: column;
+}
+
+@media (max-width: 699px) {
+  .market-palm {
+    flex-direction: column;
+  }
+  .market-wpalm {
+    width: 100%;
+    min-height: 120px;
+  }
 }
 
 .market-vs {

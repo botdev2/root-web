@@ -228,10 +228,10 @@ export function QuotePane({ item, label, extra }) {
   return (
     <div className={`market-pane ${up ? "market-pane-up" : "market-pane-down"}`}>
       <SparkArea values={item?.spark} up={up} className="market-pane-spark" w={240} h={90} />
-      <div className="relative z-[1]">
-        <div className="flex items-center gap-2">
-          <MarketLogo symbol={item?.symbol || label} src={item?.logo} size={22} />
+      <div className="relative z-[1] flex min-h-full flex-col">
+        <div className="flex items-center justify-end gap-2">
           <span className="text-[11px] tracking-[0.2em] text-[var(--faint)]">{label}</span>
+          <MarketLogo symbol={item?.symbol || label} src={item?.logo} size={22} />
         </div>
         <div className="mt-2 text-[26px] tabular-nums leading-none">{item?.price ? formatUsd(item.price) : "—"}</div>
         <div className={`mt-1.5 text-[13px] tabular-nums ${tickClass(item?.change24h)}`}>{formatPct(item?.change24h)}</div>
@@ -264,30 +264,39 @@ export function PalmVs({ palm, quotes = [] }) {
 export function PalmHero({ palm, wpalm, connected, extra, fallback, vs = [] }) {
   const up = Number(palm?.change24h) >= 0;
   return (
-    <div className={`market-palm ${up ? "market-pane-up" : "market-pane-down"}`}>
-      <SparkArea values={palm?.spark} up={up} className="market-palm-spark" w={640} h={180} />
-      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <MarketLogo symbol="PALM" src={palm?.logo || PALM_MARK} size={22} />
-          <span className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM</span>
-          <span className="market-live">live</span>
-        </div>
-        <div>
-          <div className="text-[34px] tabular-nums leading-none md:text-[42px]">
-            {palm?.price ? formatUsd(palm.price) : fallback || "—"}
+    <div className="market-palm">
+      <div className={`market-palm-main ${up ? "market-pane-up" : "market-pane-down"}`}>
+        <SparkArea values={palm?.spark} up={up} className="market-palm-spark" w={640} h={180} />
+        <div className="relative z-[1] flex min-h-full flex-col justify-between gap-3">
+          <div className="flex items-center justify-end gap-2.5">
+            <span className="market-live">live</span>
+            <span className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM</span>
+            <MarketLogo symbol="PALM" src={palm?.logo || PALM_MARK} size={22} />
           </div>
-          <div className={`mt-2 text-[15px] tabular-nums ${tickClass(palm?.change24h)}`}>{formatPct(palm?.change24h)}</div>
+          <div>
+            <div className="text-[34px] tabular-nums leading-none md:text-[42px]">
+              {palm?.price ? formatUsd(palm.price) : fallback || "—"}
+            </div>
+            <div className={`mt-2 text-[15px] tabular-nums ${tickClass(palm?.change24h)}`}>{formatPct(palm?.change24h)}</div>
+          </div>
+          {extra && <div className="text-[12px] text-[var(--muted)]">{extra}</div>}
+          <RangeTrack low={palm?.low24h} high={palm?.high24h} price={palm?.price} />
+          <PalmVs palm={palm} quotes={vs} />
         </div>
-        {extra && <div className="text-[12px] text-[var(--muted)]">{extra}</div>}
-        <RangeTrack low={palm?.low24h} high={palm?.high24h} price={palm?.price} />
-        <PalmVs palm={palm} quotes={vs} />
       </div>
-      <div className="relative z-[1] flex w-[132px] shrink-0 flex-col justify-end border-l border-[color-mix(in_srgb,var(--stroke)_70%,transparent)] pl-4">
-        <div className="text-[10px] tracking-[0.18em] text-[var(--faint)]">wPALM</div>
-        <div className="mt-1 text-[22px] tabular-nums leading-none">
-          {connected ? wpalm.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"}
+      <div className={`market-wpalm ${up ? "market-pane-up" : "market-pane-down"}`}>
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-[11px] tracking-[0.2em] text-[var(--faint)]">wPALM</span>
+          <MarketLogo symbol="PALM" src={PALM_MARK} size={22} />
         </div>
-        <div className="mt-1 text-[11px] text-[var(--muted)]">{connected ? extraHold(wpalm, palm?.price) : "Connect a wallet"}</div>
+        <div className="mt-auto">
+          <div className="text-[26px] tabular-nums leading-none">
+            {connected ? wpalm.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"}
+          </div>
+          <div className="mt-1.5 text-[13px] text-[var(--muted)]">
+            {connected ? extraHold(wpalm, palm?.price) : "Connect a wallet"}
+          </div>
+        </div>
       </div>
     </div>
   );

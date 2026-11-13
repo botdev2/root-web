@@ -2216,6 +2216,21 @@ textarea {
   animation: market-blink 1.6s ease-in-out infinite;
 }
 
+.market-event {
+  padding: 14px 18px 13px;
+  border-radius: 18px;
+  border: 1px solid var(--stroke);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--amber) 10%, transparent), transparent 42%),
+    color-mix(in srgb, var(--panel) 74%, transparent);
+}
+
+.market-event:hover {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--amber) 14%, transparent), transparent 48%),
+    color-mix(in srgb, var(--hover) 50%, var(--panel));
+}
+
 .market-instruments {
   display: grid;
   gap: 0;

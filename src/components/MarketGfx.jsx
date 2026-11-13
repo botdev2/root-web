@@ -1,6 +1,7 @@
 import { useId } from "react";
-import { formatPct, formatUsd, formatVol, PALM_MARK, tickClass, vsChange } from "../market.js";
+import { formatEventWhen, formatPct, formatUsd, formatVol, PALM_MARK, tickClass, vsChange } from "../market.js";
 import MarketLogo from "./MarketLogo.jsx";
+import useNow from "../hooks/useNow.js";
 
 function polar(cx, cy, r, deg) {
   const rad = (deg * Math.PI) / 180;
@@ -162,6 +163,49 @@ export function Turnover({ volume, mcap }) {
       <div className="market-inst-note">{turn ? turn.toFixed(2) + "% of mcap" : "CoinPaprika"}</div>
     </div>
   );
+}
+
+export function NextEvent({ event }) {
+  const now = useNow(1000);
+  if (!event?.title || !event.at) return null;
+  const remain = event.at - now.getTime();
+  if (remain < -30 * 60 * 1000) return null;
+  const when = formatEventWhen(event.at, now.getTime()) || "now";
+  const stamp = new Date(event.at).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const bits = [
+    event.currency,
+    event.impact,
+    event.forecast ? "forecast " + event.forecast : "",
+    event.previous ? "prior " + event.previous : "",
+  ].filter(Boolean);
+  const inner = (
+    <>
+      <div className="min-w-0">
+        <div className="market-inst-label">Next event</div>
+        <div className="truncate text-[18px] leading-tight">{event.title}</div>
+        <div className="mt-1 text-[12px] text-[var(--muted)]">{bits.join(" · ")}</div>
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="text-[18px] tabular-nums leading-none">{when}</div>
+        <div className="mt-1 text-[11px] text-[var(--faint)]">{stamp}</div>
+      </div>
+    </>
+  );
+  const className = "market-event mb-5 flex w-full items-end justify-between gap-4 text-left";
+  if (event.url) {
+    return (
+      <a href={event.url} target="_blank" rel="noreferrer" className={className}>
+        {inner}
+      </a>
+    );
+  }
+  return <div className={className}>{inner}</div>;
 }
 
 export function RangeTrack({ low, high, price }) {

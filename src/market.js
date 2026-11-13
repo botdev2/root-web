@@ -155,6 +155,7 @@ export function tapeText(snapshot) {
   if (ranked.length) extra.push("lag " + ranked[ranked.length - 1].symbol + " " + formatPct(ranked[ranked.length - 1].change24h));
   const fund = (snapshot?.funding || []).find((item) => item.symbol === "BTC");
   if (fund && Number.isFinite(fund.rate)) extra.push("BTC fund " + (fund.rate * 100).toFixed(4) + "%");
+  if (snapshot?.event?.title) extra.unshift("Next " + snapshot.event.title + " " + formatEventWhen(snapshot.event.at));
   return [...extra, ...prints].filter(Boolean).join("  ·  ");
 }
 
@@ -515,6 +516,97 @@ async function fetchFearGreed() {
   return { value, label: row.value_classification || "" };
 }
 
+function eventWeight(title, currency) {
+  const t = String(title || "").toLowerCase();
+  let w = 20;
+  if (/fomc rate|interest rate decision|fed funds/.test(t)) w = 100;
+  else if (/non-farm|nonfarm|payroll/.test(t)) w = 96;
+  else if (/\bcpi\b/.test(t) && !/ex food|core|harmonised/.test(t)) w = 94;
+  else if (/core cpi/.test(t)) w = 88;
+  else if (/fomc minutes/.test(t)) w = 86;
+  else if ((/\bppi\b/.test(t) || /producer price/.test(t)) && !/ex food|core/.test(t)) w = 84;
+  else if (/\bgdp\b/.test(t)) w = 82;
+  else if (/retail sales/.test(t) && !/control/.test(t)) w = 78;
+  else if (/unemployment|jobless/.test(t)) w = 74;
+  else if (/speaks|speech/.test(t)) w = 28;
+  if (String(currency || "").toUpperCase() === "USD") w += 6;
+  return w;
+}
+
+export function formatEventWhen(at, now = Date.now()) {
+  const ms = Number(at) - now;
+  if (!Number.isFinite(Number(at)) || Number(at) <= 0) return "";
+  if (ms <= 0 && ms > -30 * 60 * 1000) return "printing";
+  if (ms <= 0) return "";
+  const min = Math.max(1, Math.round(ms / 60000));
+  if (min < 60) return min + "m";
+  const hr = Math.floor(min / 60);
+  const rem = min % 60;
+  if (hr < 24) return rem ? hr + "h " + rem + "m" : hr + "h";
+  const days = Math.floor(hr / 24);
+  const left = hr % 24;
+  return left ? days + "d " + left + "h" : days + "d";
+}
+
+function cleanCalendarEvent(row) {
+  const ts = Number(row?.ts);
+  const at = Number.isFinite(ts) && ts > 1e12 ? ts : Number.isFinite(ts) && ts > 0 ? ts * 1000 : Date.parse(row?.time || row?.date || "");
+  if (!Number.isFinite(at) || at <= 0) return null;
+  const title = String(row?.title || "").trim();
+  if (!title) return null;
+  return {
+    title,
+    at,
+    currency: String(row.currency || row.country || "USD").toUpperCase(),
+    impact: String(row.impact || "high").toLowerCase(),
+    forecast: String(row.forecast || ""),
+    previous: String(row.previous || ""),
+    actual: String(row.actual || ""),
+    source: row.source || "USD calendar",
+    url: row.url || "https://showmytrades.com/tools/economic-calendar",
+  };
+}
+
+function pickNextEvent(rows, now = Date.now()) {
+  const floor = now - 20 * 60 * 1000;
+  const live = (rows || []).map(cleanCalendarEvent).filter((row) => row && row.at >= floor);
+  live.sort((a, b) => a.at - b.at || eventWeight(b.title, b.currency) - eventWeight(a.title, a.currency));
+  return live[0] || null;
+}
+
+async function fetchShowMyTradesEvent() {
+  const data = await getJson("https://showmytrades.com/api/public/calendar/v1?currency=USD,EUR&impact=high&days=14");
+  const rows = Array.isArray(data?.events) ? data.events : [];
+  const next = pickNextEvent(rows);
+  if (!next) return null;
+  next.source = "USD calendar";
+  return next;
+}
+
+async function fetchForexFactoryEvent() {
+  const rows = await getJson("https://nfs.faireconomy.media/ff_calendar_thisweek.json");
+  const list = Array.isArray(rows) ? rows : [];
+  const mapped = list
+    .filter((row) => String(row.impact || "").toLowerCase() === "high")
+    .map((row) => ({
+      title: row.title,
+      date: row.date,
+      currency: row.country,
+      impact: row.impact,
+      forecast: row.forecast,
+      previous: row.previous,
+      source: "Forex Factory",
+      url: "https://www.forexfactory.com/calendar",
+    }));
+  return pickNextEvent(mapped);
+}
+
+async function fetchNextEvent() {
+  const first = await fetchShowMyTradesEvent().catch(() => null);
+  if (first) return first;
+  return fetchForexFactoryEvent().catch(() => null);
+}
+
 async function fetchPaprikaGlobal() {
   const data = await getJson("https://api.coinpaprika.com/v1/global");
   return {
@@ -593,6 +685,7 @@ export async function loadMarketBoard() {
     fetchFearGreed(),
     fetchFunding(),
     fetchMempoolFees(),
+    fetchNextEvent(),
   ]);
   const desk = settled(jobs[0]) || [];
   const coincap = settled(jobs[1]) || [];
@@ -603,6 +696,7 @@ export async function loadMarketBoard() {
   const fng = settled(jobs[6]);
   const funding = settled(jobs[7]) || [];
   const fees = settled(jobs[8]);
+  const event = settled(jobs[9]);
 
   const map = new Map();
   const put = (row) => {
@@ -642,7 +736,7 @@ export async function loadMarketBoard() {
     .filter((item) => item.price)
     .sort((a, b) => rankOf(a.symbol) - rankOf(b.symbol) || (a.rank || 999) - (b.rank || 999));
 
-  return { quotes, global, fng, funding, fees };
+  return { quotes, global, fng, funding, fees, event };
 }
 
 export function useMarketQuotes(active = true) {
@@ -651,6 +745,7 @@ export function useMarketQuotes(active = true) {
   const [fng, setFng] = useState(null);
   const [funding, setFunding] = useState([]);
   const [fees, setFees] = useState(null);
+  const [event, setEvent] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(0);
   const [error, setError] = useState("");
 
@@ -667,6 +762,7 @@ export function useMarketQuotes(active = true) {
             setFng(data.fng || null);
             setFunding(data.funding || []);
             setFees(data.fees || null);
+            setEvent(data.event || null);
             setUpdatedAt(Date.now());
             setError("");
           } else {
@@ -684,5 +780,5 @@ export function useMarketQuotes(active = true) {
     };
   }, [active]);
 
-  return { quotes, global, fng, funding, fees, updatedAt, error };
+  return { quotes, global, fng, funding, fees, event, updatedAt, error };
 }

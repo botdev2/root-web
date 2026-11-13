@@ -1197,6 +1197,7 @@ export default function App() {
                     fng={board.fng}
                     funding={board.funding}
                     fees={board.fees}
+                    event={board.event}
                     updatedAt={board.updatedAt}
                     error={board.error}
                     credit={credit}

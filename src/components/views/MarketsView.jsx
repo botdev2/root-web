@@ -16,6 +16,7 @@ import {
   FearGauge,
   FeeLadder,
   FundingMeter,
+  NextEvent,
   PalmHero,
   QuotePane,
   RangeTrack,
@@ -38,6 +39,7 @@ export default function MarketsView({
   fng = null,
   funding = [],
   fees = null,
+  event = null,
   updatedAt = 0,
   error = "",
   credit = null,
@@ -164,6 +166,8 @@ export default function MarketsView({
           <QuotePane item={btc} label="BTC" extra={btc && Number.isFinite(btc.high24h) ? "hi " + formatUsd(btc.high24h) : "Bitcoin"} />
           <QuotePane item={eth} label="ETH" extra={eth && Number.isFinite(eth.high24h) ? "hi " + formatUsd(eth.high24h) : "Ethereum"} />
         </div>
+
+        <NextEvent event={event} />
 
         <PositionsStrip book={book} quotes={quotes} onOpen={onOpenTrades} />
 

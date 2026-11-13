@@ -115,6 +115,12 @@ export function formatVol(value) {
   return "$" + amount.toFixed(0);
 }
 
+export function mcapOf(item) {
+  const mcap = Number(item?.mcap);
+  if (Number.isFinite(mcap) && mcap > 0) return mcap;
+  return Number(item?.liquidity) || 0;
+}
+
 export function tickClass(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount === 0) return "text-[var(--faint)]";
@@ -208,6 +214,7 @@ function quoteShape(partial) {
     change24h: NaN,
     volume: 0,
     liquidity: 0,
+    mcap: 0,
     high24h: NaN,
     low24h: NaN,
     rank: 0,
@@ -235,6 +242,7 @@ function pairToQuote(pair, extra = {}) {
     change24h: Number(pair.priceChange?.h24),
     volume: Number(pair.volume?.h24) || 0,
     liquidity: Number(pair.liquidity?.usd) || 0,
+    mcap: Number(pair.marketCap) || Number(pair.fdv) || 0,
     logo,
     url: pair.url || "",
     source: extra.source || "dex",
@@ -421,6 +429,7 @@ async function fetchGeckoMajors() {
         change24h: Number(row.price_change_percentage_24h),
         volume: Number(row.total_volume) || 0,
         liquidity: Number(row.market_cap) || 0,
+        mcap: Number(row.market_cap) || 0,
         high24h: Number(row.high_24h),
         low24h: Number(row.low_24h),
         rank: Number(row.market_cap_rank) || 0,
@@ -449,6 +458,7 @@ async function fetchCoinCap() {
         change24h: Number(row.changePercent24Hr),
         volume: Number(row.volumeUsd24Hr) || 0,
         liquidity: Number(row.marketCapUsd) || 0,
+        mcap: Number(row.marketCapUsd) || 0,
         rank: Number(row.rank) || 0,
         logo: "https://assets.coincap.io/assets/icons/" + String(symbol).toLowerCase() + "@2x.png",
         url: "https://coincap.io/assets/" + row.id,
@@ -663,7 +673,9 @@ function mergeQuote(into, from) {
   }
   if (!Number.isFinite(next.change24h) && Number.isFinite(from.change24h)) next.change24h = from.change24h;
   if ((!next.volume || from.volume > next.volume) && from.source !== "binance") next.volume = from.volume || next.volume;
-  if (!next.liquidity && from.liquidity) next.liquidity = from.liquidity;
+  if (from.featured && from.liquidity) next.liquidity = from.liquidity;
+  else if (!next.liquidity && from.liquidity) next.liquidity = from.liquidity;
+  if (from.mcap && (from.featured || !next.mcap)) next.mcap = from.mcap;
   if (!next.rank && from.rank) next.rank = from.rank;
   if (from.featured) {
     next.featured = true;
@@ -722,14 +734,14 @@ export async function loadMarketBoard() {
   if (btc?.liquidity && global.mcap) {
     /* keep paprika dominance when present */
   } else if (btc?.liquidity) {
-    const total = [...map.values()].reduce((sum, item) => sum + (Number(item.liquidity) || 0), 0);
+    const total = [...map.values()].reduce((sum, item) => sum + mcapOf(item), 0);
     if (total > 0) {
       global.mcap = global.mcap || total;
-      global.btcDom = global.btcDom || (btc.liquidity / total) * 100;
-      global.ethDom = eth?.liquidity ? (eth.liquidity / total) * 100 : 0;
+      global.btcDom = global.btcDom || (mcapOf(btc) / total) * 100;
+      global.ethDom = eth ? (mcapOf(eth) / total) * 100 : 0;
     }
   }
-  if (eth?.liquidity && global.mcap && !global.ethDom) global.ethDom = (eth.liquidity / global.mcap) * 100;
+  if (eth && global.mcap && !global.ethDom) global.ethDom = (mcapOf(eth) / global.mcap) * 100;
 
   const preferred = ["PALM", "SPECTRE", "RYFT", ...MAJORS.map((item) => item.symbol)];
   const rankOf = (symbol) => {

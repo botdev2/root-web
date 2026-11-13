@@ -4,6 +4,7 @@ import {
   formatPct,
   formatUsd,
   formatVol,
+  mcapOf,
   readWatchlist,
   searchDexQuotes,
   tickClass,
@@ -104,7 +105,7 @@ export default function MarketsView({
     return filtered.slice().sort((a, b) => {
       if (sort === "change") return (Number(b.change24h) || -999) - (Number(a.change24h) || -999);
       if (sort === "volume") return (b.volume || 0) - (a.volume || 0);
-      if (sort === "mcap") return (b.liquidity || 0) - (a.liquidity || 0);
+      if (sort === "mcap") return mcapOf(b) - mcapOf(a);
       const aStar = starred.has(a.symbol) ? 1 : 0;
       const bStar = starred.has(b.symbol) ? 1 : 0;
       if (aStar !== bStar) return bStar - aStar;
@@ -366,7 +367,7 @@ function Row({ item, starred, onStar, onAsk }) {
       <div className="text-right text-[13px] tabular-nums">{formatUsd(item.price)}</div>
       <div className={`text-right text-[13px] tabular-nums ${tickClass(item.change24h)}`}>{formatPct(item.change24h)}</div>
       <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] lg:block">{formatVol(item.volume)}</div>
-      <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] lg:block">{formatVol(item.liquidity)}</div>
+      <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] lg:block">{formatVol(mcapOf(item))}</div>
       <div className="hidden min-w-0 lg:block">
         {item.spark?.length > 4 ? (
           <SparkArea values={item.spark} up={up} w={88} h={28} />

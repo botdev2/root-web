@@ -7,12 +7,22 @@ import {
   readWatchlist,
   searchDexQuotes,
   tickClass,
-  usd,
   wpalmOf,
   writeWatchlist,
 } from "../../market.js";
 import MarketLogo from "../MarketLogo.jsx";
-import { Card, Ghost, Page, Primary } from "../ui.jsx";
+import {
+  DominanceStrip,
+  FearGauge,
+  FeeLadder,
+  FundingMeter,
+  PalmHero,
+  QuotePane,
+  RangeTrack,
+  SparkArea,
+  Turnover,
+} from "../MarketGfx.jsx";
+import { Ghost, Page, Primary } from "../ui.jsx";
 
 const SORTS = [
   { id: "watch", label: "Watch" },
@@ -107,190 +117,169 @@ export default function MarketsView({
     ? new Date(updatedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })
     : "";
   const palmBtc = palm?.price && btc?.price ? palm.price / btc.price : 0;
-  const heat = ranked.slice(0, 12);
+  const heat = ranked.slice(0, 14);
 
   return (
-    <Page wide>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM MARKET</div>
-          <div className="mt-1 text-[22px]">Live tape</div>
-          <p className="mt-1 max-w-[680px] text-[13px] leading-5 text-[var(--muted)]">
-            PALM on DexScreener. Majors from CoinCap, Binance, and CoinGecko. Dominance from CoinPaprika. Fear & Greed from alternative.me. BTC fees from mempool.space. Client-side only. Not advice.
-          </p>
+    <Page wide desk>
+      <div className="market-desk">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[11px] tracking-[0.28em] text-[var(--faint)]">PALM MARKET</div>
+            <div className="mt-1 text-[22px]">Live tape</div>
+            <p className="mt-1 max-w-[680px] text-[13px] leading-5 text-[var(--muted)]">
+              PALM on DexScreener. Majors from CoinCap, Binance, and CoinGecko. Dominance from CoinPaprika. Fear & Greed from alternative.me. BTC fees from mempool.space. Client-side only. Not advice.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {stamp && (
+              <span className="flex items-center gap-1.5 text-[11px] tabular-nums text-[var(--faint)]">
+                <span className="market-live">live</span>
+                {stamp}
+              </span>
+            )}
+            <Ghost active={marketOn} onClick={onToggleMode}>
+              {marketOn ? "Mode on" : "Market Mode"}
+            </Ghost>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {stamp && <span className="text-[11px] tabular-nums text-[var(--faint)]">{stamp}</span>}
-          <Ghost active={marketOn} onClick={onToggleMode}>
-            {marketOn ? "Mode on" : "Market Mode"}
-          </Ghost>
-        </div>
-      </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Crypto mcap" value={formatVol(global?.mcap)} note={global?.coins ? global.coins + " coins" : ""} />
-        <Stat label="BTC.D" value={Number.isFinite(global?.btcDom) ? global.btcDom.toFixed(1) + "%" : "—"} note="CoinPaprika" />
-        <Stat label="ETH.D" value={Number.isFinite(global?.ethDom) && global.ethDom ? global.ethDom.toFixed(1) + "%" : "—"} />
-        <Stat label="Fear & Greed" value={fng?.value ?? "—"} note={fng?.label || "alternative.me"} tone={fng?.value >= 55 ? "up" : fng?.value <= 45 ? "down" : ""} />
-        <Stat
-          label="BTC funding"
-          value={fundBtc && Number.isFinite(fundBtc.rate) ? (fundBtc.rate * 100).toFixed(4) + "%" : "—"}
-          note="Binance perp"
-          tone={fundBtc?.rate > 0 ? "up" : fundBtc?.rate < 0 ? "down" : ""}
-        />
-        <Stat label="BTC fee" value={fees?.fastestFee ? fees.fastestFee + " sat" : "—"} note={fees?.halfHourFee ? "30m " + fees.halfHourFee : "mempool.space"} />
-      </div>
-
-      <div className="mb-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <Hero item={palm} label="PALM" fallback={error || "Waiting on DexScreener"} extra={palm ? formatVol(palm.volume) + " 24h vol" : ""} />
-        <Hero
-          label="wPALM"
-          value={isConnected ? wpalm.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"}
-          extra={isConnected ? usd(wpalm, palm?.price) : "Connect a wallet"}
-          logo="/palm.png"
-          symbol="PALM"
-        />
-        <Hero item={btc} label="BTC" extra={btc && Number.isFinite(btc.high24h) ? "hi " + formatUsd(btc.high24h) : "Bitcoin"} />
-        <Hero
-          item={eth}
-          label="ETH"
-          extra={palmBtc ? "PALM/BTC " + palmBtc.toExponential(2) : "Ethereum"}
-        />
-      </div>
-
-      {heat.length > 0 && (
-        <div className="market-heat mb-5">
-          {heat.map((item) => (
-            <button
-              key={item.symbol}
-              type="button"
-              onClick={onAsk ? () => onAsk(`What's moving ${item.symbol} today? Print ${formatUsd(item.price)} (${formatPct(item.change24h)}). Cite live sources.`) : undefined}
-              className="market-heat-cell"
-              style={{
-                background:
-                  Number(item.change24h) >= 0
-                    ? "color-mix(in srgb, var(--green) " + Math.min(42, 12 + Math.abs(item.change24h) * 2) + "%, var(--panel))"
-                    : "color-mix(in srgb, var(--rose) " + Math.min(42, 12 + Math.abs(item.change24h) * 2) + "%, var(--panel))",
-              }}
-            >
-              <MarketLogo symbol={item.symbol} src={item.logo} size={16} />
-              <div className="mt-1 text-[11px] tracking-[0.08em]">{item.symbol}</div>
-              <div className={`text-[12px] tabular-nums ${tickClass(item.change24h)}`}>{formatPct(item.change24h)}</div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search a ticker, then DexScreener fills gaps"
-          className="h-10 min-w-[220px] flex-1 rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px] outline-none placeholder:text-[var(--faint)]"
-        />
-        {SORTS.map((item) => (
-          <Ghost key={item.id} active={sort === item.id} onClick={() => setSort(item.id)}>
-            {item.label}
-          </Ghost>
-        ))}
-        {onAsk && (
-          <Primary
-            onClick={() =>
-              onAsk(
-                [
-                  "Read this tape and say what risk is doing.",
-                  fng ? `Fear & Greed ${fng.value} ${fng.label}.` : "",
-                  Number.isFinite(global?.btcDom) ? `BTC.D ${global.btcDom.toFixed(1)}%.` : "",
-                  palm ? `PALM ${formatUsd(palm.price)} (${formatPct(palm.change24h)}).` : "",
-                  ranked[0] ? `Lead ${ranked[0].symbol} ${formatPct(ranked[0].change24h)}.` : "",
-                  ranked.length ? `Lag ${ranked[ranked.length - 1].symbol} ${formatPct(ranked[ranked.length - 1].change24h)}.` : "",
-                  fees?.fastestFee ? `BTC fee ${fees.fastestFee} sat/vB.` : "",
-                  "Cite the prints. Not a trade idea.",
-                ]
-                  .filter(Boolean)
-                  .join(" "),
-              )
-            }
-          >
-            Ask Hamrin
-          </Primary>
-        )}
-      </div>
-
-      <Card className="overflow-hidden">
-        <div className="hidden grid-cols-[auto_auto_5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem_5.5rem] gap-2 border-b border-[var(--stroke-soft)] px-3 py-2 text-[10.5px] tracking-[0.16em] text-[var(--faint)] lg:grid">
-          <span />
-          <span />
-          <span>SYM</span>
-          <span>Name</span>
-          <span className="text-right">Price</span>
-          <span className="text-right">24h</span>
-          <span className="text-right">Volume</span>
-          <span className="text-right">Mcap</span>
-          <span className="text-right">Range</span>
-        </div>
-        {board.length === 0 && (
-          <div className="px-4 py-8 text-center text-[13px] text-[var(--muted)]">{error || "Waiting on quotes."}</div>
-        )}
-        {board.map((item) => (
-          <Row
-            key={item.id || item.symbol}
-            item={item}
-            starred={watch.includes(item.symbol)}
-            onStar={() => toggleStar(item.symbol)}
-            onAsk={
-              onAsk
-                ? () =>
-                    onAsk(
-                      `What's moving ${item.symbol} (${item.name}) today? Last print ${formatUsd(item.price)} (${formatPct(item.change24h)}). Cite live sources.`,
-                    )
-                : null
+        <div className="market-hero mb-4">
+          <PalmHero
+            palm={palm}
+            wpalm={wpalm}
+            connected={isConnected}
+            fallback={error || "Waiting on DexScreener"}
+            extra={
+              [
+                palm?.volume ? formatVol(palm.volume) + " 24h vol" : "",
+                palmBtc ? "PALM/BTC " + palmBtc.toExponential(2) : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")
             }
           />
-        ))}
-      </Card>
+          <QuotePane item={btc} label="BTC" extra={btc && Number.isFinite(btc.high24h) ? "hi " + formatUsd(btc.high24h) : "Bitcoin"} />
+          <QuotePane item={eth} label="ETH" extra={eth && Number.isFinite(eth.high24h) ? "hi " + formatUsd(eth.high24h) : "Ethereum"} />
+        </div>
+
+        <div className="market-instruments mb-5">
+          <FearGauge value={fng?.value} label={fng?.label} />
+          <DominanceStrip btc={global?.btcDom} eth={global?.ethDom} mcap={global?.mcap} coins={global?.coins} />
+          <FundingMeter rate={fundBtc?.rate} />
+          <FeeLadder fastest={fees?.fastestFee} half={fees?.halfHourFee} hour={fees?.hourFee} />
+          <Turnover volume={global?.volume} mcap={global?.mcap} />
+        </div>
+
+        {heat.length > 0 && (
+          <div className="market-heat mb-5">
+            {heat.map((item) => {
+              const mag = Math.min(10, Math.abs(Number(item.change24h) || 0));
+              const up = Number(item.change24h) >= 0;
+              return (
+                <button
+                  key={item.symbol}
+                  type="button"
+                  onClick={
+                    onAsk
+                      ? () =>
+                          onAsk(
+                            `What's moving ${item.symbol} today? Print ${formatUsd(item.price)} (${formatPct(item.change24h)}). Cite live sources.`,
+                          )
+                      : undefined
+                  }
+                  className={`market-heat-cell ${up ? "market-heat-up" : "market-heat-down"}`}
+                  style={{ flex: `${(1.2 + mag).toFixed(2)} 1 ${72 + mag * 10}px` }}
+                >
+                  <SparkArea values={item.spark} up={up} className="market-heat-spark" w={120} h={44} />
+                  <div className="relative z-[1] flex items-center gap-1.5">
+                    <MarketLogo symbol={item.symbol} src={item.logo} size={16} />
+                    <span className="text-[11px] tracking-[0.1em]">{item.symbol}</span>
+                  </div>
+                  <div className={`relative z-[1] text-[15px] tabular-nums ${tickClass(item.change24h)}`}>{formatPct(item.change24h)}</div>
+                  <div className="relative z-[1] text-[11px] tabular-nums text-[var(--muted)]">{formatUsd(item.price)}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search a ticker, then DexScreener fills gaps"
+            className="h-10 min-w-[220px] flex-1 rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px] outline-none placeholder:text-[var(--faint)]"
+          />
+          {SORTS.map((item) => (
+            <Ghost key={item.id} active={sort === item.id} onClick={() => setSort(item.id)}>
+              {item.label}
+            </Ghost>
+          ))}
+          {onAsk && (
+            <Primary
+              onClick={() =>
+                onAsk(
+                  [
+                    "Read this tape and say what risk is doing.",
+                    fng ? `Fear & Greed ${fng.value} ${fng.label}.` : "",
+                    Number.isFinite(global?.btcDom) ? `BTC.D ${global.btcDom.toFixed(1)}%.` : "",
+                    palm ? `PALM ${formatUsd(palm.price)} (${formatPct(palm.change24h)}).` : "",
+                    ranked[0] ? `Lead ${ranked[0].symbol} ${formatPct(ranked[0].change24h)}.` : "",
+                    ranked.length ? `Lag ${ranked[ranked.length - 1].symbol} ${formatPct(ranked[ranked.length - 1].change24h)}.` : "",
+                    fees?.fastestFee ? `BTC fee ${fees.fastestFee} sat/vB.` : "",
+                    "Cite the prints. Not a trade idea.",
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                )
+              }
+            >
+              Ask Hamrin
+            </Primary>
+          )}
+        </div>
+
+        <div className="market-book">
+          <div className="hidden grid-cols-[auto_auto_5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem_7rem] gap-2 border-b border-[var(--stroke-soft)] px-3 py-2 text-[10.5px] tracking-[0.16em] text-[var(--faint)] lg:grid">
+            <span />
+            <span />
+            <span>SYM</span>
+            <span>Name</span>
+            <span className="text-right">Price</span>
+            <span className="text-right">24h</span>
+            <span className="text-right">Volume</span>
+            <span className="text-right">Mcap</span>
+            <span className="text-right">Range</span>
+          </div>
+          {board.length === 0 && (
+            <div className="px-4 py-8 text-center text-[13px] text-[var(--muted)]">{error || "Waiting on quotes."}</div>
+          )}
+          {board.map((item) => (
+            <Row
+              key={item.id || item.symbol}
+              item={item}
+              starred={watch.includes(item.symbol)}
+              onStar={() => toggleStar(item.symbol)}
+              onAsk={
+                onAsk
+                  ? () =>
+                      onAsk(
+                        `What's moving ${item.symbol} (${item.name}) today? Last print ${formatUsd(item.price)} (${formatPct(item.change24h)}). Cite live sources.`,
+                      )
+                  : null
+              }
+            />
+          ))}
+        </div>
+      </div>
     </Page>
   );
 }
 
-function Stat({ label, value, note, tone }) {
-  return (
-    <Card className="px-3 py-3">
-      <div className="text-[10px] tracking-[0.16em] text-[var(--faint)]">{label}</div>
-      <div className={`mt-1 text-[16px] tabular-nums leading-none ${tone === "up" ? "text-[var(--green)]" : tone === "down" ? "text-[var(--rose)]" : ""}`}>
-        {value}
-      </div>
-      {note && <div className="mt-1 text-[10.5px] text-[var(--muted)]">{note}</div>}
-    </Card>
-  );
-}
-
-function Hero({ item, label, value, extra, fallback, logo, symbol }) {
-  const change = item?.change24h;
-  return (
-    <Card className="px-3 py-3.5">
-      <div className="flex items-center gap-2">
-        <MarketLogo symbol={symbol || item?.symbol || label} src={logo || item?.logo} size={20} />
-        <div className="text-[10px] tracking-[0.16em] text-[var(--faint)]">{label}</div>
-      </div>
-      <div className="mt-1.5 text-[20px] tabular-nums leading-none">{value || (item?.price ? formatUsd(item.price) : fallback) || "—"}</div>
-      {Number.isFinite(Number(change)) ? (
-        <div className={`mt-1 text-[12px] tabular-nums ${tickClass(change)}`}>{formatPct(change)}</div>
-      ) : (
-        extra && <div className="mt-1 text-[11px] text-[var(--muted)]">{extra}</div>
-      )}
-      {Number.isFinite(Number(change)) && extra && <div className="mt-0.5 text-[11px] text-[var(--muted)]">{extra}</div>}
-    </Card>
-  );
-}
-
 function Row({ item, starred, onStar, onAsk }) {
-  const range =
-    Number.isFinite(item.low24h) && Number.isFinite(item.high24h) && item.high24h > 0
-      ? ((item.price - item.low24h) / (item.high24h - item.low24h || 1)) * 100
-      : null;
+  const up = Number(item.change24h) >= 0;
   return (
-    <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-[var(--stroke-soft)] px-3 py-2.5 last:border-b-0 lg:grid-cols-[auto_auto_5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem_5.5rem]">
+    <div className="market-book-row grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-2 px-3 py-2.5 lg:grid-cols-[auto_auto_5rem_1fr_6.5rem_5.5rem_5.5rem_5.5rem_7rem]">
       <button
         type="button"
         onClick={onStar}
@@ -309,36 +298,13 @@ function Row({ item, starred, onStar, onAsk }) {
       <div className={`text-right text-[13px] tabular-nums ${tickClass(item.change24h)}`}>{formatPct(item.change24h)}</div>
       <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] lg:block">{formatVol(item.volume)}</div>
       <div className="hidden text-right text-[12px] tabular-nums text-[var(--muted)] lg:block">{formatVol(item.liquidity)}</div>
-      <div className="hidden lg:block">
-        {range == null ? (
-          <Spark values={item.spark} up={Number(item.change24h) >= 0} />
+      <div className="hidden min-w-0 lg:block">
+        {item.spark?.length > 4 ? (
+          <SparkArea values={item.spark} up={up} w={88} h={28} />
         ) : (
-          <div className="flex items-center gap-1.5">
-            <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--stroke-soft)]">
-              <div className="h-full bg-[var(--accent)]" style={{ width: Math.max(4, Math.min(100, range)) + "%" }} />
-            </div>
-          </div>
+          <RangeTrack low={item.low24h} high={item.high24h} price={item.price} />
         )}
       </div>
     </div>
-  );
-}
-
-function Spark({ values, up }) {
-  if (!values?.length) return <span className="inline-block h-6 w-16" />;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  const points = values
-    .map((value, index) => {
-      const x = (index / Math.max(1, values.length - 1)) * 64;
-      const y = 22 - ((value - min) / span) * 20;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg className="market-spark h-6 w-16" viewBox="0 0 64 24" aria-hidden="true">
-      <polyline fill="none" stroke={up ? "var(--green)" : "var(--rose)"} strokeWidth="1.4" points={points} />
-    </svg>
   );
 }

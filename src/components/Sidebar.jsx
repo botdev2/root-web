@@ -7,12 +7,10 @@ import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 const NAV = [
   { id: "home", label: "New Agent" },
   { id: "markets", label: "Markets" },
-  { id: "trades", label: "Trades" },
   { id: "quests", label: "Achievements" },
   { id: "reasoning", label: "Reasoning" },
   { id: "ops", label: "Ops" },
   { id: "marketplace", label: "Marketplace" },
-  { id: "notes", label: "Notes" },
   { id: "billing", label: "Billing" },
 ];
 
@@ -118,7 +116,13 @@ export default function Sidebar({
       node: (
         <NavButton
           tour={item.id === "home" ? "nav-home" : undefined}
-          active={item.id === "home" ? view === "home" : view === item.id}
+          active={
+            item.id === "home"
+              ? view === "home" || view === "notes"
+              : item.id === "markets"
+                ? view === "markets" || view === "trades"
+                : view === item.id
+          }
           onClick={() => go(() => (item.id === "home" ? onNewChat() : onView(item.id)))}
         >
           {item.label}

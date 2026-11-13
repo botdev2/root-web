@@ -2518,6 +2518,21 @@ textarea {
   pointer-events: none;
 }
 
+.market-positions {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--stroke);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 42%),
+    color-mix(in srgb, var(--panel) 74%, transparent);
+}
+
+.market-positions:hover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 11%, transparent), transparent 48%),
+    color-mix(in srgb, var(--hover) 55%, var(--panel));
+}
+
 .market-book {
   overflow: hidden;
   border-radius: 18px;

@@ -185,6 +185,13 @@ export function Icon({ name, size = 16, className = "" }) {
           <path d="M8 15l3.5-4.5 3 2.5L19 7" />
         </svg>
       );
+    case "edit":
+      return (
+        <svg {...props}>
+          <path d="M14.5 5.5 18.5 9.5" />
+          <path d="M12.2 7.8 5.5 14.5V18.5H9.5L16.2 11.8Z" />
+        </svg>
+      );
     case "grip":
       return (
         <svg {...props} fill="currentColor" stroke="none">

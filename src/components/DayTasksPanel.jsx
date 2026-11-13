@@ -1,9 +1,10 @@
 import { useState } from "react";
 import DayRing from "./DayRing.jsx";
+import { Icon } from "./Icons.jsx";
 import useNow from "../hooks/useNow.js";
 import { DAY_PART_META, dayPartFromDate, formatClock, formatDateLine } from "../dayClock.js";
 
-export default function DayTasksPanel({ goals, onToggleGoal }) {
+export default function DayTasksPanel({ goals, onToggleGoal, onEdit }) {
   const now = useNow();
   const [filter, setFilter] = useState(dayPartFromDate());
   const part = filter || dayPartFromDate(now);
@@ -11,7 +12,20 @@ export default function DayTasksPanel({ goals, onToggleGoal }) {
 
   return (
     <div className="mx-auto w-full max-w-[420px] px-1 pt-2 pb-4 text-center md:px-2 md:pt-6 md:pb-2">
-      <div className="home-title text-[32px] font-light leading-none tabular-nums md:text-[42px]">{formatClock(now)}</div>
+      <div className="relative inline-flex items-start justify-center">
+        <div className="home-title text-[32px] font-light leading-none tabular-nums md:text-[42px]">{formatClock(now)}</div>
+        {onEdit && (
+          <button
+            type="button"
+            aria-label="Edit notes"
+            title="Edit notes"
+            onClick={onEdit}
+            className="absolute -right-8 top-1 flex h-7 w-7 items-center justify-center rounded-md text-[var(--faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)] md:-right-9 md:top-2"
+          >
+            <Icon name="edit" size={15} />
+          </button>
+        )}
+      </div>
       <div className="mt-1 text-[13px] text-[var(--muted)]">{formatDateLine(now)}</div>
       <div className="mt-3 md:mt-4">
         <DayRing now={now} goals={goals} selectedPart={filter} onSelectPart={setFilter} />

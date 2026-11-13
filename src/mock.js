@@ -146,7 +146,7 @@ export const HELP = [
     summary: "Agentic coding in the browser — chat, tools, git, notes, achievements, and ship.",
     body: "/root is an agentic coding workspace. Chat, tools, git, notes, automations, and ship from the same chrome. A Root Account on useroot.sh unlocks the session.",
     bullets: [
-      "Sidebar: New Agent, Achievements, Reasoning, Ops, Marketplace, Notes",
+      "Sidebar: New Agent, Markets, Achievements, Reasoning, Ops, Marketplace",
       "Composer: Agent / Ask / Plan, Auto-Prompt, model, Attach, Files, send",
       "Projects use GitHub remotes — github.com/you/…",
     ],
@@ -222,8 +222,9 @@ export const HELP = [
     section: "Ship",
     title: "Trades",
     summary: "A Hamrin session plus local PALM/ETH limits that ask the wallet to sign on Uniswap V2.",
-    body: "Trades is a desk, not a 24/7 bot. Uniswap V2 has no order book. You arm a buy or sell on PALM versus ETH. While /root is open, a DexScreener print can open a wallet prompt. You still sign. Caps, a kill switch, exact allowances, and an allowlist of PALM/WETH are on the rail. Closing the tab stops watching. Not financial advice, and /root does not hold keys.",
+    body: "Trades is not a sidebar tab. Open it from Markets → Your Positions. It is a desk, not a 24/7 bot. Uniswap V2 has no order book. You arm a buy or sell on PALM versus ETH. While /root is open, a DexScreener print can open a wallet prompt. You still sign. Caps, a kill switch, exact allowances, and an allowlist of PALM/WETH are on the rail. Closing the tab stops watching. Not financial advice, and /root does not hold keys.",
     bullets: [
+      "Open from Markets → Your Positions",
       "Dedicated Hamrin thread titled Trades",
       "Buy PALM with ETH or sell PALM for ETH",
       "Per-order and daily USD caps, slippage cap, kill switch",
@@ -276,9 +277,9 @@ export const HELP = [
     id: "notes",
     section: "Ship",
     title: "Notes",
-    summary: "Daily goals and markdown.",
-    body: "Goals toggle in place. Markdown is a single page for the day.",
-    bullets: ["Check a goal to mark it done", "Add a goal from the field", "Markdown is free text"],
+    summary: "Daily goals and markdown. Opened from the day-task clock.",
+    body: "Notes is not a sidebar tab. Turn on Day tasks, then press the edit icon beside the clock. Goals toggle in place. Markdown is a single page for the day.",
+    bullets: ["Edit icon beside the home clock", "Check a goal to mark it done", "Add a goal from the field", "Markdown is free text"],
   },
   {
     id: "account",

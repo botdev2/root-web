@@ -15,14 +15,14 @@ const MARKET_CHIPS = [
   "Is PALM holding its ground versus BTC on this tape?",
 ];
 
-export default function HomeView({ onChip, onTemplates, clockOn, project, marketOn = false }) {
+export default function HomeView({ onChip, onTemplates, clockOn, project, marketOn = false, onNotes }) {
   const { dayGoals, toggleDayGoal } = useAppState();
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto md:block">
       <div className={`flex px-3 py-3 md:h-full md:min-h-0 md:items-center md:justify-center md:px-8 md:py-0 ${clockOn ? "" : "min-h-[280px] items-center justify-center py-8"}`}>
         {clockOn ? (
-          <DayTasksPanel goals={dayGoals} onToggleGoal={toggleDayGoal} />
+          <DayTasksPanel goals={dayGoals} onToggleGoal={toggleDayGoal} onEdit={onNotes} />
         ) : (
           <div className="max-w-[560px] text-center">
             <button type="button" onClick={onTemplates} className="text-[14px] text-[var(--muted)] hover:text-[var(--ink)]">

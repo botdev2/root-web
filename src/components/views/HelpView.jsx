@@ -105,6 +105,16 @@ export default function HelpView({ onOpen, onTour, onEpisode }) {
               Open Marketplace →
             </button>
           )}
+          {page.id === "trades" && (
+            <button type="button" onClick={() => onOpen?.("markets")} className="mt-5 text-[13px] text-[var(--accent)]">
+              Open Markets →
+            </button>
+          )}
+          {page.id === "notes" && (
+            <button type="button" onClick={() => onOpen?.("home")} className="mt-5 text-[13px] text-[var(--accent)]">
+              Open home clock →
+            </button>
+          )}
         </Card>
       </div>
     </Page>

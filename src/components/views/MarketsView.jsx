@@ -22,6 +22,7 @@ import {
   SparkArea,
   Turnover,
 } from "../MarketGfx.jsx";
+import { notionalUsd } from "../../trades.js";
 import { Ghost, Page, Primary } from "../ui.jsx";
 
 const SORTS = [
@@ -41,8 +42,10 @@ export default function MarketsView({
   error = "",
   credit = null,
   marketOn = false,
+  book = null,
   onToggleMode,
   onAsk,
+  onOpenTrades,
 }) {
   const { isConnected } = useAccount();
   const [query, setQuery] = useState("");
@@ -162,6 +165,8 @@ export default function MarketsView({
           <QuotePane item={eth} label="ETH" extra={eth && Number.isFinite(eth.high24h) ? "hi " + formatUsd(eth.high24h) : "Ethereum"} />
         </div>
 
+        <PositionsStrip book={book} quotes={quotes} onOpen={onOpenTrades} />
+
         <div className="market-instruments mb-5">
           <FearGauge value={fng?.value} label={fng?.label} />
           <DominanceStrip btc={global?.btcDom} eth={global?.ethDom} mcap={global?.mcap} coins={global?.coins} />
@@ -278,6 +283,61 @@ export default function MarketsView({
         </div>
       </div>
     </Page>
+  );
+}
+
+function PositionsStrip({ book, quotes, onOpen }) {
+  const palm = quotes.find((item) => item.symbol === "PALM");
+  const eth = quotes.find((item) => item.symbol === "ETH");
+  const live = (book?.orders || []).filter((item) => ["armed", "triggered", "signing"].includes(item.status));
+  const filled = (book?.orders || []).filter((item) => item.status === "done").slice(0, 4);
+  const rows = live.length ? live : filled;
+  const halt = !!book?.guards?.halt;
+  const disarmed = book?.guards && !book.guards.live;
+
+  return (
+    <button type="button" onClick={onOpen} className="market-positions mb-5 w-full text-left">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10.5px] tracking-[0.16em] text-[var(--faint)]">YOUR POSITIONS</span>
+          {live.length > 0 && (
+            <span className="rounded-full border border-[var(--stroke)] px-1.5 py-0.5 text-[10px] tabular-nums text-[var(--ink)]">
+              {live.length} live
+            </span>
+          )}
+          {halt && <span className="text-[10px] tracking-[0.12em] text-[var(--rose)]">KILL</span>}
+          {disarmed && !halt && <span className="text-[10px] tracking-[0.12em] text-[var(--faint)]">DISARMED</span>}
+        </div>
+        <span className="text-[11px] text-[var(--muted)]">Open desk</span>
+      </div>
+      {rows.length === 0 ? (
+        <div className="px-4 pb-4 text-[13px] text-[var(--muted)]">No PALM/ETH limits. Open the desk to arm one.</div>
+      ) : (
+        <div className="px-2 pb-2">
+          {rows.map((order) => {
+            const size = order.side === "buy" ? `${order.amount} ETH` : `${order.amount} PALM`;
+            const usd = notionalUsd(order, palm?.price, eth?.price);
+            return (
+              <div key={order.id} className="flex items-center justify-between gap-3 rounded-lg px-2 py-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[11px] tracking-[0.12em] ${order.side === "buy" ? "text-[var(--green)]" : "text-[var(--rose)]"}`}>
+                      {order.side.toUpperCase()}
+                    </span>
+                    <span className="text-[13px]">{order.pair || "PALM/ETH"}</span>
+                    <span className="text-[11px] uppercase tracking-[0.1em] text-[var(--faint)]">{order.status}</span>
+                  </div>
+                  <div className="mt-0.5 text-[12px] text-[var(--muted)]">
+                    {size} · trigger {formatUsd(order.triggerUsd)}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right text-[12px] tabular-nums text-[var(--muted)]">{usd ? formatUsd(usd) : "—"}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </button>
   );
 }
 

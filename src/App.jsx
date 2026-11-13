@@ -1112,6 +1112,7 @@ export default function App() {
                     marketOn={marketOn}
                     onTemplates={() => openView("templates")}
                     onChip={(chip) => send(chip)}
+                    onNotes={() => openView("notes")}
                   />
                 )}
                 {view === "chat" && <ChatView sessionId={sessionId} extras={local[sessionId] || []} />}
@@ -1200,8 +1201,10 @@ export default function App() {
                     error={board.error}
                     credit={credit}
                     marketOn={marketOn}
+                    book={book}
                     onToggleMode={() => enableMarket(!marketOn)}
                     onAsk={(text) => send(text)}
+                    onOpenTrades={() => openView("trades")}
                   />
                 )}
                 {view === "account" && <AccountView />}

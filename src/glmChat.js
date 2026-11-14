@@ -74,6 +74,46 @@ export function readCredits(address) {
   return call("/v1/credits", { address });
 }
 
+const PRESENCE_KEY = "root-web-presence-id";
+
+function presenceSession() {
+  try {
+    let id = localStorage.getItem(PRESENCE_KEY) || "";
+    if (!/^anon:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      id = "anon:" + crypto.randomUUID();
+      localStorage.setItem(PRESENCE_KEY, id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
+}
+
+export async function readUserStats() {
+  const response = await fetch(ORIGIN + "/v1/stats/users", { headers: { "content-type": "application/json" } });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Could not read user stats.");
+  return data;
+}
+
+export async function pingPresence(address) {
+  const headers = { "content-type": "application/json" };
+  const token = opsBearer(address);
+  if (token && address) {
+    headers.authorization = "Bearer " + token;
+    headers["x-wallet"] = address;
+  }
+  const session = presenceSession();
+  const response = await fetch(ORIGIN + "/v1/presence", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(session ? { session } : {}),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Could not update presence.");
+  return data;
+}
+
 /** Public PALM ID snapshot. No wallet sign-in. */
 export function readPalmId(address) {
   const wallet = String(address || "").toLowerCase();

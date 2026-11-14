@@ -5,6 +5,7 @@ import { creditTitle, formatCredits, PALM_PER_CREDIT } from "../glmChat.js";
 import WalletButton from "./WalletButton.jsx";
 import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 import { APP_VERSION, publicIdUrl } from "../version.js";
+import LiveUsers from "./LiveUsers.jsx";
 
 const HEADERS = {
   home: { title: "New Agent" },
@@ -46,6 +47,7 @@ export default function HeaderBar({
   address = "",
   marketOn = false,
   onMarket,
+  stats = null,
 }) {
   const { signedIn } = useAppState();
   const [more, setMore] = useState(false);
@@ -59,6 +61,17 @@ export default function HeaderBar({
   const bottom = layout.header === "bottom";
 
   const pool = [
+    ...(stats
+      ? [
+          {
+            id: "live-users",
+            label: "Live",
+            home: "header",
+            className: "shrink-0",
+            node: <LiveUsers stats={stats} />,
+          },
+        ]
+      : []),
     ...(credit && Number.isFinite(credit.allowance)
       ? [
           {

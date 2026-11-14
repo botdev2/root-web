@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
-import { archiveConversation, listConversations, loadConversation, readCredits, removeConversation, reportQuestEvent, sendTurn } from "./glmChat.js";
+import { archiveConversation, listConversations, loadConversation, pingPresence, readCredits, readUserStats, removeConversation, reportQuestEvent, sendTurn } from "./glmChat.js";
 import { readCache, writeCache } from "./opsCache.js";
 import { claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, repoLimit, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
@@ -115,6 +115,7 @@ export default function App() {
   const [opsProjectId, setOpsProjectId] = useState("");
   const [usagePercent, setUsagePercent] = useState(0);
   const [credit, setCredit] = useState(null);
+  const [userStats, setUserStats] = useState(null);
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { open } = useAppKit();
@@ -385,6 +386,29 @@ export default function App() {
       cancelled = true;
     };
   }, [opsToken, address]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const take = (data) => {
+      if (!cancelled && data && Number.isFinite(Number(data.live))) setUserStats(data);
+    };
+    const pull = () => readUserStats().then(take).catch(() => {});
+    const beat = () => pingPresence(isConnected ? address : "").then(take).catch(() => {});
+    pull();
+    beat();
+    const statsTimer = window.setInterval(pull, 15000);
+    const beatTimer = window.setInterval(beat, 25000);
+    const wake = () => {
+      if (!document.hidden) beat();
+    };
+    document.addEventListener("visibilitychange", wake);
+    return () => {
+      cancelled = true;
+      window.clearInterval(statsTimer);
+      window.clearInterval(beatTimer);
+      document.removeEventListener("visibilitychange", wake);
+    };
+  }, [isConnected, address]);
 
   // The sidebar paints from the last answer while the Hub is asked again.
   useEffect(() => {
@@ -983,7 +1007,7 @@ export default function App() {
     <div className="relative isolate h-full min-h-0 overflow-hidden">
       {wallpaperId !== "none" && <div className="wallpaper-layer" />}
       <div className="shell relative z-[1] flex h-full min-h-0 flex-col text-[var(--ink)]">
-            <TitleBar marketOn={marketOn} />
+            <TitleBar marketOn={marketOn} stats={userStats} />
         <div className="relative flex min-h-0 flex-1">
           {navOpen && (
             <button
@@ -1051,6 +1075,7 @@ export default function App() {
               credit={credit}
               address={isConnected ? address : ""}
               marketOn={marketOn}
+              stats={userStats}
               onMarket={() => enableMarket(!marketOn)}
               onBilling={() => openView("billing")}
               onMenu={() => {

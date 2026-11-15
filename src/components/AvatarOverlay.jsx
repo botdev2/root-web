@@ -3,6 +3,7 @@ import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import portrait from "../assets/avatar.png";
 import { sendTurn, watchAvatar } from "../glmChat.js";
+import { parseGuide } from "../avatarGuide.js";
 
 const CHAT_KEY = "root-web-avatar-conversation";
 const HISTORY_KEY = "root-web-avatar-history";
@@ -121,6 +122,7 @@ export default function AvatarOverlay({
   signedIn = false,
   credit = null,
   workspace = null,
+  onGuide,
   hidden = false,
 }) {
   const { open: openWallet } = useAppKit();
@@ -240,8 +242,9 @@ export default function AvatarOverlay({
       const id = result.conversation?.id || "";
       if (id) writeChatId(address, id);
       setFailed(false);
-      const reply = String(result.text || "").replace(/\s+/g, " ").trim() || "I lost that one.";
-      remember([...pending, { role: "assistant", text: reply }]);
+      const parsed = parseGuide(String(result.text || "").trim() || "I lost that one.", { allowSend: true });
+      remember([...pending, { role: "assistant", text: parsed.say || "Watch this." }]);
+      if (parsed.action) onGuide?.(parsed.action);
     } catch (error) {
       setFailed(true);
       remember([...pending, { role: "assistant", text: error.message || "I could not answer." }]);
@@ -249,7 +252,6 @@ export default function AvatarOverlay({
       busyRef.current = false;
       setBusy(false);
       setTalking(true);
-      requestAnimationFrame(() => replyRef.current?.focus());
     }
   };
 
@@ -278,7 +280,8 @@ export default function AvatarOverlay({
           nudge: true,
           ...workspacePayload(workspaceRef.current),
         });
-        const advice = String(data?.advice || "").replace(/\s+/g, " ").trim();
+        const parsed = parseGuide(String(data?.advice || "").trim(), { allowSend: false });
+        const advice = parsed.say;
         if (cancelled || !advice) return;
         const last = linesRef.current[linesRef.current.length - 1];
         if (last?.role === "assistant" && last.text === advice) return;
@@ -286,6 +289,7 @@ export default function AvatarOverlay({
         setTalking(true);
         setPing(true);
         window.setTimeout(() => setPing(false), 1600);
+        if (parsed.action) onGuide?.(parsed.action);
         const id = data.conversation?.id;
         if (id) writeChatId(address, id);
       } catch {

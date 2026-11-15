@@ -56,6 +56,8 @@ import ChatView from "./components/ChatView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import Composer from "./components/Composer.jsx";
 import AvatarOverlay from "./components/AvatarOverlay.jsx";
+import GuideCursor from "./components/GuideCursor.jsx";
+import { playGuide } from "./avatarGuide.js";
 import FilesInspector from "./components/FilesInspector.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
 import ShipFlow from "./components/ShipFlow.jsx";
@@ -151,6 +153,9 @@ export default function App() {
   const opsSignAttempt = useRef("");
   const signOpsRef = useRef(signMessageAsync);
   signOpsRef.current = signMessageAsync;
+  const sendRef = useRef(() => {});
+  const guideRun = useRef(0);
+  const [guideCursor, setGuideCursor] = useState({ x: -80, y: -80, show: false, tap: 0, rect: null });
   const [dayTasksIdle, setDayTasksIdle] = useState(false);
   const mobile = useMobileShell();
   const [editorFile, setEditorFile] = useState("README.md");
@@ -873,6 +878,7 @@ export default function App() {
       setBusy(null);
     }
   };
+  sendRef.current = send;
 
   const runLock = useRef(new Set());
   const scheduleRef = useRef(() => {});
@@ -1041,6 +1047,65 @@ export default function App() {
     }
     setTour({ auto: false, episode: typeof episode === "string" && findEpisode(episode) ? episode : "" });
   };
+
+  const playAvatarGuide = async (action) => {
+    const token = ++guideRun.current;
+    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const moveTo = async (node) => {
+      const box = node.getBoundingClientRect();
+      node.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+      setGuideCursor({
+        x: box.left + Math.min(box.width / 2, 110),
+        y: box.top + box.height / 2,
+        show: true,
+        tap: 0,
+        rect: { left: box.left - 6, top: box.top - 6, width: box.width + 12, height: box.height + 12, radius: 12 },
+      });
+      await pause(720);
+    };
+    const click = async (node) => {
+      await moveTo(node);
+      if (guideRun.current !== token) return;
+      setGuideCursor((prev) => ({ ...prev, tap: (prev.tap || 0) + 1 }));
+      await pause(220);
+      if (guideRun.current === token) node.click();
+      await pause(180);
+    };
+    const typeInto = async (node, text) => {
+      await moveTo(node);
+      if (guideRun.current !== token) return;
+      node.focus();
+      setDraft("");
+      for (let i = 1; i <= text.length; i += 1) {
+        if (guideRun.current !== token) return;
+        setDraft(text.slice(0, i));
+        await pause(16);
+      }
+      await pause(280);
+    };
+    try {
+      await playGuide(action, {
+        alive: () => guideRun.current === token,
+        click,
+        typeInto,
+        setDraft,
+        send: (text) => sendRef.current(text),
+        openView,
+        setMode,
+        setFilesOpen,
+        setConnectOpen,
+        setNavOpen,
+        startTour,
+        view: () => view,
+      });
+    } finally {
+      if (guideRun.current === token) {
+        await pause(500);
+        setGuideCursor((prev) => ({ ...prev, show: false, rect: null }));
+      }
+    }
+  };
+
   if (!state) return null;
 
   return (
@@ -1425,7 +1490,9 @@ export default function App() {
         view={view}
         projectLabel={activeProject?.label || ""}
         workspace={avatarWorkspace}
+        onGuide={playAvatarGuide}
       />
+      <GuideCursor cursor={guideCursor} />
       <LayoutBar />
       <DockTargets />
       {tour?.classroom && (

@@ -54,6 +54,7 @@ export default function Composer({
             <button
               key={item.id}
               type="button"
+              data-tour={"mode-" + item.id}
               title={item.label}
               onClick={() => setMode(item.id)}
               className={`flex h-8 items-center gap-1 px-2 text-[12px] md:h-[30px] md:px-2.5 ${

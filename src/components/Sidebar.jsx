@@ -348,6 +348,7 @@ export default function Sidebar({
             </div>
             <button
               type="button"
+              data-tour="ship"
               onClick={() => go(() => onConnect?.())}
               className="flex h-10 w-full items-center justify-center gap-2 border border-[var(--stroke)] bg-[var(--input)] text-[13px]"
             >

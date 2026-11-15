@@ -121,8 +121,8 @@ export default function HeaderBar({
       ),
     },
     ...(!signedIn ? [{ id: "unlock", label: "Unlock", home: "header", className: "shrink-0", node: <Ghost onClick={onUnlock}>Unlock</Ghost> }] : []),
-    { id: "avatar", label: "Avatar", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onAvatar} active={avatarOn}>Avatar</Ghost> },
-    { id: "help", label: "Help", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onHelp}>Help</Ghost> },
+    { id: "avatar", label: "Avatar", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onAvatar} active={avatarOn} tour="avatar">Avatar</Ghost> },
+    { id: "help", label: "Help", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onHelp} tour="help">Help</Ghost> },
     { id: "files", label: "Files", home: "header", className: "hidden shrink-0 sm:block", node: (
       <Ghost onClick={onFiles} active={filesOpen} tour="files">
         Files
@@ -244,12 +244,13 @@ function MoreItem({ children, onClick }) {
   );
 }
 
-function Ghost({ children, onClick, active }) {
+function Ghost({ children, onClick, active, tour }) {
   return (
     <button
       type="button"
+      data-tour={tour}
       onClick={onClick}
-      className={`h-[30px] rounded-lg px-2.5 text-[12.5px] ${
+      className={`relative h-[30px] rounded-lg px-2.5 text-[12.5px] ${
         active ? "bg-[var(--sidebar-sel)] text-[var(--ink)]" : "text-[var(--ink)] hover:bg-[var(--hover)]"
       }`}
     >

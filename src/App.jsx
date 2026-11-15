@@ -1370,7 +1370,10 @@ export default function App() {
       <AvatarOverlay
         open={avatarOn}
         hidden={!!tour}
+        signedIn={!!opsToken}
+        credit={credit}
         onTour={startTour}
+        onConnect={() => open({ view: "Connect" })}
         onClose={() => {
           setAvatarOn(false);
           try {

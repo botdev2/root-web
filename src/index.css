@@ -427,6 +427,13 @@ textarea {
   0% { transform: scale(1); opacity: 0.7; }
   100% { transform: scale(2.4); opacity: 0; }
 }
+.avatar-pop {
+  animation: avatarPop 0.22s ease-out;
+}
+@keyframes avatarPop {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
 
 .file-fresh-dot {
   position: absolute;

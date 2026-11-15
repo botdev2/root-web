@@ -5,6 +5,7 @@ import portrait from "../assets/avatar.png";
 import { sendTurn } from "../glmChat.js";
 
 const CHAT_KEY = "root-web-avatar-conversation";
+const HISTORY_KEY = "root-web-avatar-history";
 const POS_KEY = "root-web-avatar-pos";
 const PORTRAIT_W = 128;
 const PORTRAIT_H = Math.round((PORTRAIT_W * 993) / 871);
@@ -30,12 +31,93 @@ function initialPos() {
   return clampPos(window.innerWidth - PORTRAIT_W - 24, window.innerHeight - PORTRAIT_H - bottom);
 }
 
-export default function AvatarOverlay({ open, view, projectLabel, onTour, hidden = false }) {
+function walletKey(address) {
+  return String(address || "").toLowerCase();
+}
+
+function chatKey(address) {
+  return CHAT_KEY + ":" + walletKey(address);
+}
+
+function historyKey(address) {
+  return HISTORY_KEY + ":" + walletKey(address);
+}
+
+function readChatId(address) {
+  try {
+    const scoped = localStorage.getItem(chatKey(address));
+    if (scoped) return scoped;
+    const legacy = localStorage.getItem(CHAT_KEY) || "";
+    if (legacy) {
+      localStorage.setItem(chatKey(address), legacy);
+      localStorage.removeItem(CHAT_KEY);
+    }
+    return legacy;
+  } catch {
+    return "";
+  }
+}
+
+function writeChatId(address, id) {
+  try {
+    if (id) localStorage.setItem(chatKey(address), id);
+    else localStorage.removeItem(chatKey(address));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readHistory(address) {
+  try {
+    const rows = JSON.parse(localStorage.getItem(historyKey(address)) || "[]");
+    return Array.isArray(rows) ? rows.filter((row) => row?.text).slice(-8) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeHistory(address, rows) {
+  try {
+    localStorage.setItem(historyKey(address), JSON.stringify((rows || []).slice(-8)));
+  } catch {
+    /* ignore */
+  }
+}
+
+function deadThread(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    error?.status === 404 ||
+    error?.status === 409 ||
+    error?.archived === true ||
+    message.includes("not on this wallet") ||
+    message.includes("archived")
+  );
+}
+
+function greeting(view, projectLabel) {
+  const where = view === "home" ? "home" : String(view || "this screen");
+  return projectLabel
+    ? `Hey — I'm with you on ${where}, looking at ${projectLabel}. Type anything.`
+    : `Hey — I'm with you on ${where}. Type anything.`;
+}
+
+export default function AvatarOverlay({
+  open,
+  view,
+  projectLabel,
+  onTour,
+  onConnect,
+  signedIn = false,
+  credit = null,
+  hidden = false,
+}) {
   const { open: openWallet } = useAppKit();
   const { address, isConnected } = useAccount();
-  const [talking, setTalking] = useState(false);
+  const ready = !!(isConnected && address && signedIn);
+  const [talking, setTalking] = useState(true);
   const [draft, setDraft] = useState("");
-  const [line, setLine] = useState("");
+  const [lines, setLines] = useState([]);
   const [busy, setBusy] = useState(false);
   const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
   const [failed, setFailed] = useState(false);
@@ -44,6 +126,7 @@ export default function AvatarOverlay({ open, view, projectLabel, onTour, hidden
   const dragRef = useRef(null);
   const suppressClick = useRef(false);
   const replyRef = useRef(null);
+  const scrollerRef = useRef(null);
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -59,7 +142,19 @@ export default function AvatarOverlay({ open, view, projectLabel, onTour, hidden
     };
   }, []);
 
-  const status = offline || failed ? "red" : isConnected && address ? "green" : "yellow";
+  useEffect(() => {
+    if (!open) return;
+    const held = address ? readHistory(address) : [];
+    setLines(held.length ? held : [{ role: "assistant", text: greeting(view, projectLabel) }]);
+    setTalking(true);
+    setFailed(false);
+  }, [open, address]);
+
+  useEffect(() => {
+    scrollerRef.current?.scrollTo?.(0, scrollerRef.current.scrollHeight);
+  }, [lines, talking]);
+
+  const status = offline || failed ? "red" : ready ? "green" : "yellow";
   const statusLabel = status === "green" ? "Available" : status === "red" ? "Unavailable" : "Standard";
   const statusTone =
     status === "green"
@@ -68,26 +163,37 @@ export default function AvatarOverlay({ open, view, projectLabel, onTour, hidden
         ? { hi: "#ffb4b4", lo: "#d63a3a", glow: "rgba(226,75,75,0.8)" }
         : { hi: "#ffe58a", lo: "#e2b30e", glow: "rgba(240,196,25,0.85)" };
 
+  const remember = (address, next) => {
+    const kept = next.filter((row) => row?.text).slice(-8);
+    setLines(kept);
+    if (address) writeHistory(address, kept);
+  };
+
   const speak = async (text) => {
     const said = String(text || "").trim();
     if (!said || busyRef.current) return;
     if (!isConnected || !address) {
-      setLine("Connect a wallet and I can talk.");
-      openWallet({ view: "Connect" });
+      remember(address, [...lines, { role: "assistant", text: "Connect a wallet and I can talk." }]);
+      if (onConnect) onConnect();
+      else openWallet({ view: "Connect" });
+      return;
+    }
+    if (!signedIn) {
+      remember(address, [...lines, { role: "assistant", text: "Approve the wallet signature and I'm in." }]);
+      if (onConnect) onConnect();
+      else openWallet({ view: "Connect" });
+      return;
+    }
+    if (credit && Number.isFinite(credit.remaining) && credit.remaining <= 0) {
+      remember(address, [...lines, { role: "assistant", text: "Hamrin credits on this wallet are used up, so I can't answer until they refill." }]);
       return;
     }
     busyRef.current = true;
     setBusy(true);
-    setLine("…");
-    try {
-      let conversationId = "";
-      try {
-        conversationId = localStorage.getItem(CHAT_KEY) || "";
-      } catch {
-        conversationId = "";
-      }
-      const where = `The person is on the ${view || "home"} screen${projectLabel ? `, repository ${projectLabel}` : ""}.`;
-      const result = await sendTurn(address, {
+    const pending = [...lines, { role: "user", text: said }];
+    remember(address, pending);
+    const turn = async (conversationId) =>
+      sendTurn(address, {
         conversationId,
         projectId: "__avatar__",
         projectLabel: "Avatar",
@@ -95,26 +201,31 @@ export default function AvatarOverlay({ open, view, projectLabel, onTour, hidden
         title: "Avatar",
         mode: "ask",
         text:
-          "You are the companion in the corner of this app. " +
-          "Reply in one or two short spoken sentences. No markdown, no lists, no tools.\n" +
-          `${where} ${said}`,
+          "You are the companion avatar in the corner of /root. " +
+          "Reply in one or two short spoken sentences. No markdown, no lists, no tools. Stay in character.\n" +
+          `The person is on the ${view || "home"} screen${projectLabel ? `, repository ${projectLabel}` : ""}. ${said}`,
         brain: {},
         files: "",
         autoprompt: false,
       });
-      const id = result.conversation?.id || "";
-      if (id) {
-        try {
-          localStorage.setItem(CHAT_KEY, id);
-        } catch {
-          /* ignore */
-        }
+    try {
+      let conversationId = readChatId(address);
+      let result;
+      try {
+        result = await turn(conversationId);
+      } catch (error) {
+        if (!deadThread(error)) throw error;
+        writeChatId(address, "");
+        result = await turn("");
       }
+      const id = result.conversation?.id || "";
+      if (id) writeChatId(address, id);
       setFailed(false);
-      setLine(String(result.text || "").replace(/\s+/g, " ").trim() || "I lost that one.");
+      const reply = String(result.text || "").replace(/\s+/g, " ").trim() || "I lost that one.";
+      remember(address, [...pending, { role: "assistant", text: reply }]);
     } catch (error) {
       setFailed(true);
-      setLine(error.message || "I could not answer.");
+      remember(address, [...pending, { role: "assistant", text: error.message || "I could not answer." }]);
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -125,55 +236,63 @@ export default function AvatarOverlay({ open, view, projectLabel, onTour, hidden
 
   if (!open || hidden) return null;
 
-  const bubbleAbove = pos.y > 96;
+  const bubbleAbove = pos.y > 220;
 
   return (
     <div className="fixed z-[70]" style={{ left: pos.x, top: pos.y, width: PORTRAIT_W }}>
       <div
-        className={`pointer-events-none absolute right-0 flex w-max max-w-[240px] flex-col items-end gap-2 ${
+        className={`pointer-events-none absolute right-0 flex w-max max-w-[260px] flex-col items-end gap-2 ${
           bubbleAbove ? "bottom-full mb-2" : "top-full mt-2"
         }`}
       >
-        {line && (
-          <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
-            {line}
-          </div>
-        )}
-        {talking && !line && onTour && (
-          <div className="pointer-events-auto max-w-[240px] rounded-2xl border border-[var(--stroke)] bg-[var(--panel)] px-3 py-2.5 text-left text-[13px] leading-5 text-[var(--ink)] shadow-lg">
-            <div>Want a guided tour? I'll show you around and help you ship your first commit.</div>
-            <button
-              type="button"
-              onClick={() => {
-                setTalking(false);
-                onTour();
+        {talking && (
+          <div className="pointer-events-auto frost-panel w-[min(260px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[var(--stroke)] shadow-lg">
+            <div ref={scrollerRef} className="flex max-h-[220px] flex-col gap-1.5 overflow-y-auto px-3 py-2.5">
+              {lines.map((row, index) => (
+                <div
+                  key={index}
+                  className={`avatar-pop max-w-[95%] rounded-2xl px-2.5 py-1.5 text-left text-[13px] leading-5 ${
+                    row.role === "user"
+                      ? "ml-auto bg-[var(--accent)] text-[var(--bg)]"
+                      : "mr-auto bg-[var(--bubble)] text-[var(--ink)]"
+                  }`}
+                >
+                  {row.text}
+                </div>
+              ))}
+              {busy && (
+                <div className="mr-auto rounded-2xl bg-[var(--panel)] px-2.5 py-1.5 text-[13px] text-[var(--faint)]">…</div>
+              )}
+            </div>
+            {onTour && lines.length <= 1 && (
+              <button
+                type="button"
+                onClick={() => onTour()}
+                className="mx-3 mb-2 h-8 w-[calc(100%-1.5rem)] rounded-lg border border-[var(--stroke)] text-[12px] text-[var(--muted)] hover:bg-[var(--hover)]"
+              >
+                Start the tour
+              </button>
+            )}
+            <form
+              className="border-t border-[var(--stroke)] p-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const text = draft.trim();
+                if (!text || busy) return;
+                setDraft("");
+                speak(text);
               }}
-              className="mt-2 h-9 w-full rounded-lg bg-[var(--accent)] text-[12.5px] text-[var(--bg)]"
             >
-              Start the tour
-            </button>
+              <input
+                ref={replyRef}
+                autoFocus
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder={ready ? "Talk to me" : "Connect a wallet to talk"}
+                className="h-10 w-full bg-transparent px-2 text-[13px] outline-none"
+              />
+            </form>
           </div>
-        )}
-        {(talking || line) && (
-          <form
-            className="pointer-events-auto frost-panel w-[min(240px,calc(100vw-1.5rem))] rounded-2xl border border-[var(--stroke)] p-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const text = draft.trim();
-              if (!text || busy) return;
-              setDraft("");
-              speak(text);
-            }}
-          >
-            <input
-              ref={replyRef}
-              autoFocus
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder={isConnected ? "Reply" : "Connect a wallet to talk"}
-              className="h-10 w-full bg-transparent px-2 text-[13px] outline-none"
-            />
-          </form>
         )}
       </div>
       <div className="relative" style={{ width: PORTRAIT_W, height: PORTRAIT_H }}>

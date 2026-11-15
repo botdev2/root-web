@@ -434,6 +434,13 @@ textarea {
   from { transform: translateY(8px); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
+.avatar-nudge {
+  animation: avatarNudge 1.5s ease-out;
+}
+@keyframes avatarNudge {
+  0%, 100% { filter: none; transform: scale(1); }
+  40% { filter: drop-shadow(0 0 18px rgba(75, 184, 122, 0.9)); transform: scale(1.03); }
+}
 
 .file-fresh-dot {
   position: absolute;

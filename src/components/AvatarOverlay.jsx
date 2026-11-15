@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount } from "wagmi";
 import portrait from "../assets/avatar.png";
-import { sendTurn } from "../glmChat.js";
+import { sendTurn, watchAvatar } from "../glmChat.js";
 
 const CHAT_KEY = "root-web-avatar-conversation";
 const HISTORY_KEY = "root-web-avatar-history";
@@ -98,8 +98,8 @@ function deadThread(error) {
 function greeting(view, projectLabel) {
   const where = view === "home" ? "home" : String(view || "this screen");
   return projectLabel
-    ? `Hey — I'm with you on ${where}, looking at ${projectLabel}. Type anything.`
-    : `Hey — I'm with you on ${where}. Type anything.`;
+    ? `Hey — I'm with you on ${where}, looking at ${projectLabel}. I'll jump in if I notice something.`
+    : `Hey — I'm with you on ${where}. I'll jump in if I notice something.`;
 }
 
 export default function AvatarOverlay({
@@ -119,14 +119,20 @@ export default function AvatarOverlay({
   const [draft, setDraft] = useState("");
   const [lines, setLines] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [ping, setPing] = useState(false);
   const [offline, setOffline] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
   const [failed, setFailed] = useState(false);
   const [pos, setPos] = useState(initialPos);
   const busyRef = useRef(false);
+  const linesRef = useRef([]);
+  const creditRef = useRef(credit);
+  const typedAt = useRef(0);
   const dragRef = useRef(null);
   const suppressClick = useRef(false);
   const replyRef = useRef(null);
   const scrollerRef = useRef(null);
+  creditRef.current = credit;
+  linesRef.current = lines;
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -145,7 +151,9 @@ export default function AvatarOverlay({
   useEffect(() => {
     if (!open) return;
     const held = address ? readHistory(address) : [];
-    setLines(held.length ? held : [{ role: "assistant", text: greeting(view, projectLabel) }]);
+    const next = held.length ? held : [{ role: "assistant", text: greeting(view, projectLabel) }];
+    linesRef.current = next;
+    setLines(next);
     setTalking(true);
     setFailed(false);
   }, [open, address]);
@@ -163,8 +171,9 @@ export default function AvatarOverlay({
         ? { hi: "#ffb4b4", lo: "#d63a3a", glow: "rgba(226,75,75,0.8)" }
         : { hi: "#ffe58a", lo: "#e2b30e", glow: "rgba(240,196,25,0.85)" };
 
-  const remember = (address, next) => {
+  const remember = (next) => {
     const kept = next.filter((row) => row?.text).slice(-8);
+    linesRef.current = kept;
     setLines(kept);
     if (address) writeHistory(address, kept);
   };
@@ -173,37 +182,34 @@ export default function AvatarOverlay({
     const said = String(text || "").trim();
     if (!said || busyRef.current) return;
     if (!isConnected || !address) {
-      remember(address, [...lines, { role: "assistant", text: "Connect a wallet and I can talk." }]);
+      remember([...linesRef.current, { role: "assistant", text: "Connect a wallet and I can talk." }]);
       if (onConnect) onConnect();
       else openWallet({ view: "Connect" });
       return;
     }
     if (!signedIn) {
-      remember(address, [...lines, { role: "assistant", text: "Approve the wallet signature and I'm in." }]);
+      remember([...linesRef.current, { role: "assistant", text: "Approve the wallet signature and I'm in." }]);
       if (onConnect) onConnect();
       else openWallet({ view: "Connect" });
       return;
     }
     if (credit && Number.isFinite(credit.remaining) && credit.remaining <= 0) {
-      remember(address, [...lines, { role: "assistant", text: "Hamrin credits on this wallet are used up, so I can't answer until they refill." }]);
+      remember([...linesRef.current, { role: "assistant", text: "Hamrin credits on this wallet are used up, so I can't answer until they refill." }]);
       return;
     }
     busyRef.current = true;
     setBusy(true);
-    const pending = [...lines, { role: "user", text: said }];
-    remember(address, pending);
+    const pending = [...linesRef.current, { role: "user", text: said }];
+    remember(pending);
     const turn = async (conversationId) =>
       sendTurn(address, {
         conversationId,
         projectId: "__avatar__",
-        projectLabel: "Avatar",
-        projectRemote: "",
+        projectLabel: projectLabel || "",
+        view: view || "home",
         title: "Avatar",
         mode: "ask",
-        text:
-          "You are the companion avatar in the corner of /root. " +
-          "Reply in one or two short spoken sentences. No markdown, no lists, no tools. Stay in character.\n" +
-          `The person is on the ${view || "home"} screen${projectLabel ? `, repository ${projectLabel}` : ""}. ${said}`,
+        text: said,
         brain: {},
         files: "",
         autoprompt: false,
@@ -222,10 +228,10 @@ export default function AvatarOverlay({
       if (id) writeChatId(address, id);
       setFailed(false);
       const reply = String(result.text || "").replace(/\s+/g, " ").trim() || "I lost that one.";
-      remember(address, [...pending, { role: "assistant", text: reply }]);
+      remember([...pending, { role: "assistant", text: reply }]);
     } catch (error) {
       setFailed(true);
-      remember(address, [...pending, { role: "assistant", text: error.message || "I could not answer." }]);
+      remember([...pending, { role: "assistant", text: error.message || "I could not answer." }]);
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -233,6 +239,61 @@ export default function AvatarOverlay({
       requestAnimationFrame(() => replyRef.current?.focus());
     }
   };
+
+  useEffect(() => {
+    if (!open || hidden || !ready || !address) return undefined;
+    let cancelled = false;
+    const observe = () => {
+      watchAvatar(address, {
+        view: view || "home",
+        projectLabel: projectLabel || "",
+        conversationId: readChatId(address),
+        nudge: false,
+      }).catch(() => {});
+    };
+    const offer = async () => {
+      if (cancelled || busyRef.current || document.hidden) return;
+      if (Date.now() - typedAt.current < 20_000) return;
+      const left = creditRef.current;
+      if (left && Number.isFinite(left.remaining) && left.remaining <= 0) return;
+      try {
+        const data = await watchAvatar(address, {
+          view: view || "home",
+          projectLabel: projectLabel || "",
+          conversationId: readChatId(address),
+          nudge: true,
+        });
+        const advice = String(data?.advice || "").replace(/\s+/g, " ").trim();
+        if (cancelled || !advice) return;
+        const last = linesRef.current[linesRef.current.length - 1];
+        if (last?.role === "assistant" && last.text === advice) return;
+        remember([...linesRef.current, { role: "assistant", text: advice }]);
+        setTalking(true);
+        setPing(true);
+        window.setTimeout(() => setPing(false), 1600);
+        const id = data.conversation?.id;
+        if (id) writeChatId(address, id);
+      } catch {
+        /* stay quiet if a nudge misses */
+      }
+    };
+    observe();
+    const soon = window.setTimeout(offer, 14000);
+    let loop;
+    const tick = () => {
+      loop = window.setTimeout(() => {
+        offer();
+        tick();
+      }, 50000 + Math.floor(Math.random() * 28000));
+    };
+    const start = window.setTimeout(tick, 22000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(soon);
+      window.clearTimeout(start);
+      window.clearTimeout(loop);
+    };
+  }, [open, hidden, ready, address, view, projectLabel]);
 
   if (!open || hidden) return null;
 
@@ -287,7 +348,10 @@ export default function AvatarOverlay({
                 ref={replyRef}
                 autoFocus
                 value={draft}
-                onChange={(event) => setDraft(event.target.value)}
+                onChange={(event) => {
+                  typedAt.current = Date.now();
+                  setDraft(event.target.value);
+                }}
                 placeholder={ready ? "Talk to me" : "Connect a wallet to talk"}
                 className="h-10 w-full bg-transparent px-2 text-[13px] outline-none"
               />
@@ -295,7 +359,7 @@ export default function AvatarOverlay({
           </div>
         )}
       </div>
-      <div className="relative" style={{ width: PORTRAIT_W, height: PORTRAIT_H }}>
+      <div className={`relative ${ping ? "avatar-nudge" : ""}`} style={{ width: PORTRAIT_W, height: PORTRAIT_H }}>
         <button
           type="button"
           aria-label="Avatar"

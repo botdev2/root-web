@@ -58,6 +58,14 @@ export function sendTurn(address, body) {
   return call("/v1/chat/turn", { address, method: "POST", body });
 }
 
+export function watchAvatar(address, body) {
+  return call("/v1/avatar/watch", { address, method: "POST", body });
+}
+
+export function readAvatarMemory(address) {
+  return call("/v1/avatar/memory", { address });
+}
+
 export function searchWeb(address, query) {
   return call("/v1/web/search", { address, method: "POST", body: { query } });
 }

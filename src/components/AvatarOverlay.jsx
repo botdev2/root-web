@@ -98,8 +98,18 @@ function deadThread(error) {
 function greeting(view, projectLabel) {
   const where = view === "home" ? "home" : String(view || "this screen");
   return projectLabel
-    ? `Hey — I'm with you on ${where}, looking at ${projectLabel}. I'll jump in if I notice something.`
-    : `Hey — I'm with you on ${where}. I'll jump in if I notice something.`;
+    ? `Hey — I can see this chat and ${projectLabel}. I'll jump in if I notice something.`
+    : `Hey — I can see this chat and the open repo. I'll jump in if I notice something on ${where}.`;
+}
+
+function workspacePayload(workspace) {
+  const work = workspace && typeof workspace === "object" ? workspace : {};
+  return {
+    workTitle: String(work.workTitle || "").slice(0, 80),
+    workMode: String(work.workMode || "").slice(0, 16),
+    chat: String(work.chat || "").slice(0, 2500),
+    files: String(work.files || "").slice(0, 3500),
+  };
 }
 
 export default function AvatarOverlay({
@@ -110,6 +120,7 @@ export default function AvatarOverlay({
   onConnect,
   signedIn = false,
   credit = null,
+  workspace = null,
   hidden = false,
 }) {
   const { open: openWallet } = useAppKit();
@@ -131,8 +142,10 @@ export default function AvatarOverlay({
   const suppressClick = useRef(false);
   const replyRef = useRef(null);
   const scrollerRef = useRef(null);
+  const workspaceRef = useRef(workspace);
   creditRef.current = credit;
   linesRef.current = lines;
+  workspaceRef.current = workspace;
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -211,8 +224,8 @@ export default function AvatarOverlay({
         mode: "ask",
         text: said,
         brain: {},
-        files: "",
         autoprompt: false,
+        ...workspacePayload(workspaceRef.current),
       });
     try {
       let conversationId = readChatId(address);
@@ -249,6 +262,7 @@ export default function AvatarOverlay({
         projectLabel: projectLabel || "",
         conversationId: readChatId(address),
         nudge: false,
+        ...workspacePayload(workspaceRef.current),
       }).catch(() => {});
     };
     const offer = async () => {
@@ -262,6 +276,7 @@ export default function AvatarOverlay({
           projectLabel: projectLabel || "",
           conversationId: readChatId(address),
           nudge: true,
+          ...workspacePayload(workspaceRef.current),
         });
         const advice = String(data?.advice || "").replace(/\s+/g, " ").trim();
         if (cancelled || !advice) return;

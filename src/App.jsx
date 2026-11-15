@@ -14,6 +14,35 @@ function liveEdited(hub, held) {
   if (!Number.isNaN(heldTime) && heldTime <= now + 2000 && hubFuture) return held;
   return hub || held || "";
 }
+
+function packAvatarWorkspace(turns, files, { title, mode, project, commit } = {}) {
+  const chat = (turns || [])
+    .filter((item) => item?.text && !item.pending)
+    .slice(-8)
+    .map((item) => {
+      const who = item.role === "user" ? "You" : "Agent";
+      return who + ": " + String(item.text || "").replace(/\s+/g, " ").trim().slice(0, 420);
+    })
+    .join("\n")
+    .slice(0, 2500);
+  const tree = files && typeof files === "object" ? files : {};
+  const names = Object.keys(tree).slice(0, 30);
+  const snippets = names
+    .slice(0, 8)
+    .map((path) => path + "\n" + String(tree[path] || "").slice(0, 360))
+    .join("\n\n");
+  const commitLine = commit?.message
+    ? "Last commit: " + String(commit.message).slice(0, 80) + (commit.files?.length ? " (" + commit.files.join(", ").slice(0, 120) + ")" : "")
+    : "";
+  const fileBlock = [commitLine, names.length ? "Paths: " + names.join(", ") : "", snippets].filter(Boolean).join("\n\n").slice(0, 3500);
+  return {
+    workTitle: String(title || "").slice(0, 80),
+    workMode: String(mode || "").slice(0, 16),
+    chat,
+    files: fileBlock,
+    project: String(project || "").slice(0, 80),
+  };
+}
 import { desktopSeedFiles, projectFolderName } from "./projectSeed.js";
 import { applyTheme, DEFAULT_THEME_ID, findTheme, MARKET_THEME_ID, readSavedThemeId, readSavedWallpaper } from "./themes.js";
 import { formatUsd, tapeText, useMarketQuotes } from "./market.js";
@@ -688,6 +717,17 @@ export default function App() {
       .join("\n\n")
       .slice(0, 6000);
   };
+
+  const avatarWorkspace = useMemo(
+    () =>
+      packAvatarWorkspace(local[sessionId] || [], files?.[activeProject?.id] || {}, {
+        title: sessionTitle,
+        mode,
+        project: activeProject?.label || "",
+        commit: lastCommit,
+      }),
+    [local, sessionId, files, activeProject?.id, activeProject?.label, sessionTitle, mode, lastCommit],
+  );
 
   const send = async (text = draft) => {
     const value = text.trim();
@@ -1384,6 +1424,7 @@ export default function App() {
         }}
         view={view}
         projectLabel={activeProject?.label || ""}
+        workspace={avatarWorkspace}
       />
       <LayoutBar />
       <DockTargets />

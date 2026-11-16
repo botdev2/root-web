@@ -99,8 +99,8 @@ function deadThread(error) {
 function greeting(view, projectLabel) {
   const where = view === "home" ? "home" : String(view || "this screen");
   return projectLabel
-    ? `Hey — I can see this chat and ${projectLabel}. I'll jump in if I notice something.`
-    : `Hey — I can see this chat and the open repo. I'll jump in if I notice something on ${where}.`;
+    ? `Hey, I'm Miles. I can see this chat and ${projectLabel}. I'll jump in if I notice something.`
+    : `Hey, I'm Miles. I can see this chat and the open repo. I'll jump in if I notice something on ${where}.`;
 }
 
 function workspacePayload(workspace) {
@@ -222,7 +222,7 @@ export default function AvatarOverlay({
         projectId: "__avatar__",
         projectLabel: projectLabel || "",
         view: view || "home",
-        title: "Avatar",
+        title: "Miles",
         mode: "ask",
         text: said,
         brain: {},
@@ -371,7 +371,7 @@ export default function AvatarOverlay({
                   typedAt.current = Date.now();
                   setDraft(event.target.value);
                 }}
-                placeholder={ready ? "Talk to me" : "Connect a wallet to talk"}
+                placeholder={ready ? "Talk to Miles" : "Connect a wallet to talk"}
                 className="h-10 w-full bg-transparent px-2 text-[13px] outline-none"
               />
             </form>
@@ -381,7 +381,7 @@ export default function AvatarOverlay({
       <div className={`relative ${ping ? "avatar-nudge" : ""}`} style={{ width: PORTRAIT_W, height: PORTRAIT_H }}>
         <button
           type="button"
-          aria-label="Avatar"
+          aria-label="Miles"
           className="block h-full w-full cursor-grab touch-none overflow-hidden rounded-[32px] shadow-lg active:cursor-grabbing"
           onPointerDown={(event) => {
             if (event.button !== 0) return;

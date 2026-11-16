@@ -166,12 +166,12 @@ export default function Sidebar({
     })),
     {
       id: "avatar-nav",
-      label: "Avatar",
+      label: "Miles",
       home: "footer",
       className: "sm:hidden",
       node: (
         <NavButton active={avatarOn} onClick={() => go(() => onAvatar?.())}>
-          Avatar
+          Miles
         </NavButton>
       ),
     },

@@ -108,7 +108,7 @@ export default function HeaderBar({
       ),
     },
     ...(!signedIn ? [{ id: "unlock", label: "Unlock", home: "header", className: "shrink-0", node: <Ghost onClick={onUnlock}>Unlock</Ghost> }] : []),
-    { id: "avatar", label: "Avatar", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onAvatar} active={avatarOn} tour="avatar">Avatar</Ghost> },
+    { id: "avatar", label: "Miles", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onAvatar} active={avatarOn} tour="avatar">Miles</Ghost> },
     { id: "help", label: "Help", home: "header", className: "hidden shrink-0 sm:block", node: <Ghost onClick={onHelp} tour="help">Help</Ghost> },
     { id: "files", label: "Files", home: "header", className: "hidden shrink-0 sm:block", node: (
       <Ghost onClick={onFiles} active={filesOpen} tour="files">
@@ -187,7 +187,7 @@ export default function HeaderBar({
                 onAvatar();
               }}
             >
-              Avatar {avatarOn ? "· on" : ""}
+              Miles {avatarOn ? "· on" : ""}
             </MoreItem>
             <MoreItem
               onClick={() => {

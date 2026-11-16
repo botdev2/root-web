@@ -1180,7 +1180,6 @@ export default function App() {
               credit={credit}
               address={isConnected ? address : ""}
               marketOn={marketOn}
-              stats={userStats}
               onMarket={() => enableMarket(!marketOn)}
               onBilling={() => openView("billing")}
               onMenu={() => {

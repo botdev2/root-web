@@ -1,4 +1,4 @@
-export const APP_VERSION = "0.2.38";
+export const APP_VERSION = "0.2.39";
 export const APP_CHANNEL = "stable";
 
 export function publicIdUrl(address, origin = typeof window !== "undefined" ? window.location.origin : "https://chat.useroot.sh") {

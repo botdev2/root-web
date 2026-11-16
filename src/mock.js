@@ -149,6 +149,19 @@ export const HELP = [
       "Sidebar: New Agent, Markets, Achievements, Reasoning, Ops, Marketplace",
       "Composer: Agent / Ask / Plan, Auto-Prompt, model, Attach, Files, send",
       "Projects live on Ops Hub for this wallet. No GitHub username.",
+      "The paper is at chat.useroot.sh/paper. Points only.",
+    ],
+  },
+  {
+    id: "paper",
+    section: "Introduction",
+    title: "Paper",
+    summary: "/root and Ops, stated as points.",
+    body: "A public page that says what the products do, what they cost, what they are not, and what follows the wallet. No pitch.",
+    bullets: [
+      "Open /paper or /philosophy.",
+      "Wallet is the account. Hub is git. Ops hosts. Hamrin is metered in PALM credits.",
+      "The web harness is not local inference.",
     ],
   },
   {

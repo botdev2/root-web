@@ -96,6 +96,11 @@ export default function HelpView({ onOpen, onTour, onEpisode, onShip }) {
               </span>
             </div>
           )}
+          {page.id === "paper" && (
+            <a href="/paper" className="mt-5 inline-flex h-11 items-center rounded-lg bg-[var(--accent)] px-5 text-[13px] text-[var(--bg)]">
+              Open /paper
+            </a>
+          )}
           {page.id === "control" && (
             <button type="button" onClick={() => onOpen?.("settings")} className="mt-5 text-[13px] text-[var(--accent)]">
               Open Settings →

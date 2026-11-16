@@ -7,6 +7,7 @@ const root = createRoot(document.getElementById("root"));
 
 // /tv (or ?tv) is the 24/7 episode channel for OBS. It needs no wallet or app state.
 const isTV = /^\/tv\/?$/.test(window.location.pathname) || new URLSearchParams(window.location.search).has("tv");
+const isPaper = /^\/(paper|philosophy)\/?$/.test(window.location.pathname);
 const authenticatorId = parseAuthenticatorId();
 const publicId = parsePublicId();
 
@@ -15,6 +16,14 @@ if (isTV) {
     root.render(
       <StrictMode>
         <TV />
+      </StrictMode>,
+    );
+  });
+} else if (isPaper) {
+  import("./components/PaperPage.jsx").then(({ default: PaperPage }) => {
+    root.render(
+      <StrictMode>
+        <PaperPage />
       </StrictMode>,
     );
   });

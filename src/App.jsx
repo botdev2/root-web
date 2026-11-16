@@ -1600,6 +1600,10 @@ export default function App() {
               startTour("ship-demo");
               return;
             }
+            if (id === "paper") {
+              window.location.href = "/paper";
+              return;
+            }
             openView(id);
             if (id === "home") {
               setSessionId(null);

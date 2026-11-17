@@ -34,6 +34,11 @@ html[data-paper] {
   font-family: "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
 }
 
+.paper-top nav {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .paper-print {
   background: none;
   border: 0;
@@ -221,6 +226,11 @@ html[data-paper] {
   height: auto;
 }
 
+.paper-doc svg text {
+  display: inline;
+  font: 12px "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
+}
+
 .paper-svg-cap,
 .paper-eq-label {
   fill: var(--paper-faint);
@@ -288,6 +298,64 @@ html[data-paper] {
 .paper-eq-op {
   color: var(--paper-rule);
   font-size: 16px;
+}
+
+.paper-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 8px;
+  padding: 4px 4px 12px;
+}
+
+.paper-flow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paper-flow-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.paper-flow-box {
+  min-width: 7.5rem;
+  padding: 12px 14px;
+  border: 1px solid #3a342c;
+  border-radius: 8px;
+  background: #1d1a17;
+}
+
+.paper-flow-title {
+  font-family: "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: var(--paper-ink);
+}
+
+.paper-flow-sub {
+  margin-top: 3px;
+  font-family: "PALM", "Segoe UI Variable", "Segoe UI", sans-serif;
+  font-size: 11px;
+  color: var(--paper-faint);
+}
+
+.paper-flow-arrow {
+  width: 22px;
+  height: 1px;
+  background: var(--paper-rule);
+  position: relative;
+}
+
+.paper-flow-arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -3px;
+  border: 4px solid transparent;
+  border-left-color: var(--paper-rule);
+  border-right: 0;
 }
 
 .paper-ship {

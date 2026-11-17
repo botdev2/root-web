@@ -175,21 +175,22 @@ export default function PaperPage() {
 function StackFigure() {
   return (
     <figure className="paper-fig">
-      <svg viewBox="0 0 640 220" role="img" aria-label="Wallet to harness to Hub to Ops">
-        <Defs id="paper-arrow-stack" />
-        <text x="8" y="18" className="paper-svg-cap">
-          Figure 1 · One key, four layers
-        </text>
-        <Box x="8" y="44" w="150" h="56" title="Wallet" sub="sign once" />
-        <Arrow x1="166" y1="72" x2="198" y2="72" marker="paper-arrow-stack" />
-        <Box x="206" y="28" w="168" h="44" title="/root Windows" sub="localhost:11434" />
-        <Box x="206" y="84" w="168" h="44" title="/root web" sub="Hamrin 1.0" />
-        <Arrow x1="382" y1="72" x2="414" y2="72" marker="paper-arrow-stack" />
-        <Box x="422" y="44" w="96" h="56" title="Hub" sub="git" />
-        <Arrow x1="526" y1="72" x2="558" y2="72" marker="paper-arrow-stack" />
-        <Box x="566" y="28" w="66" h="44" title="Site" sub="box" />
-        <Box x="566" y="84" w="66" h="44" title="Name" sub="DNS" />
-      </svg>
+      <div className="paper-eq-label">Figure 1 · One key, four layers</div>
+      <div className="paper-flow" aria-label="Wallet to harness to Hub to Ops">
+        <FlowBox title="Wallet" sub="sign once" />
+        <FlowArrow />
+        <div className="paper-flow-col">
+          <FlowBox title="/root Windows" sub="localhost:11434" />
+          <FlowBox title="/root web" sub="Hamrin 1.0" />
+        </div>
+        <FlowArrow />
+        <FlowBox title="Hub" sub="git" />
+        <FlowArrow />
+        <div className="paper-flow-col">
+          <FlowBox title="Site" sub="box" />
+          <FlowBox title="Name" sub="DNS" />
+        </div>
+      </div>
     </figure>
   );
 }
@@ -198,23 +199,15 @@ function LoopFigure() {
   const steps = ["goal", "model", "tools", "commit", "result"];
   return (
     <figure className="paper-fig">
-      <svg viewBox="0 0 640 120" role="img" aria-label="A turn: goal, model, tools, commit, result">
-        <Defs id="paper-arrow-loop" />
-        <text x="8" y="18" className="paper-svg-cap">
-          Figure 2 · A turn
-        </text>
-        {steps.map((step, i) => {
-          const x = 16 + i * 124;
-          return (
-            <g key={step}>
-              <Box x={x} y="40" w="96" h="48" title={step} />
-              {i < steps.length - 1 && (
-                <Arrow x1={x + 100} y1="64" x2={x + 120} y2="64" marker="paper-arrow-loop" />
-              )}
-            </g>
-          );
-        })}
-      </svg>
+      <div className="paper-eq-label">Figure 2 · A turn</div>
+      <div className="paper-flow" aria-label="A turn: goal, model, tools, commit, result">
+        {steps.map((step, i) => (
+          <div key={step} className="paper-flow-item">
+            <FlowBox title={step} />
+            {i < steps.length - 1 && <FlowArrow />}
+          </div>
+        ))}
+      </div>
     </figure>
   );
 }
@@ -270,34 +263,15 @@ function ShipFigure() {
   );
 }
 
-function Defs({ id }) {
+function FlowBox({ title, sub }) {
   return (
-    <defs>
-      <marker id={id} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" fill="#c4a574" />
-      </marker>
-    </defs>
+    <div className="paper-flow-box">
+      <div className="paper-flow-title">{title}</div>
+      {sub && <div className="paper-flow-sub">{sub}</div>}
+    </div>
   );
 }
 
-function Box({ x, y, w, h, title, sub }) {
-  return (
-    <g>
-      <rect x={x} y={y} width={w} height={h} rx="6" className="paper-svg-box" />
-      <text x={x + w / 2} y={y + (sub ? h / 2 - 4 : h / 2 + 4)} textAnchor="middle" className="paper-svg-title">
-        {title}
-      </text>
-      {sub && (
-        <text x={x + w / 2} y={y + h / 2 + 14} textAnchor="middle" className="paper-svg-sub">
-          {sub}
-        </text>
-      )}
-    </g>
-  );
-}
-
-function Arrow({ x1, y1, x2, y2, marker }) {
-  return (
-    <line x1={x1} y1={y1} x2={x2} y2={y2} className="paper-svg-arrow" markerEnd={`url(#${marker})`} />
-  );
+function FlowArrow() {
+  return <div className="paper-flow-arrow" aria-hidden="true" />;
 }

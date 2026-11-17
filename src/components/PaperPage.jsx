@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import {
   PAPER,
   PAPER_ABSTRACT,
-  PAPER_CLAIM,
+  PAPER_AUTHOR,
   PAPER_DATE,
-  PAPER_KICKER,
-  PAPER_NO,
-  PAPER_READ,
+  PAPER_KEYWORDS,
+  PAPER_SERIES,
   PAPER_TITLE,
 } from "../paper.js";
 import { APP_VERSION } from "../version.js";
@@ -23,7 +22,7 @@ export default function PaperPage() {
 
   useEffect(() => {
     document.documentElement.setAttribute("data-paper", "1");
-    document.title = `${PAPER_TITLE} — ${PAPER_KICKER}`;
+    document.title = PAPER_TITLE;
     const nodes = PAPER.map((chapter) => document.getElementById(chapter.id)).filter(Boolean);
     const io = new IntersectionObserver(
       (entries) => {
@@ -42,18 +41,15 @@ export default function PaperPage() {
   }, []);
 
   return (
-    <div className="paper-doc min-h-screen">
+    <div className="paper-doc">
       <header className="paper-top">
-        <a href="/" className="flex items-center gap-2 text-[13px] text-[var(--paper-ink)] no-underline">
-          <img src="/palm.png" alt="" className="h-5 w-5 object-contain" />
+        <a href="/" className="paper-brand">
+          <img src="/palm.png" alt="" />
           /root
         </a>
-        <div className="hidden text-[11px] tracking-[0.2em] text-[var(--paper-faint)] sm:block">
-          {PAPER_NO}
-        </div>
-        <nav className="flex items-center gap-4 text-[12px] text-[var(--paper-faint)]">
+        <nav>
           {LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="no-underline hover:text-[var(--paper-ink)]">
+            <a key={link.href} href={link.href}>
               {link.label}
             </a>
           ))}
@@ -67,33 +63,31 @@ export default function PaperPage() {
         <nav className="paper-toc" aria-label="Contents">
           <div className="paper-toc-label">Contents</div>
           {PAPER.map((chapter) => (
-            <a
-              key={chapter.id}
-              href={`#${chapter.id}`}
-              className={active === chapter.id ? "is-active" : ""}
-            >
-              <span>{chapter.n}</span>
-              {chapter.title}
+            <a key={chapter.id} href={`#${chapter.id}`} className={active === chapter.id ? "is-active" : ""}>
+              {chapter.num}. {chapter.title}
             </a>
           ))}
         </nav>
 
         <article className="paper-article">
-          <p className="paper-kicker">
-            {PAPER_KICKER} · {PAPER_DATE} · {PAPER_READ}
+          <p className="paper-meta">
+            {PAPER_SERIES} · {PAPER_AUTHOR} · {PAPER_DATE}
           </p>
-          <h1 className="paper-title">{PAPER_TITLE}</h1>
-          <p className="paper-claim">{PAPER_CLAIM}</p>
+          <h1>{PAPER_TITLE}</h1>
 
-          <div className="paper-abstract">
-            <div className="paper-abstract-label">Abstract</div>
-            <p>{PAPER_ABSTRACT}</p>
-          </div>
+          <section className="paper-abstract">
+            <p>
+              <strong>Abstract.</strong> {PAPER_ABSTRACT}
+            </p>
+            <p className="paper-keywords">
+              <strong>Keywords:</strong> {PAPER_KEYWORDS}
+            </p>
+          </section>
 
-          <nav className="paper-toc-mobile" aria-label="Chapters">
+          <nav className="paper-toc-mobile" aria-label="Sections">
             {PAPER.map((chapter) => (
               <a key={chapter.id} href={`#${chapter.id}`}>
-                {chapter.n} {chapter.title}
+                {chapter.num}. {chapter.title}
               </a>
             ))}
           </nav>
@@ -101,29 +95,13 @@ export default function PaperPage() {
           {PAPER.map((chapter) => (
             <section key={chapter.id} id={chapter.id} className="paper-section">
               <h2>
-                <span>{chapter.n}</span>
-                {chapter.title}
+                {chapter.num}. {chapter.title}
               </h2>
               {chapter.body.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
-              {chapter.quote && <blockquote>{chapter.quote}</blockquote>}
               {chapter.figure === "stack" && <StackFigure />}
               {chapter.figure === "loop" && <LoopFigure />}
-              {chapter.figure === "credit" && <CreditFigure />}
-              {chapter.figure === "ship" && <ShipFigure />}
-              {chapter.modes && (
-                <div className="paper-modes">
-                  {chapter.modes.map((mode) => (
-                    <div key={mode.name} className="paper-mode">
-                      <div className="paper-mode-name" style={{ color: mode.color }}>
-                        {mode.name}
-                      </div>
-                      <div>{mode.line}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
               {chapter.table && (
                 <figure className="paper-table">
                   <figcaption>{chapter.table.caption}</figcaption>
@@ -131,7 +109,7 @@ export default function PaperPage() {
                     <thead>
                       <tr>
                         {chapter.table.cols.map((col) => (
-                          <th key={col}>{col}</th>
+                          <th key={col || "stub"}>{col}</th>
                         ))}
                       </tr>
                     </thead>
@@ -147,23 +125,11 @@ export default function PaperPage() {
                   </table>
                 </figure>
               )}
-              {chapter.nots && (
-                <ul className="paper-nots">
-                  {chapter.nots.map((item) => (
-                    <li key={item}>
-                      <span>not</span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </section>
           ))}
 
           <footer className="paper-foot">
-            <div>
-              PALM paper 01 · rules as of {PAPER_DATE} · chat.useroot.sh/{APP_VERSION}
-            </div>
+            Product rules as of {PAPER_DATE}. chat.useroot.sh/{APP_VERSION}.
             <a href="/">Open the harness</a>
           </footer>
         </article>
@@ -175,22 +141,22 @@ export default function PaperPage() {
 function StackFigure() {
   return (
     <figure className="paper-fig">
-      <div className="paper-eq-label">Figure 1 · One key, four layers</div>
       <div className="paper-flow" aria-label="Wallet to harness to Hub to Ops">
-        <FlowBox title="Wallet" sub="sign once" />
+        <FlowBox title="Wallet" sub="signed message" />
         <FlowArrow />
         <div className="paper-flow-col">
-          <FlowBox title="/root Windows" sub="localhost:11434" />
+          <FlowBox title="/root Windows" sub="Ollama" />
           <FlowBox title="/root web" sub="Hamrin 1.0" />
         </div>
         <FlowArrow />
         <FlowBox title="Hub" sub="git" />
         <FlowArrow />
         <div className="paper-flow-col">
-          <FlowBox title="Site" sub="box" />
+          <FlowBox title="Site" sub="container" />
           <FlowBox title="Name" sub="DNS" />
         </div>
       </div>
+      <figcaption>Figure 1. Path from wallet signature to hosted site and name.</figcaption>
     </figure>
   );
 }
@@ -199,8 +165,7 @@ function LoopFigure() {
   const steps = ["goal", "model", "tools", "commit", "result"];
   return (
     <figure className="paper-fig">
-      <div className="paper-eq-label">Figure 2 · A turn</div>
-      <div className="paper-flow" aria-label="A turn: goal, model, tools, commit, result">
+      <div className="paper-flow" aria-label="Turn: goal, model, tools, commit, result">
         {steps.map((step, i) => (
           <div key={step} className="paper-flow-item">
             <FlowBox title={step} />
@@ -208,57 +173,7 @@ function LoopFigure() {
           </div>
         ))}
       </div>
-    </figure>
-  );
-}
-
-function CreditFigure() {
-  return (
-    <figure className="paper-fig paper-fig-eq">
-      <div className="paper-eq-label">Figure 3 · Hamrin window</div>
-      <div className="paper-eq">
-        <span>credits</span>
-        <span className="paper-eq-op">=</span>
-        <span>
-          ⌊ (held + staked) / 1,000 ⌋
-          <small>per 14 days</small>
-        </span>
-        <span className="paper-eq-op">+</span>
-        <span>
-          0.5
-          <small>welcome, once</small>
-        </span>
-        <span className="paper-eq-op">+</span>
-        <span>
-          extras
-          <small>achievements</small>
-        </span>
-      </div>
-    </figure>
-  );
-}
-
-function ShipFigure() {
-  const steps = [
-    { n: "1", t: "Scaffold", d: "Vite + React, port 3000" },
-    { n: "2", t: "Hub repo", d: "git on this wallet" },
-    { n: "3", t: "Live URL", d: "Ops builds from Hub" },
-  ];
-  return (
-    <figure className="paper-fig">
-      <div className="paper-eq-label">Figure 4 · Ship</div>
-      <div className="paper-ship">
-        {steps.map((step, i) => (
-          <div key={step.n} className="paper-ship-step">
-            <div className="paper-ship-n">{step.n}</div>
-            <div>
-              <div className="paper-ship-t">{step.t}</div>
-              <div className="paper-ship-d">{step.d}</div>
-            </div>
-            {i < steps.length - 1 && <div className="paper-ship-arrow" aria-hidden="true" />}
-          </div>
-        ))}
-      </div>
+      <figcaption>Figure 2. Control loop of a single turn.</figcaption>
     </figure>
   );
 }

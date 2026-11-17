@@ -1,193 +1,140 @@
-export const PAPER_NO = "PALM · 01";
-export const PAPER_TITLE = "The key is the account";
-export const PAPER_KICKER = "/root and Ops";
+export const PAPER_SERIES = "Working paper";
+export const PAPER_TITLE = "Identity, inference, and publication in /root and Ops";
+export const PAPER_AUTHOR = "PALM";
 export const PAPER_DATE = "17 November 2026";
-export const PAPER_READ = "12 min";
+export const PAPER_KEYWORDS = "local inference; agent harness; wallet identity; $PALM; Ops Hub";
 
 export const PAPER_ABSTRACT =
-  "Coding agents glued four things together: a model, an email, a card, and GitHub. /root and Ops cut the glue. The account is an Ethereum address. The harness talks to a model and writes files. Ops is git, a running box, and a name. Local if you install Windows /root. Hosted if you open a browser. Hamrin is paid in PALM you hold. Hosting is a separate bill. Nothing here is invisible.";
-
-export const PAPER_CLAIM =
-  "You do not rent a seat. You sign a key. The files, the site, and the meter follow that key.";
+  "This note describes /root and Ops as shipped on 17 November 2026. A typical commercial coding agent couples four services in a single seat: remote inference, an email account, card billing, and a GitHub identity. /root and Ops keep those functions distinct. The account is an Ethereum address, authenticated by a signed message that is not a transaction. /root is a harness: it submits a goal to a model, executes the model's tool calls, and records writes as git commits. On Windows the harness may call a local Ollama endpoint. On the web it calls Hamrin 1.0, whose prompts leave the browser. Ops supplies git (Hub), container hosting, and optional domain registration, all keyed to the same address. Hamrin is metered in credits derived from held or staked $PALM. Hosting is billed on Ops and is not part of that meter. The note states product rules. It is not legal advice. Quantities may change.";
 
 export const PAPER = [
   {
-    id: "claim",
-    n: "01",
-    title: "The claim",
+    id: "introduction",
+    num: "1",
+    title: "Introduction",
     body: [
-      "A commercial coding agent sells a seat. The seat is an email, a payment method, a GitHub login, and a model behind someone else’s wall. You cannot keep the files without the host. You cannot keep the host without the card. You cannot talk to the model without the email.",
-      "/root and Ops unbundle that. The account is a key you already have. The harness is software that calls a model and runs tools. Ops is where those files become a repository, a container, and a domain. GitHub is optional. Email is not used.",
-      "That is the philosophy. Not privacy theater. Not a pitch. A split: identity is cryptographic, generation is metered, hosting is billed, git is keyed to the same address.",
+      "The object of study is the pair of products published as /root and Ops. /root is the operator-facing harness. Ops is the publication layer: a git service (Hub), a container host, and a registrar path. Both treat an Ethereum address as the sole account. There is no email sign-up, password, or product username.",
+      "The design is a response to a coupling that is now standard in hosted coding agents. Inference, identity, payment, and source control are sold together. The operator cannot retain files without the host, cannot retain the host without a card, and cannot reach the model without an email. /root and Ops attempt to separate those layers so that a lost vendor relationship does not, by construction, take the account, the repository, and the meter with it. Separation is incomplete. The web path still uses a hosted model. Ops still sees the session. The chain still records the address. Section 9 returns to these remainders.",
+      "The description below is of the public web harness at chat.useroot.sh, the Windows application, and Ops at ops.palmaierc.com, as configured on the date of this note.",
     ],
   },
   {
-    id: "split",
-    n: "02",
-    title: "Two products",
+    id: "boundary",
+    num: "2",
+    title: "System boundary",
     body: [
-      "/root is the harness. You type a goal. A model may list, read, write, edit, delete, run a command, or commit. The harness executes those calls against the open repo. A write is a commit. The model may only claim a file changed if the tool result says it did.",
-      "Ops is the plant. Hub is git for that wallet. A site is a container Ops builds from Hub. A domain is a name Ops can buy and point. You do not log into Coolify, a registrar panel, or GitHub to ship from chat.useroot.sh.",
+      "A session begins when a wallet signs a message. The signature is the session token. It spends no gas. Subsequent chats, credits, Hub repositories, sites, and domain aim follow that address.",
+      "/root accepts a goal in natural language. The selected model may emit tool calls: list, read, write, edit, delete, create a repository, run a command, or invoke git. The harness executes those calls against the open repository and returns the results. A write or edit is committed. The model is permitted to report a file change only when the tool result confirms it. The loop continues until the model stops or a step cap is reached.",
+      "Ops is not a harness. Hub stores git for the wallet. A site is a container built from a Hub repository. A domain is a name Ops may purchase and that the wallet may point at a site. Publication from chat.useroot.sh does not require a GitHub login, a Coolify dashboard, or a registrar panel.",
     ],
     figure: "stack",
     table: {
-      caption: "Who does what",
-      cols: ["Layer", "Job", "Where"],
+      caption: "Table 1. Functions and their locations.",
+      cols: ["Component", "Function", "Location"],
       rows: [
-        ["/root Windows", "Local harness. Tools on the PC.", "Your machine"],
-        ["/root web", "Hosted harness. Same tools, Hub-backed.", "chat.useroot.sh"],
-        ["Hamrin 1.0", "The hosted model.", "Leaves the browser"],
-        ["Ops Hub", "Git keyed to the wallet.", "ops.palmaierc.com"],
-        ["Ops host", "Build and run the container.", "Ops"],
-        ["Domain", "Name Ops holds. Wallet aims it.", "Public DNS"],
+        ["/root (Windows)", "Harness; tools execute on the PC", "Local machine"],
+        ["/root (web)", "Harness; tools execute against Hub", "chat.useroot.sh"],
+        ["Hamrin 1.0", "Hosted model", "Leaves the browser"],
+        ["Ollama", "Optional local model", "http://localhost:11434"],
+        ["Ops Hub", "Git keyed to the wallet", "ops.palmaierc.com"],
+        ["Ops host", "Build and run a container", "Ops"],
+        ["Domain", "Name held by Ops; aimed by the wallet", "Public DNS"],
       ],
     },
   },
   {
     id: "identity",
-    n: "03",
-    title: "The address",
+    num: "3",
+    title: "Identity",
     body: [
-      "Connect a wallet. Sign one message. That signature is the session. It is not a transaction. It spends no gas.",
-      "Chats, credits, Hub repos, sites, and domain control follow the address. There is no username to pick. There is no password. There is no recovery email. Lose the key, lose the account.",
-      "“No account” means no email account. The address is public on-chain. Ops sees the session. A public page at chat.useroot.sh/id/<address> shows hold, stake, window, and activity. The owner can open an authenticator at /id/<address>/authenticator after signing in.",
-    ],
-    quote: "The chain sees the address. Ops sees the session. Private is not invisible.",
-  },
-  {
-    id: "local",
-    n: "04",
-    title: "Local /root",
-    body: [
-      "The Windows app is a local harness. Chat and tools run on the PC. Generation can go to Ollama at http://localhost:11434. Local weights do not need a third-party API key.",
-      "That is the closed path: UI, tools, and model on machines you run. Optional cloud models reintroduce a host, a bill, and an IP. Use them if you need them. Do not pretend they are local.",
+      "The account is the address. There is no second identifier. Loss of the private key is loss of the account; Ops does not offer email recovery. The marketing phrase “no account” refers to the absence of an email account, not to the absence of identity. The address is public on-chain, and Ops retains the session.",
+      "A public page at chat.useroot.sh/id/<address> reports hold, stake, credit window, and public activity for that address. After signing in, the owner may open an authenticator at /id/<address>/authenticator.",
     ],
   },
   {
-    id: "web",
-    n: "05",
-    title: "Hosted /root",
+    id: "harnesses",
+    num: "4",
+    title: "Local and hosted harnesses",
     body: [
-      "chat.useroot.sh is not a mock of the desktop app. It creates Hub repos, commits files, and publishes to Ops. The hosted model is Hamrin 1.0. Prompts leave the browser. This is not local inference.",
-      "A wallet keeps ten cloud chats. Older ones are dropped. Context is 8,192 tokens. The web harness needs the wallet online to sign.",
+      "The Windows application runs chat and tools on the PC. Generation may be sent to Ollama at http://localhost:11434. Local weights do not require a third-party API key. That path is closed with respect to inference: the interface, the tools, and the model occupy machines the operator runs. Optional cloud tags on Ollama reintroduce a host, a bill, and an IP address. They should not be described as local.",
+      "The web application at chat.useroot.sh is not a demonstration of the desktop product. It creates Hub repositories, commits files, and publishes to Ops. Its model is Hamrin 1.0. Prompts leave the browser. A wallet may keep ten cloud conversations; older conversations are dropped. The context window is 8,192 tokens. The web harness requires the wallet to be available for signing.",
     ],
     table: {
-      caption: "Local vs hosted",
+      caption: "Table 2. Local and hosted configurations.",
       cols: ["", "Windows", "Web"],
       rows: [
         ["Harness", "On the PC", "In the browser"],
-        ["Model", "Ollama, optional cloud", "Hamrin 1.0"],
-        ["Git", "Local folder or remote", "Ops Hub"],
-        ["Meter", "Electricity, or a cloud bill", "PALM credits"],
-        ["Prompt path", "localhost, unless you pick cloud", "Leaves the tab"],
+        ["Default model", "Ollama (optional cloud)", "Hamrin 1.0"],
+        ["Source control", "Local folder or remote", "Ops Hub"],
+        ["Inference meter", "Electricity, or a cloud bill", "PALM credits"],
+        ["Prompt path", "localhost, unless cloud is selected", "Leaves the tab"],
       ],
     },
   },
   {
-    id: "modes",
-    n: "06",
-    title: "Modes",
-    body: [
-      "Agent may write, run, and commit. Ask only reads and answers. Plan writes steps and does not implement them. Auto-Prompt rewrites a loose ask into a short brief before the model acts. Web, when on, lets Hamrin search and fetch pages.",
-      "Pick the mode that matches the damage you are willing to allow. Do not run Agent on a repo you cannot revert. Every write is a commit. That is the undo.",
-    ],
-    modes: [
-      { name: "Agent", color: "#6fbf8a", line: "Write, run, commit." },
-      { name: "Ask", color: "#efe8dc", line: "Read. Answer. No edits." },
-      { name: "Plan", color: "#c4a574", line: "Steps. No implementation." },
-    ],
-  },
-  {
     id: "loop",
-    n: "07",
-    title: "A turn",
+    num: "5",
+    title: "Control loop and modes",
     body: [
-      "You type a goal. The model may emit tool calls. The harness runs them against the open Hub repo and returns the results. The loop continues until the model stops or the step cap is hit.",
-      "The point of the harness is that last sentence. A model without tools is a chat window. A model with tools that cannot commit is a demo. /root commits.",
+      "The unit of work is a turn. The operator states a goal. The model may request tools. The harness runs them against the open Hub repository and returns the output. Without tools the product is a chat window. With tools that cannot commit, it is a demonstration. /root commits.",
+      "Three modes constrain what the harness will do. Agent may write, run commands, and commit. Ask reads and answers and does not edit. Plan produces steps and does not implement them. Auto-Prompt, when enabled, rewrites a loose request into a short brief before the model acts. A separate Web switch, when enabled, lets Hamrin search and fetch pages.",
+      "Mode choice is a damage bound. Agent should not be used on a repository the operator cannot revert. Because every write is a commit, the history is the undo.",
     ],
     figure: "loop",
   },
   {
-    id: "credits",
-    n: "08",
-    title: "The meter",
+    id: "meter",
+    num: "6",
+    title: "Metering",
     body: [
-      "Hamrin is metered in credits, not a card on file for each token. 1,000 $PALM held or staked equals 1 credit for a 14-day window. A new wallet gets 0.5 welcome credits once. Achievements can pay extras. Welcome and extras do not reset with the window.",
-      "When the window and the extras are empty, Hamrin stops. Hold more PALM, wait for the window, or spend extras. Hosting is not this meter. Ops bills the box separately.",
-    ],
-    figure: "credit",
-    quote: "1,000 $PALM held or staked = 1 credit / 14 days.",
-  },
-  {
-    id: "hub",
-    n: "09",
-    title: "Hub",
-    body: [
-      "Hub is git keyed to the wallet. Most wallets may keep three repositories. You can create, clone, commit, and delete from the web harness. There is no Hub username.",
-      "GitHub can still be a remote if you want it. It is not required to ship. Hub is smaller than GitHub. That is the trade: wallet-owned, capped, enough to publish.",
+      "Hamrin is metered in credits rather than a card attached to each token. Let H be $PALM held and S be $PALM staked. The 14-day window grant is floor((H + S) / 1,000). A new wallet receives 0.5 welcome credits once. Achievements may add extras. Welcome credit and extras do not reset with the window.",
+      "When the window grant and the extras are exhausted, Hamrin stops until the window renews, more PALM is held or staked, or extras remain. Container hosting is not this meter. Ops bills it separately (section 7).",
     ],
   },
   {
-    id: "ship",
-    n: "10",
-    title: "Ship",
+    id: "publication",
+    num: "7",
+    title: "Repository, publication, and naming",
     body: [
-      "Ship is three steps: a compiling scaffold, a Hub repo, a live URL. The default scaffold is Vite and React, with a Dockerfile that serves port 3000. Publish posts to Ops with source “hub”. Ops builds from that repo.",
-      "The tour clicks the same buttons you click. It is not a recording of a product that lives somewhere else.",
-    ],
-    figure: "ship",
-  },
-  {
-    id: "hosting",
-    n: "11",
-    title: "The box and the name",
-    body: [
-      "Ops runs the container. A deploy key is read-only: Ops can fetch code and cannot push. Current monthly plans: Plot $8, Grove $24, Canopy $60.",
-      "Ops can buy and hold a name. The wallet controls which site the name points at. The registrant on the public record is Ops, not you. That hides a legal name. It does not hide the wallet that signed in.",
+      "Hub is git addressed by wallet. Most wallets may keep three repositories. Creation, clone, commit, and deletion are available from the web harness. There is no Hub username. GitHub may be used as an additional remote. It is not required to publish. Hub is smaller than GitHub; the trade is wallet ownership and a cap.",
+      "Publication (“Ship”) has three steps: a compiling scaffold, a Hub repository, and a live URL. The default scaffold is Vite and React, with a Dockerfile that serves port 3000. Ops builds from the Hub repository when publish is posted with source “hub”. The in-product tour operates the same controls as a manual publish.",
+      "Ops runs the container. The deploy key is read-only: Ops may fetch and may not push. Monthly hosting, as of this date, is Plot at $8, Grove at $24, and Canopy at $60. Ops may buy and hold a domain. The wallet selects the site the name points to. The registrant on the public record is Ops, not the operator. That arrangement conceals a legal name. It does not conceal the wallet that signed the session.",
     ],
     table: {
-      caption: "Hosting, November 2026",
-      cols: ["Plan", "Month", "For"],
+      caption: "Table 3. Ops hosting prices, November 2026.",
+      cols: ["Plan", "Monthly price"],
       rows: [
-        ["Plot", "$8", "A small site"],
-        ["Grove", "$24", "More CPU and disk"],
-        ["Canopy", "$60", "Heavier apps"],
+        ["Plot", "$8"],
+        ["Grove", "$24"],
+        ["Canopy", "$60"],
       ],
     },
   },
   {
     id: "miles",
-    n: "12",
-    title: "Miles",
+    num: "8",
+    title: "Companion process",
     body: [
-      "Miles is the optional companion in the web harness. He reads the open chat and the repo text. He has no camera. He keeps a short memory of what you said and where you were. It expires.",
-      "He can click the UI and type a Hamrin prompt when you ask him to. He spends the same credits. He is not a second account.",
+      "Miles is an optional companion in the web harness. It is given the open conversation and repository text. It has no camera. It retains a short memory of recent speech and location; the memory expires. On request it may click controls in the interface and submit a Hamrin prompt. It draws on the same credit balance. It is not a second account.",
     ],
   },
   {
-    id: "not",
-    n: "13",
-    title: "What this is not",
+    id: "limits",
+    num: "9",
+    title: "Limits and non-claims",
     body: [
-      "Not local-only on the web. Hamrin runs on a host. Not a promise that a third party cannot log a prompt. Not GitHub. Not a lawyer, a bank, or a company. Not free hosting. Ops has a bill. Not a recovery process for a lost key.",
-      "The product is the unbundling. The honesty is the remainder: a host still exists, a chain still records the address, a registrar still lists Ops. Use the Windows path if those remainders are the problem. Use the web path if you want to ship from a tab.",
-    ],
-    nots: [
-      "Local inference in the browser",
-      "Invisible",
-      "A GitHub replacement at GitHub scale",
-      "A legal person",
-      "Free compute forever",
-      "A way back in without the key",
+      "Hard limits on the web path are ten cloud conversations per wallet, three Hub repositories per wallet unless Ops has removed the cap, 8,192 tokens of context, a finite credit window, and the requirement that the wallet be present to sign.",
+      "The web harness is not local inference. Hamrin runs on a host, and the note does not claim that a third party cannot log a prompt. The system is not invisible: the chain records the address and Ops records the session. Hub is not a substitute for GitHub at GitHub's scale. Ops is not a lawyer, a bank, or a company. Hosting is not free. There is no recovery path for a discarded key.",
+      "Where those remainders are unacceptable, the Windows path with local Ollama is the relevant configuration. Where the aim is to publish from a browser, the web path is the relevant configuration. The product is the separation of layers. The honesty is what remains coupled.",
     ],
   },
   {
-    id: "use",
-    n: "14",
-    title: "Use",
+    id: "procedure",
+    num: "10",
+    title: "Procedure",
     body: [
-      "Open chat.useroot.sh. Connect the wallet. Sign the session. Ship an app, open a Hub repo, or type a prompt.",
-      "Install Windows /root if you want generation on the PC. Ops is ops.palmaierc.com for hosting, domains, Hub, and plans. Numbers in this paper are the rules as shipped on 17 November 2026. They can change. This is not legal advice.",
+      "Open chat.useroot.sh, connect a wallet, and sign the session. From there, publish an application, open a Hub repository, or submit a prompt. Install Windows /root if generation should remain on the PC. Hosting, domains, Hub, and plans are administered at ops.palmaierc.com.",
+      "Numbers in this note are the product rules as shipped on 17 November 2026. They can change. Nothing here is legal advice.",
     ],
   },
 ];

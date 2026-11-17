@@ -156,8 +156,8 @@ export const HELP = [
     id: "paper",
     section: "Introduction",
     title: "Paper",
-    summary: "The key is the account. /root and Ops, as a paper.",
-    body: "A public paper: identity is a key, the harness writes files, Ops is git and a box. Hamrin is PALM credits. Hosting is a separate bill.",
+    summary: "Identity, inference, and publication in /root and Ops.",
+    body: "A working paper: the account is an Ethereum address, /root is the harness, Ops is git and hosting. Hamrin is metered in PALM. Hosting is billed separately.",
     bullets: [
       "Open /paper or /philosophy.",
       "Wallet is the account. Hub is git. Ops hosts. Hamrin is metered in PALM credits.",

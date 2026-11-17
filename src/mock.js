@@ -156,8 +156,8 @@ export const HELP = [
     id: "paper",
     section: "Introduction",
     title: "Paper",
-    summary: "Identity, inference, and publication in /root and Ops.",
-    body: "A working paper: the account is an Ethereum address, /root is the harness, Ops is git and hosting. Hamrin is metered in PALM. Hosting is billed separately.",
+    summary: "Remaining private with /root and Ops.",
+    body: "A working paper on linkability: wallet identity, local inference, PALM metering, Hub without a username, and Ops as domain registrant. The web path is hosted. The local path is not.",
     bullets: [
       "Open /paper or /philosophy.",
       "Wallet is the account. Hub is git. Ops hosts. Hamrin is metered in PALM credits.",

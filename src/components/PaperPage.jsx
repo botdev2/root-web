@@ -100,6 +100,16 @@ export default function PaperPage() {
               {chapter.body.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
+              {chapter.parts?.map((part) => (
+                <div key={part.id} id={part.id} className="paper-part">
+                  <h3>
+                    {part.num} {part.title}
+                  </h3>
+                  {part.body.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                </div>
+              ))}
               {chapter.figure === "stack" && <StackFigure />}
               {chapter.figure === "loop" && <LoopFigure />}
               {chapter.table && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   PAPER,
   PAPER_ABSTRACT,
@@ -9,6 +9,7 @@ import {
   PAPER_TITLE,
 } from "../paper.js";
 import { APP_VERSION } from "../version.js";
+import { Icon } from "./Icons.jsx";
 import "../paper.css";
 
 const LINKS = [
@@ -17,13 +18,38 @@ const LINKS = [
   { href: "https://useroot.sh", label: "useroot.sh" },
 ];
 
+const LOOP = [
+  { icon: "edit", title: "goal" },
+  { icon: "spark", title: "model" },
+  { icon: "list", title: "tools" },
+  { icon: "branch", title: "commit" },
+  { icon: "check", title: "result" },
+];
+
+const RECORDS = [
+  { icon: "folder", title: "Content", body: "Prompts, files, commits" },
+  { icon: "id", title: "Identity", body: "How the model, git, and bill are obtained" },
+  { icon: "globe", title: "Network", body: "Address, time, browser" },
+];
+
 export default function PaperPage() {
   const [active, setActive] = useState(PAPER[0].id);
+  const [navOpen, setNavOpen] = useState(false);
+  const activeChapter = PAPER.find((chapter) => chapter.id === active) || PAPER.find((chapter) => chapter.parts?.some((part) => part.id === active)) || PAPER[0];
+
+  const headings = useMemo(() => {
+    const list = [];
+    PAPER.forEach((chapter) => {
+      list.push(chapter.id);
+      chapter.parts?.forEach((part) => list.push(part.id));
+    });
+    return list;
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-paper", "1");
     document.title = PAPER_TITLE;
-    const nodes = PAPER.map((chapter) => document.getElementById(chapter.id)).filter(Boolean);
+    const nodes = headings.map((id) => document.getElementById(id)).filter(Boolean);
     const io = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -31,89 +57,188 @@ export default function PaperPage() {
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (visible?.target?.id) setActive(visible.target.id);
       },
-      { rootMargin: "-20% 0px -60% 0px", threshold: [0.15, 0.4, 0.7] },
+      { rootMargin: "-18% 0px -70% 0px", threshold: [0.12, 0.35] },
     );
     nodes.forEach((node) => io.observe(node));
     return () => {
       io.disconnect();
       document.documentElement.removeAttribute("data-paper");
     };
-  }, []);
+  }, [headings]);
+
+  const chapterIndex = PAPER.findIndex((chapter) => chapter.id === activeChapter.id);
+  const prev = chapterIndex > 0 ? PAPER[chapterIndex - 1] : null;
+  const next = chapterIndex < PAPER.length - 1 ? PAPER[chapterIndex + 1] : null;
+  const philosophy = PAPER.find((chapter) => chapter.id === "linkability");
 
   return (
-    <div className="paper-doc">
-      <header className="paper-top">
-        <a href="/" className="paper-brand">
+    <div className="gb">
+      {navOpen && <button type="button" className="gb-scrim" aria-label="Close contents" onClick={() => setNavOpen(false)} />}
+      <aside className={`gb-side${navOpen ? " is-open" : ""}`}>
+        <a href="/" className="gb-brand">
           <img src="/palm.png" alt="" />
-          /root
+          <span>
+            <strong>/root</strong>
+            <small>Paper</small>
+          </span>
         </a>
-        <nav>
-          {LINKS.map((link) => (
-            <a key={link.href} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <button type="button" className="paper-print" onClick={() => window.print()}>
-            Print
-          </button>
-        </nav>
-      </header>
-
-      <div className="paper-shell">
-        <nav className="paper-toc" aria-label="Contents">
-          <div className="paper-toc-label">Contents</div>
+        <div className="gb-book">
+          <Icon name="book" size={14} />
+          Remaining private
+        </div>
+        <nav className="gb-nav" aria-label="Contents">
           {PAPER.map((chapter) => (
-            <a key={chapter.id} href={`#${chapter.id}`} className={active === chapter.id ? "is-active" : ""}>
-              {chapter.num}. {chapter.title}
-            </a>
+            <div key={chapter.id} className="gb-nav-group">
+              <a
+                href={`#${chapter.id}`}
+                className={active === chapter.id || chapter.parts?.some((part) => part.id === active) ? "is-active" : ""}
+                onClick={() => setNavOpen(false)}
+              >
+                <Icon name={chapter.icon || "book"} size={14} />
+                {chapter.title}
+              </a>
+              {chapter.parts && (
+                <div className="gb-nav-sub">
+                  {chapter.parts.map((part) => (
+                    <a key={part.id} href={`#${part.id}`} className={active === part.id ? "is-active" : ""} onClick={() => setNavOpen(false)}>
+                      {part.title}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
+        <div className="gb-side-foot">
+          {PAPER_SERIES} · {APP_VERSION}
+        </div>
+      </aside>
 
-        <article className="paper-article">
-          <p className="paper-meta">
+      <div className="gb-main">
+        <header className="gb-top">
+          <button type="button" className="gb-menu" aria-label="Contents" onClick={() => setNavOpen(true)}>
+            <Icon name="menu" size={16} />
+          </button>
+          <div className="gb-crumb">
+            <a href="/">/root</a>
+            <Icon name="chevron-right" size={12} />
+            <span>Paper</span>
+            <Icon name="chevron-right" size={12} />
+            <span>{activeChapter.title}</span>
+          </div>
+          <nav className="gb-links">
+            {LINKS.map((link) => (
+              <a key={link.href} href={link.href}>
+                {link.label}
+              </a>
+            ))}
+            <button type="button" onClick={() => window.print()}>
+              Print
+            </button>
+          </nav>
+        </header>
+
+        <article className="gb-article">
+          <p className="gb-kicker">
             {PAPER_SERIES} · {PAPER_AUTHOR} · {PAPER_DATE}
           </p>
           <h1>{PAPER_TITLE}</h1>
-
-          <section className="paper-abstract">
-            <p>
-              <strong>Abstract.</strong> {PAPER_ABSTRACT}
-            </p>
-            <p className="paper-keywords">
-              <strong>Keywords:</strong> {PAPER_KEYWORDS}
-            </p>
-          </section>
-
-          <nav className="paper-toc-mobile" aria-label="Sections">
-            {PAPER.map((chapter) => (
-              <a key={chapter.id} href={`#${chapter.id}`}>
-                {chapter.num}. {chapter.title}
-              </a>
+          <div className="gb-tags">
+            {PAPER_KEYWORDS.split("; ").map((word) => (
+              <span key={word}>{word}</span>
             ))}
-          </nav>
+          </div>
+
+          <Callout kind="info" title="Abstract">
+            {PAPER_ABSTRACT}
+          </Callout>
+
+          <div className="gb-cards">
+            {RECORDS.map((item) => (
+              <div key={item.title} className="gb-card">
+                <span className="gb-ico">
+                  <Icon name={item.icon} size={16} />
+                </span>
+                <strong>{item.title}</strong>
+                <p>{item.body}</p>
+              </div>
+            ))}
+          </div>
 
           {PAPER.map((chapter) => (
-            <section key={chapter.id} id={chapter.id} className="paper-section">
+            <section key={chapter.id} id={chapter.id} className="gb-section">
               <h2>
+                <span className="gb-ico">
+                  <Icon name={chapter.icon || "book"} size={16} />
+                </span>
                 {chapter.num}. {chapter.title}
               </h2>
               {chapter.body.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
+              {chapter.id === "linkability" && philosophy?.parts && (
+                <div className="gb-cards gb-cards-6">
+                  {philosophy.parts.map((part) => (
+                    <a key={part.id} href={`#${part.id}`} className="gb-card gb-card-link">
+                      <span className="gb-ico">
+                        <Icon name={part.icon || "shield"} size={16} />
+                      </span>
+                      <strong>
+                        {part.num} {part.title}
+                      </strong>
+                    </a>
+                  ))}
+                </div>
+              )}
               {chapter.parts?.map((part) => (
-                <div key={part.id} id={part.id} className="paper-part">
+                <div key={part.id} id={part.id} className="gb-part">
                   <h3>
+                    <span className="gb-ico">
+                      <Icon name={part.icon || "book"} size={15} />
+                    </span>
                     {part.num} {part.title}
                   </h3>
                   {part.body.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
+                  {part.note && <Callout kind={part.note.kind} title={part.note.title}>{part.note.body}</Callout>}
                 </div>
               ))}
-              {chapter.figure === "stack" && <StackFigure />}
-              {chapter.figure === "loop" && <LoopFigure />}
+              {chapter.figure === "loop" && (
+                <figure className="gb-fig">
+                  <div className="gb-flow">
+                    {LOOP.map((step, i) => (
+                      <div key={step.title} className="gb-flow-item">
+                        <FlowNode icon={step.icon} title={step.title} />
+                        {i < LOOP.length - 1 && <span className="gb-arrow" />}
+                      </div>
+                    ))}
+                  </div>
+                  <figcaption>Figure 2. Control loop of a single turn.</figcaption>
+                </figure>
+              )}
+              {chapter.figure === "stack" && (
+                <figure className="gb-fig">
+                  <div className="gb-stack">
+                    <FlowNode icon="wallet" title="Wallet" sub="signed message" />
+                    <span className="gb-arrow" />
+                    <div className="gb-stack-col">
+                      <FlowNode icon="monitor" title="/root Windows" sub="Ollama" />
+                      <FlowNode icon="cloud" title="/root web" sub="Hamrin 1.0" />
+                    </div>
+                    <span className="gb-arrow" />
+                    <FlowNode icon="branch" title="Hub" sub="git" />
+                    <span className="gb-arrow" />
+                    <div className="gb-stack-col">
+                      <FlowNode icon="server" title="Site" sub="container" />
+                      <FlowNode icon="globe" title="Name" sub="DNS" />
+                    </div>
+                  </div>
+                  <figcaption>Figure 1. Path from wallet signature to hosted site and name.</figcaption>
+                </figure>
+              )}
               {chapter.table && (
-                <figure className="paper-table">
+                <figure className="gb-table">
                   <figcaption>{chapter.table.caption}</figcaption>
                   <table>
                     <thead>
@@ -135,10 +260,30 @@ export default function PaperPage() {
                   </table>
                 </figure>
               )}
+              {chapter.note && <Callout kind={chapter.note.kind} title={chapter.note.title}>{chapter.note.body}</Callout>}
             </section>
           ))}
 
-          <footer className="paper-foot">
+          <nav className="gb-pager">
+            {prev ? (
+              <a href={`#${prev.id}`}>
+                <small>Previous</small>
+                {prev.title}
+              </a>
+            ) : (
+              <span />
+            )}
+            {next ? (
+              <a href={`#${next.id}`} className="is-next">
+                <small>Next</small>
+                {next.title}
+              </a>
+            ) : (
+              <span />
+            )}
+          </nav>
+
+          <footer className="gb-foot">
             Product rules as of {PAPER_DATE}. chat.useroot.sh/{APP_VERSION}.
             <a href="/">Open the harness</a>
           </footer>
@@ -148,55 +293,31 @@ export default function PaperPage() {
   );
 }
 
-function StackFigure() {
+function Callout({ kind, title, children }) {
+  const icon = kind === "warn" ? "warn" : kind === "hint" ? "check" : "info";
   return (
-    <figure className="paper-fig">
-      <div className="paper-flow" aria-label="Wallet to harness to Hub to Ops">
-        <FlowBox title="Wallet" sub="signed message" />
-        <FlowArrow />
-        <div className="paper-flow-col">
-          <FlowBox title="/root Windows" sub="Ollama" />
-          <FlowBox title="/root web" sub="Hamrin 1.0" />
-        </div>
-        <FlowArrow />
-        <FlowBox title="Hub" sub="git" />
-        <FlowArrow />
-        <div className="paper-flow-col">
-          <FlowBox title="Site" sub="container" />
-          <FlowBox title="Name" sub="DNS" />
-        </div>
+    <aside className={`gb-callout is-${kind}`}>
+      <span className="gb-ico">
+        <Icon name={icon} size={16} />
+      </span>
+      <div>
+        <strong>{title}</strong>
+        <p>{children}</p>
       </div>
-      <figcaption>Figure 1. Path from wallet signature to hosted site and name.</figcaption>
-    </figure>
+    </aside>
   );
 }
 
-function LoopFigure() {
-  const steps = ["goal", "model", "tools", "commit", "result"];
+function FlowNode({ icon, title, sub }) {
   return (
-    <figure className="paper-fig">
-      <div className="paper-flow" aria-label="Turn: goal, model, tools, commit, result">
-        {steps.map((step, i) => (
-          <div key={step} className="paper-flow-item">
-            <FlowBox title={step} />
-            {i < steps.length - 1 && <FlowArrow />}
-          </div>
-        ))}
+    <div className="gb-node">
+      <span className="gb-ico">
+        <Icon name={icon} size={15} />
+      </span>
+      <div>
+        <div className="gb-node-title">{title}</div>
+        {sub && <div className="gb-node-sub">{sub}</div>}
       </div>
-      <figcaption>Figure 2. Control loop of a single turn.</figcaption>
-    </figure>
-  );
-}
-
-function FlowBox({ title, sub }) {
-  return (
-    <div className="paper-flow-box">
-      <div className="paper-flow-title">{title}</div>
-      {sub && <div className="paper-flow-sub">{sub}</div>}
     </div>
   );
-}
-
-function FlowArrow() {
-  return <div className="paper-flow-arrow" aria-hidden="true" />;
 }

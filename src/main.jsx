@@ -20,6 +20,7 @@ if (isTV) {
     );
   });
 } else if (isPaper) {
+  document.documentElement.setAttribute("data-paper", "1");
   import("./components/PaperPage.jsx").then(({ default: PaperPage }) => {
     root.render(
       <StrictMode>

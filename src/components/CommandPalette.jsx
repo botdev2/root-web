@@ -30,7 +30,7 @@ const HITS = [
   { id: "episode:privacy-4", label: "Episode 4 - Privacy & Compliance Aspect", hint: "Whiteboard class, about 5 minutes" },
   { id: "episode:revenue-5", label: "Episode 5 - Managing Revenue Streams", hint: "Whiteboard class, about 5 minutes" },
   { id: "help", label: "Help", hint: "How /root works" },
-  { id: "paper", label: "Paper", hint: "/root and Ops, in points" },
+  { id: "paper", label: "Paper", hint: "The key is the account" },
 ];
 
 const LOOKS = [

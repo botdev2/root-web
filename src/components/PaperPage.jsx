@@ -1,7 +1,16 @@
-import { useEffect } from "react";
-import { PAPER, PAPER_DATE, PAPER_TITLE } from "../paper.js";
+import { useEffect, useState } from "react";
+import {
+  PAPER,
+  PAPER_ABSTRACT,
+  PAPER_CLAIM,
+  PAPER_DATE,
+  PAPER_KICKER,
+  PAPER_NO,
+  PAPER_READ,
+  PAPER_TITLE,
+} from "../paper.js";
 import { APP_VERSION } from "../version.js";
-import { applyTheme, findTheme, readSavedThemeId, readSavedWallpaper } from "../themes.js";
+import "../paper.css";
 
 const LINKS = [
   { href: "/", label: "harness" },
@@ -10,54 +19,285 @@ const LINKS = [
 ];
 
 export default function PaperPage() {
+  const [active, setActive] = useState(PAPER[0].id);
+
   useEffect(() => {
-    applyTheme(findTheme(readSavedThemeId()), readSavedWallpaper());
-    document.title = PAPER_TITLE;
+    document.documentElement.setAttribute("data-paper", "1");
+    document.title = `${PAPER_TITLE} — ${PAPER_KICKER}`;
+    const nodes = PAPER.map((chapter) => document.getElementById(chapter.id)).filter(Boolean);
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) setActive(visible.target.id);
+      },
+      { rootMargin: "-20% 0px -60% 0px", threshold: [0.15, 0.4, 0.7] },
+    );
+    nodes.forEach((node) => io.observe(node));
+    return () => {
+      io.disconnect();
+      document.documentElement.removeAttribute("data-paper");
+    };
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
-      <header className="mx-auto flex max-w-[720px] items-center justify-between gap-4 px-5 py-5 md:px-0 md:pt-10">
-        <a href="/" className="flex items-center gap-2 text-[13px] text-[var(--ink)]">
-          <img src="/palm.png" alt="" className="h-6 w-6 object-contain" />
+    <div className="paper-doc min-h-screen">
+      <header className="paper-top">
+        <a href="/" className="flex items-center gap-2 text-[13px] text-[var(--paper-ink)] no-underline">
+          <img src="/palm.png" alt="" className="h-5 w-5 object-contain" />
           /root
         </a>
-        <nav className="flex gap-4 text-[12px] text-[var(--faint)]">
+        <div className="hidden text-[11px] tracking-[0.2em] text-[var(--paper-faint)] sm:block">
+          {PAPER_NO}
+        </div>
+        <nav className="flex items-center gap-4 text-[12px] text-[var(--paper-faint)]">
           {LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="hover:text-[var(--ink)]">
+            <a key={link.href} href={link.href} className="no-underline hover:text-[var(--paper-ink)]">
               {link.label}
             </a>
           ))}
+          <button type="button" className="paper-print" onClick={() => window.print()}>
+            Print
+          </button>
         </nav>
       </header>
 
-      <article className="mx-auto max-w-[720px] px-5 pb-24 pt-4 md:px-0">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--faint)]">Paper · {PAPER_DATE}</p>
-        <h1 className="mt-2 text-[32px] leading-tight tracking-[-0.03em]">{PAPER_TITLE}</h1>
+      <div className="paper-shell">
+        <nav className="paper-toc" aria-label="Contents">
+          <div className="paper-toc-label">Contents</div>
+          {PAPER.map((chapter) => (
+            <a
+              key={chapter.id}
+              href={`#${chapter.id}`}
+              className={active === chapter.id ? "is-active" : ""}
+            >
+              <span>{chapter.n}</span>
+              {chapter.title}
+            </a>
+          ))}
+        </nav>
 
-        {PAPER.map((section, index) => (
-          <section key={section.id} id={section.id} className="mt-12">
-            <h2 className="text-[13px] uppercase tracking-[0.16em] text-[var(--faint)]">
-              {String(index + 1).padStart(2, "0")} · {section.title}
-            </h2>
-            <ul className="mt-4 space-y-2.5">
-              {section.points.map((point) => (
-                <li key={point} className="flex gap-3 text-[16px] leading-[1.55] text-[var(--ink)]">
-                  <span className="mt-[0.7em] h-1 w-1 shrink-0 rounded-full bg-[var(--faint)]" />
-                  <span>{point}</span>
-                </li>
+        <article className="paper-article">
+          <p className="paper-kicker">
+            {PAPER_KICKER} · {PAPER_DATE} · {PAPER_READ}
+          </p>
+          <h1 className="paper-title">{PAPER_TITLE}</h1>
+          <p className="paper-claim">{PAPER_CLAIM}</p>
+
+          <div className="paper-abstract">
+            <div className="paper-abstract-label">Abstract</div>
+            <p>{PAPER_ABSTRACT}</p>
+          </div>
+
+          <nav className="paper-toc-mobile" aria-label="Chapters">
+            {PAPER.map((chapter) => (
+              <a key={chapter.id} href={`#${chapter.id}`}>
+                {chapter.n} {chapter.title}
+              </a>
+            ))}
+          </nav>
+
+          {PAPER.map((chapter) => (
+            <section key={chapter.id} id={chapter.id} className="paper-section">
+              <h2>
+                <span>{chapter.n}</span>
+                {chapter.title}
+              </h2>
+              {chapter.body.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
               ))}
-            </ul>
-          </section>
-        ))}
+              {chapter.quote && <blockquote>{chapter.quote}</blockquote>}
+              {chapter.figure === "stack" && <StackFigure />}
+              {chapter.figure === "loop" && <LoopFigure />}
+              {chapter.figure === "credit" && <CreditFigure />}
+              {chapter.figure === "ship" && <ShipFigure />}
+              {chapter.modes && (
+                <div className="paper-modes">
+                  {chapter.modes.map((mode) => (
+                    <div key={mode.name} className="paper-mode">
+                      <div className="paper-mode-name" style={{ color: mode.color }}>
+                        {mode.name}
+                      </div>
+                      <div>{mode.line}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {chapter.table && (
+                <figure className="paper-table">
+                  <figcaption>{chapter.table.caption}</figcaption>
+                  <table>
+                    <thead>
+                      <tr>
+                        {chapter.table.cols.map((col) => (
+                          <th key={col}>{col}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chapter.table.rows.map((row) => (
+                        <tr key={row.join("-")}>
+                          {row.map((cell, i) => (
+                            <td key={`${row[0]}-${i}`}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </figure>
+              )}
+              {chapter.nots && (
+                <ul className="paper-nots">
+                  {chapter.nots.map((item) => (
+                    <li key={item}>
+                      <span>not</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ))}
 
-        <footer className="mt-16 border-t border-[var(--stroke-soft)] pt-6 text-[12px] text-[var(--faint)]">
-          $PALM · chat.useroot.sh/{APP_VERSION} ·{" "}
-          <a href="/" className="underline hover:text-[var(--ink)]">
-            Open the harness
-          </a>
-        </footer>
-      </article>
+          <footer className="paper-foot">
+            <div>
+              PALM paper 01 · rules as of {PAPER_DATE} · chat.useroot.sh/{APP_VERSION}
+            </div>
+            <a href="/">Open the harness</a>
+          </footer>
+        </article>
+      </div>
     </div>
+  );
+}
+
+function StackFigure() {
+  return (
+    <figure className="paper-fig">
+      <svg viewBox="0 0 640 220" role="img" aria-label="Wallet to harness to Hub to Ops">
+        <Defs id="paper-arrow-stack" />
+        <text x="8" y="18" className="paper-svg-cap">
+          Figure 1 · One key, four layers
+        </text>
+        <Box x="8" y="44" w="150" h="56" title="Wallet" sub="sign once" />
+        <Arrow x1="166" y1="72" x2="198" y2="72" marker="paper-arrow-stack" />
+        <Box x="206" y="28" w="168" h="44" title="/root Windows" sub="localhost:11434" />
+        <Box x="206" y="84" w="168" h="44" title="/root web" sub="Hamrin 1.0" />
+        <Arrow x1="382" y1="72" x2="414" y2="72" marker="paper-arrow-stack" />
+        <Box x="422" y="44" w="96" h="56" title="Hub" sub="git" />
+        <Arrow x1="526" y1="72" x2="558" y2="72" marker="paper-arrow-stack" />
+        <Box x="566" y="28" w="66" h="44" title="Site" sub="box" />
+        <Box x="566" y="84" w="66" h="44" title="Name" sub="DNS" />
+      </svg>
+    </figure>
+  );
+}
+
+function LoopFigure() {
+  const steps = ["goal", "model", "tools", "commit", "result"];
+  return (
+    <figure className="paper-fig">
+      <svg viewBox="0 0 640 120" role="img" aria-label="A turn: goal, model, tools, commit, result">
+        <Defs id="paper-arrow-loop" />
+        <text x="8" y="18" className="paper-svg-cap">
+          Figure 2 · A turn
+        </text>
+        {steps.map((step, i) => {
+          const x = 16 + i * 124;
+          return (
+            <g key={step}>
+              <Box x={x} y="40" w="96" h="48" title={step} />
+              {i < steps.length - 1 && (
+                <Arrow x1={x + 100} y1="64" x2={x + 120} y2="64" marker="paper-arrow-loop" />
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </figure>
+  );
+}
+
+function CreditFigure() {
+  return (
+    <figure className="paper-fig paper-fig-eq">
+      <div className="paper-eq-label">Figure 3 · Hamrin window</div>
+      <div className="paper-eq">
+        <span>credits</span>
+        <span className="paper-eq-op">=</span>
+        <span>
+          ⌊ (held + staked) / 1,000 ⌋
+          <small>per 14 days</small>
+        </span>
+        <span className="paper-eq-op">+</span>
+        <span>
+          0.5
+          <small>welcome, once</small>
+        </span>
+        <span className="paper-eq-op">+</span>
+        <span>
+          extras
+          <small>achievements</small>
+        </span>
+      </div>
+    </figure>
+  );
+}
+
+function ShipFigure() {
+  const steps = [
+    { n: "1", t: "Scaffold", d: "Vite + React, port 3000" },
+    { n: "2", t: "Hub repo", d: "git on this wallet" },
+    { n: "3", t: "Live URL", d: "Ops builds from Hub" },
+  ];
+  return (
+    <figure className="paper-fig">
+      <div className="paper-eq-label">Figure 4 · Ship</div>
+      <div className="paper-ship">
+        {steps.map((step, i) => (
+          <div key={step.n} className="paper-ship-step">
+            <div className="paper-ship-n">{step.n}</div>
+            <div>
+              <div className="paper-ship-t">{step.t}</div>
+              <div className="paper-ship-d">{step.d}</div>
+            </div>
+            {i < steps.length - 1 && <div className="paper-ship-arrow" aria-hidden="true" />}
+          </div>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
+function Defs({ id }) {
+  return (
+    <defs>
+      <marker id={id} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#c4a574" />
+      </marker>
+    </defs>
+  );
+}
+
+function Box({ x, y, w, h, title, sub }) {
+  return (
+    <g>
+      <rect x={x} y={y} width={w} height={h} rx="6" className="paper-svg-box" />
+      <text x={x + w / 2} y={y + (sub ? h / 2 - 4 : h / 2 + 4)} textAnchor="middle" className="paper-svg-title">
+        {title}
+      </text>
+      {sub && (
+        <text x={x + w / 2} y={y + h / 2 + 14} textAnchor="middle" className="paper-svg-sub">
+          {sub}
+        </text>
+      )}
+    </g>
+  );
+}
+
+function Arrow({ x1, y1, x2, y2, marker }) {
+  return (
+    <line x1={x1} y1={y1} x2={x2} y2={y2} className="paper-svg-arrow" markerEnd={`url(#${marker})`} />
   );
 }

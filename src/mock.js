@@ -270,9 +270,9 @@ export const HELP = [
     id: "marketplace",
     section: "Ship",
     title: "Marketplace",
-    summary: "WIP. wPALM = wallet + staked. Same USD price as PALM. Service prices are mockups.",
-    body: "Marketplace is the PALM desk. An address has as much wPALM as PALM in the wallet plus staked. 1 wPALM = 1 PALM, so the dollar value is the same. Hamrin, Ops, and crawler are listed in wPALM. Nothing on this tab spends.",
-    bullets: ["wPALM = PALM in wallet + PALM staked", "USD of wPALM is the PALM price", "Service prices are mockups in wPALM", "Nothing here spends"],
+    summary: "P2P marketplace. Sellers list in PALM; buyers lock PALM in escrow until delivery is released.",
+    body: "Marketplace is peer-to-peer. A seller posts a listing with a PALM price. A buyer funds escrow (price plus a 1% desk fee); PALM sits between both sides until the seller marks delivered and the buyer releases — or either side refunds or disputes. Mock desk for now; nothing spends on-chain yet.",
+    bullets: ["List anything for a PALM price", "Buyer funds escrow · PALM locked between peers", "Seller delivers · buyer releases (or refund / dispute)", "1% desk fee on funded escrow · mock, nothing spends"],
   },
   {
     id: "imagegen",

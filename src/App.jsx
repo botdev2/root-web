@@ -58,8 +58,10 @@ import Composer from "./components/Composer.jsx";
 import AvatarOverlay from "./components/AvatarOverlay.jsx";
 import GuideCursor from "./components/GuideCursor.jsx";
 import { playGuide } from "./avatarGuide.js";
+import { matchHotkey } from "./hotkeys.js";
 import FilesInspector from "./components/FilesInspector.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
+import HotkeysOverlay from "./components/HotkeysOverlay.jsx";
 import ShipFlow from "./components/ShipFlow.jsx";
 import Toast from "./components/Toast.jsx";
 import AchievementToasts from "./components/AchievementToasts.jsx";
@@ -124,6 +126,7 @@ export default function App() {
     }
   });
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [hotkeysOpen, setHotkeysOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(() => {
     try {
@@ -342,30 +345,105 @@ export default function App() {
     };
   }, [dayTasksEnabled, view, sessionId]);
 
-  useEffect(() => {
-    const onKey = (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setPaletteOpen(true);
-      }
-      if (event.key === "Escape") {
-        setPaletteOpen(false);
-        setNavOpen(false);
-        setFilesOpen(false);
-        setConnectOpen(false);
-        setUnlockOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   const openView = (id) => {
     const next = id === "plugins" ? "marketplace" : id;
     setView(next);
     setNavOpen(false);
     if (next === "settings") setSettingsTab("appearance");
   };
+
+  const runHotkey = (id) => {
+    if (id === "escape") {
+      if (hotkeysOpen) setHotkeysOpen(false);
+      else if (paletteOpen) setPaletteOpen(false);
+      else {
+        setNavOpen(false);
+        setFilesOpen(false);
+        setConnectOpen(false);
+        setUnlockOpen(false);
+      }
+      return;
+    }
+    if (id === "palette") {
+      setHotkeysOpen(false);
+      setPaletteOpen(true);
+      return;
+    }
+    if (id === "hotkeys") {
+      setPaletteOpen(false);
+      setHotkeysOpen(true);
+      return;
+    }
+    if (id === "nav") {
+      setNavOpen((open) => !open);
+      return;
+    }
+    if (id === "files") {
+      setFilesOpen((open) => !open);
+      return;
+    }
+    if (id === "settings") {
+      openView("settings");
+      return;
+    }
+    if (id === "help") {
+      openView("help");
+      return;
+    }
+    if (id === "miles") {
+      setAvatarOn((value) => {
+        const next = !value;
+        try {
+          localStorage.setItem("root-web-avatar-on", next ? "1" : "0");
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+      return;
+    }
+    if (id === "new") {
+      setView("home");
+      setSessionId(null);
+      setSessionTitle("New Agent");
+      setDraft("");
+      setAttachments([]);
+      setNavOpen(false);
+      return;
+    }
+    if (id === "send") {
+      sendRef.current?.(draft);
+      return;
+    }
+    if (id === "agent" || id === "ask" || id === "plan") {
+      setMode?.(id);
+      return;
+    }
+    if (id === "ship") {
+      setConnectOpen(true);
+      return;
+    }
+    if (id === "market") {
+      enableMarket(!marketOn);
+      return;
+    }
+    if (id === "paper") {
+      window.location.href = "/paper";
+    }
+  };
+  const hotkeyRef = useRef(runHotkey);
+  hotkeyRef.current = runHotkey;
+
+  useEffect(() => {
+    const onKey = (event) => {
+      const id = matchHotkey(event);
+      if (!id) return;
+      event.preventDefault();
+      hotkeyRef.current(id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (!isConnected || !address) {
@@ -1099,6 +1177,21 @@ export default function App() {
         setNavOpen,
         startTour,
         view: () => view,
+        openHotkeys: () => setHotkeysOpen(true),
+        openPalette: () => setPaletteOpen(true),
+        openPaper: () => {
+          window.location.href = "/paper";
+        },
+        newChat: () => {
+          setView("home");
+          setSessionId(null);
+          setSessionTitle("New Agent");
+          setDraft("");
+          setAttachments([]);
+        },
+        setTheme: (id) => pickTheme(id),
+        setWallpaper: (id) => setWallpaperId(id),
+        toggleMarket: () => enableMarket(!marketOn),
       });
     } finally {
       if (guideRun.current === token) {
@@ -1557,11 +1650,33 @@ export default function App() {
           }}
         />
       )}
+      {hotkeysOpen && (
+        <HotkeysOverlay
+          onClose={() => setHotkeysOpen(false)}
+          onPick={(id) => {
+            setHotkeysOpen(false);
+            if (id !== "escape" && id !== "hotkeys") runHotkey(id);
+          }}
+        />
+      )}
       {paletteOpen && (
         <CommandPalette
           onClose={() => setPaletteOpen(false)}
           onPick={(id) => {
             setPaletteOpen(false);
+            if (id === "hotkeys") {
+              setHotkeysOpen(true);
+              return;
+            }
+            if (id === "miles") {
+              setAvatarOn(true);
+              try {
+                localStorage.setItem("root-web-avatar-on", "1");
+              } catch {
+                /* ignore */
+              }
+              return;
+            }
             if (id === "market-mode") {
               enableMarket(!marketOn);
               return;

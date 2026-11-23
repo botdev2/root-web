@@ -341,10 +341,32 @@ export const HELP = [
   {
     id: "keyboard",
     section: "Control",
-    title: "Keyboard",
-    summary: "Shortcuts for this chrome.",
-    body: "The palette is the fastest way to every destination. Escape closes overlays.",
-    bullets: ["Ctrl+K / ⌘K — command palette", "Escape — close menu, files, palette, Ship popup", "Enter — send on desktop"],
+    title: "Hotkeys",
+    summary: "Shortcuts for this chrome, and what Miles can run for you.",
+    body: "Press Ctrl+/ (⌘/ on Mac) for the live list. Click a row there to fire the action. Miles understands the same verbs in plain language.",
+    bullets: [
+      "Ctrl+K / ⌘K — command palette",
+      "Ctrl+/ — hotkey list",
+      "Ctrl+N — New Agent",
+      "Ctrl+B — sidebar · Ctrl+Shift+F — files",
+      "Ctrl+1 / 2 / 3 — Agent / Ask / Plan",
+      "Ctrl+Shift+M — Miles · Ctrl+Shift+S — Ship",
+      "Ctrl+Shift+D — Market Mode · Ctrl+, — Settings",
+      "Ask Miles: open markets, ship an app, nvidia theme, write a prompt that…",
+    ],
+  },
+  {
+    id: "miles-help",
+    section: "Control",
+    title: "Miles",
+    summary: "Corner companion that clicks the UI and prompts Hamrin.",
+    body: "Miles reads the open chat and repo. Say what you want done. Clear requests run instantly; fuzzier ones go through Hamrin with a guide fence so he can still drive the chrome.",
+    bullets: [
+      "Open Miles with Ctrl+Shift+M or the Miles button",
+      "“ship an app”, “open files”, “switch to agent”, “nvidia theme”",
+      "“write a prompt that reviews the README” fills and sends to Hamrin",
+      "He spends the same Hamrin credits",
+    ],
   },
 ];
 

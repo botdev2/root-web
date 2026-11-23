@@ -101,6 +101,9 @@ export default function HelpView({ onOpen, onTour, onEpisode, onShip }) {
               Open /paper
             </a>
           )}
+          {page.id === "keyboard" && (
+            <p className="mt-5 text-[13px] text-[var(--muted)]">Press Ctrl+/ (⌘/) anytime for the live hotkey sheet.</p>
+          )}
           {page.id === "control" && (
             <button type="button" onClick={() => onOpen?.("settings")} className="mt-5 text-[13px] text-[var(--accent)]">
               Open Settings →

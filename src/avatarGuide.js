@@ -69,7 +69,7 @@ export function findGuideNode(id) {
 function parseLoose(block) {
   const out = {};
   for (const line of String(block || "").split("\n")) {
-    const match = line.match(/^\s*"?([a-z]+)"?\s*[:=]\s*(.+?)\s*,?\s*$/i);
+    const match = line.match(/^\s*"?([a-zA-Z]+)"?\s*[:=]\s*(.+?)\s*,?\s*$/i);
     if (!match) continue;
     let value = match[2].trim().replace(/^["']|["']$/g, "");
     if (value === "true") value = true;
@@ -98,9 +98,33 @@ export function sanitizeGuide(action, { allowSend = true } = {}) {
   const send = allowSend && action.send === true;
   const files = action.files === true;
   const ship = action.ship === true;
+  const newChat = action.newChat === true || action.new === true;
+  const palette = action.palette === true;
+  const hotkeys = action.hotkeys === true;
+  const paper = action.paper === true;
+  const market = action.market === true || action.marketMode === true;
+  const theme = typeof action.theme === "string" ? action.theme.slice(0, 40) : "";
+  const wallpaper = typeof action.wallpaper === "string" ? action.wallpaper.slice(0, 40) : "";
   const tour = action.tour === true ? true : typeof action.tour === "string" ? action.tour.slice(0, 40) : "";
-  if (!clicks.length && !view && !mode && !prompt && !files && !ship && !tour) return null;
-  return { clicks, view, mode, prompt, send, files, ship, tour };
+  if (
+    !clicks.length &&
+    !view &&
+    !mode &&
+    !prompt &&
+    !files &&
+    !ship &&
+    !tour &&
+    !newChat &&
+    !palette &&
+    !hotkeys &&
+    !paper &&
+    !market &&
+    !theme &&
+    !wallpaper
+  ) {
+    return null;
+  }
+  return { clicks, view, mode, prompt, send, files, ship, tour, newChat, palette, hotkeys, paper, market, theme, wallpaper };
 }
 
 export function parseGuide(raw, options) {
@@ -127,6 +151,16 @@ export function parseGuide(raw, options) {
 export async function playGuide(action, api) {
   if (!action) return;
   const alive = () => api.alive?.() !== false;
+  if (action.hotkeys) api.openHotkeys?.();
+  if (action.palette) api.openPalette?.();
+  if (action.paper) {
+    api.openPaper?.();
+    return;
+  }
+  if (action.newChat) api.newChat?.();
+  if (action.theme) api.setTheme?.(action.theme);
+  if (action.wallpaper) api.setWallpaper?.(action.wallpaper);
+  if (action.market) api.toggleMarket?.();
   if (action.view) api.openView?.(action.view);
   if (action.mode) api.setMode?.(action.mode);
   if (action.files) api.setFilesOpen?.(true);

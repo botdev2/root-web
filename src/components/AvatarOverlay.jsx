@@ -4,6 +4,7 @@ import { useAccount } from "wagmi";
 import portrait from "../assets/avatar.png";
 import { sendTurn, watchAvatar } from "../glmChat.js";
 import { parseGuide } from "../avatarGuide.js";
+import { milesIntent } from "../milesMagic.js";
 
 const CHAT_KEY = "root-web-avatar-conversation";
 const HISTORY_KEY = "root-web-avatar-history";
@@ -99,8 +100,8 @@ function deadThread(error) {
 function greeting(view, projectLabel) {
   const where = view === "home" ? "home" : String(view || "this screen");
   return projectLabel
-    ? `Hey, I'm Miles. I can see this chat and ${projectLabel}. I'll jump in if I notice something.`
-    : `Hey, I'm Miles. I can see this chat and the open repo. I'll jump in if I notice something on ${where}.`;
+    ? `Hey, I'm Miles. I can see this chat and ${projectLabel}. Ask me to open screens, ship, switch modes, or prompt Hamrin.`
+    : `Hey, I'm Miles. Ask me to click around or prompt Hamrin — I'll do it on ${where}.`;
 }
 
 function workspacePayload(workspace) {
@@ -216,6 +217,16 @@ export default function AvatarOverlay({
     setBusy(true);
     const pending = [...linesRef.current, { role: "user", text: said }];
     remember(pending);
+    const magic = milesIntent(said);
+    if (magic?.action) {
+      remember([...pending, { role: "assistant", text: magic.say || "On it." }]);
+      busyRef.current = false;
+      setBusy(false);
+      setTalking(true);
+      setFailed(false);
+      onGuide?.(magic.action);
+      return;
+    }
     const turn = async (conversationId) =>
       sendTurn(address, {
         conversationId,

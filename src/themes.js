@@ -707,7 +707,7 @@ export const WALLPAPERS = [
   {
     id: "jensen-huang",
     name: "Jensen Huang",
-    detail: "NVIDIA keynote, CES 2025 · CC0",
+    detail: "Jensen Huang · NVIDIA",
     src: "/wallpapers/jensen-huang.jpg",
     thumb: "/wallpapers/thumb/jensen-huang.jpg",
     uhd: true,

@@ -708,9 +708,9 @@ export const WALLPAPERS = [
     id: "jensen-huang",
     name: "Jensen Huang",
     detail: "Jensen Huang · NVIDIA",
-    src: "/wallpapers/jensen-huang.jpg",
-    thumb: "/wallpapers/thumb/jensen-huang.jpg",
-    uhd: true,
+    src: "/wallpapers/jensen-huang-nvidia.jpg",
+    thumb: "/wallpapers/thumb/jensen-huang-nvidia.jpg",
+    uhd: false,
   },
   ...[
     ["alpine-mirror", "Alpine Mirror", "Clouds in still mountain water"],

@@ -314,6 +314,8 @@ export default function App() {
     }
     if (marketOn) setPrefs?.({ marketMode: false });
     setThemeId(id);
+    const next = findTheme(id);
+    if (next?.wallpaperId) setWallpaperId(next.wallpaperId);
   };
 
   useEffect(() => {

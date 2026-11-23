@@ -638,6 +638,40 @@ function makeTheme({ id, name, description, isDark, bg, ink, accent, green, ambe
   };
 }
 
+THEMES.push({
+  id: "nvidia",
+  name: "NVIDIA",
+  description: "Jensen green on black — RTX keynote",
+  isDark: true,
+  wallpaper: true,
+  wallpaperId: "jensen-huang",
+  swatches: ["#050505", "#76B900", "#B5E63A", "#1A1A1A"],
+  vars: {
+    "--bg": "#050505",
+    "--top": "#0A0A0A",
+    "--sidebar": "#0D0D0D",
+    "--sidebar-sel": "#14240A",
+    "--panel": "#121212",
+    "--panel-soft": "#171717",
+    "--input": "#080808",
+    "--stroke": "#1F3A0A",
+    "--stroke-soft": "#15260A",
+    "--ink": "#F2F7EA",
+    "--muted": "#9AAD86",
+    "--faint": "#647556",
+    "--accent": "#76B900",
+    "--accent-soft": "#1A3208",
+    "--hover": "#15280A",
+    "--tab": "#1E3A0C",
+    "--code": "#090909",
+    "--bubble": "#14220A",
+    "--green": "#76B900",
+    "--amber": "#C4D94A",
+    "--rose": "#C07068",
+    "--shell": "linear-gradient(160deg, #0A0A0A, #050505 50%, #0C1A05)",
+  },
+});
+
 THEMES.push(
   ...[
     { id: "aurora", name: "Aurora", description: "Northern lights over black ice", isDark: true, bg: "#0B1418", ink: "#E4F5EF", accent: "#5CE0B8", rose: "#B58AE0", tint: "#5CE0B8" },
@@ -670,6 +704,14 @@ export const WALLPAPERS = [
   { id: "storm", name: "Storm ocean", src: "/wallpaper.png" },
   { id: "serenity", name: "Serenity", src: "/serenity-wallpaper.jpg" },
   { id: "morning", name: "Morning", src: "/morning-wallpaper.png" },
+  {
+    id: "jensen-huang",
+    name: "Jensen Huang",
+    detail: "NVIDIA keynote, CES 2025 · CC0",
+    src: "/wallpapers/jensen-huang.jpg",
+    thumb: "/wallpapers/thumb/jensen-huang.jpg",
+    uhd: true,
+  },
   ...[
     ["alpine-mirror", "Alpine Mirror", "Clouds in still mountain water"],
     ["polar-night", "Polar Night", "Aurora over dark pines"],

@@ -696,7 +696,7 @@ const CITY_THEMES = [
   {
     id: "snowy-helsinki",
     name: "Snowy Helsinki",
-    detail: "Helsinki Cathedral in winter snow",
+    detail: "Helsinki Cathedral in winter · Wikimedia",
     description: "City · Baltic ice, pale blue and slate",
     isDark: false,
     bg: "#E8EEF4",
@@ -710,7 +710,7 @@ const CITY_THEMES = [
   {
     id: "sunny-sf",
     name: "Sunny SF",
-    detail: "Golden Gate Bridge in bay sun",
+    detail: "Golden Gate from Marin Headlands · Wikimedia",
     description: "City · Bay fog lifting into gold",
     isDark: false,
     bg: "#F6EFE3",
@@ -724,7 +724,7 @@ const CITY_THEMES = [
   {
     id: "rainy-london",
     name: "Rainy London",
-    detail: "Westminster in soft grey rain",
+    detail: "Rain on Westminster windows · Wikimedia",
     description: "City · Wet pavement and cool grey",
     isDark: true,
     bg: "#16181C",
@@ -738,7 +738,7 @@ const CITY_THEMES = [
   {
     id: "midnight-nyc",
     name: "Midnight NYC",
-    detail: "Midtown Manhattan after dark",
+    detail: "Manhattan skyline at night · Wikimedia",
     description: "City · Taxi amber on black glass",
     isDark: true,
     bg: "#0A0A0C",
@@ -752,7 +752,7 @@ const CITY_THEMES = [
   {
     id: "neon-tokyo",
     name: "Neon Tokyo",
-    detail: "Rain-slick neon street canyon",
+    detail: "Kabukicho neon street · Wikimedia",
     description: "City · Rain-slick streets, magenta and cyan",
     isDark: true,
     bg: "#0D0A1F",
@@ -765,7 +765,7 @@ const CITY_THEMES = [
   {
     id: "aurora-reykjavik",
     name: "Aurora Reykjavík",
-    detail: "Northern lights over Reykjavík coast",
+    detail: "Aurora over Solfar, Reykjavik · Wikimedia",
     description: "City · Green sky over volcanic rock",
     isDark: true,
     bg: "#0A1214",
@@ -779,7 +779,7 @@ const CITY_THEMES = [
   {
     id: "golden-dubai",
     name: "Golden Dubai",
-    detail: "Burj Khalifa in desert gold hour",
+    detail: "Dubai from Burj Khalifa · Wikimedia",
     description: "City · Desert heat and tower gold",
     isDark: true,
     bg: "#14100A",
@@ -793,7 +793,7 @@ const CITY_THEMES = [
   {
     id: "misty-kyoto",
     name: "Misty Kyoto",
-    detail: "Temple pines in morning fog",
+    detail: "Mount Hiei temple in fog · Wikimedia",
     description: "City · Temple pine and soft fog",
     isDark: false,
     bg: "#E8EDE6",
@@ -807,7 +807,7 @@ const CITY_THEMES = [
   {
     id: "blue-lisbon",
     name: "Blue Lisbon",
-    detail: "Azulejo hills over the Tagus",
+    detail: "Alfama rooftops, Lisbon · Wikimedia",
     description: "City · Azulejo tile and Atlantic light",
     isDark: false,
     bg: "#E6EEF6",
@@ -821,7 +821,7 @@ const CITY_THEMES = [
   {
     id: "humid-singapore",
     name: "Humid Singapore",
-    detail: "Tropic skyline after the rain",
+    detail: "Gardens by the Bay Supertrees · Wikimedia",
     description: "City · Tropic green after the rain",
     isDark: false,
     bg: "#E6F0E8",
@@ -835,7 +835,7 @@ const CITY_THEMES = [
   {
     id: "late-paris",
     name: "Late Paris",
-    detail: "Seine dusk and warm stone",
+    detail: "Paris skyline at sunset · Wikimedia",
     description: "City · Warm stone after dusk",
     isDark: true,
     bg: "#161218",
@@ -849,7 +849,7 @@ const CITY_THEMES = [
   {
     id: "foggy-seattle",
     name: "Foggy Seattle",
-    detail: "Space Needle under marine layer",
+    detail: "Hazy Seattle skyline · Wikimedia",
     description: "City · Evergreen under low cloud",
     isDark: true,
     bg: "#101412",
@@ -866,7 +866,7 @@ THEMES.push(
   ...CITY_THEMES.map((city) => {
     const theme = makeTheme(city);
     theme.wallpaper = true;
-    theme.wallpaperId = city.id;
+    theme.wallpaperId = city.id + "-4k";
     theme.city = true;
     return theme;
   }),
@@ -893,12 +893,12 @@ export const WALLPAPERS = [
     uhd: false,
   },
   ...CITY_THEMES.map((city) => ({
-    id: city.id,
+    id: city.id + "-4k",
     name: city.name,
     detail: city.detail,
-    src: `/wallpapers/${city.id}.jpg`,
-    thumb: `/wallpapers/thumb/${city.id}.jpg`,
-    uhd: false,
+    src: `/wallpapers/${city.id}-4k.jpg`,
+    thumb: `/wallpapers/thumb/${city.id}-4k.jpg`,
+    uhd: true,
     city: true,
   })),
   ...[

@@ -10,7 +10,19 @@ const THEMES = [
   ["serenity", /\bserenity\b/i],
   ["obsidian", /\bobsidian\b/i],
   ["ember", /\bember\b/i],
+  ["aurora-reykjavik", /\b(?:aurora\s*)?reykjav[ií]k\b|\baurora\s+reyk/i],
   ["aurora", /\baurora\b/i],
+  ["snowy-helsinki", /\b(?:snowy\s*)?helsinki\b|\bsnowy\s+helsinki\b/i],
+  ["sunny-sf", /\b(?:sunny\s*)?(?:sf|san\s*francisco)\b/i],
+  ["rainy-london", /\b(?:rainy\s*)?london\b/i],
+  ["midnight-nyc", /\b(?:midnight\s*)?(?:nyc|new\s*york)\b/i],
+  ["neon-tokyo", /\b(?:neon\s*)?tokyo\b/i],
+  ["golden-dubai", /\b(?:golden\s*)?dubai\b/i],
+  ["misty-kyoto", /\b(?:misty\s*)?kyoto\b/i],
+  ["blue-lisbon", /\b(?:blue\s*)?lisbon\b/i],
+  ["humid-singapore", /\b(?:humid\s*)?singapore\b/i],
+  ["late-paris", /\b(?:late\s*)?paris\b/i],
+  ["foggy-seattle", /\b(?:foggy\s*)?seattle\b/i],
 ];
 
 function say(text, action) {
@@ -85,6 +97,11 @@ export function milesIntent(raw) {
   }
   if (/\bnvidia\b/.test(lower)) {
     return say("NVIDIA theme with Jensen.", { theme: "nvidia" });
+  }
+  for (const [id, re] of THEMES) {
+    if (!re.test(text)) continue;
+    if (!/helsinki|sf|francisco|london|nyc|york|tokyo|reykjav|dubai|kyoto|lisbon|singapore|paris|seattle/.test(lower)) continue;
+    return say(`Theme · ${id.replace(/-/g, " ")}.`, { theme: id });
   }
 
   const promptMatch = text.match(

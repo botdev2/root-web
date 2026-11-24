@@ -19,6 +19,7 @@ import {
   resetMarketplace,
   totalDue,
 } from "../../marketplace.js";
+import { trackActivity } from "../../milesGreeting.js";
 import { Card, Field, Ghost, Page, Primary, Section, Tabs } from "../ui.jsx";
 
 export default function MarketplaceView({ credit = null }) {
@@ -41,13 +42,14 @@ export default function MarketplaceView({ credit = null }) {
   );
   const escrow = useMemo(() => ordersFor(store, address), [store, address]);
 
-  function apply(result) {
+  function apply(result, note) {
     if (result.error) {
       setFlash(result.error);
       return;
     }
     setStore(result.store);
     setFlash("");
+    if (note && address) trackActivity(address, { type: "market", label: note });
   }
 
   function onCreate(event) {
@@ -71,6 +73,7 @@ export default function MarketplaceView({ credit = null }) {
     setForm({ title: "", blurb: "", category: "service", price: "50" });
     setTab("mine");
     setFlash("Listed. Buyers fund PALM into escrow.");
+    trackActivity(address, { type: "market", label: "Listed on marketplace", detail: form.title.slice(0, 80) });
   }
 
   return (
@@ -149,7 +152,7 @@ export default function MarketplaceView({ credit = null }) {
             items={listings}
             price={price}
             address={address}
-            onBuy={(id) => apply(fundEscrow(store, id, address))}
+            onBuy={(id) => apply(fundEscrow(store, id, address), "Funded marketplace escrow")}
           />
         </Section>
       )}
@@ -171,7 +174,7 @@ export default function MarketplaceView({ credit = null }) {
               price={price}
               address={address}
               mine
-              onCancel={(id) => apply(cancelListing(store, id, address))}
+              onCancel={(id) => apply(cancelListing(store, id, address), "Cancelled a marketplace listing")}
             />
           )}
         </Section>

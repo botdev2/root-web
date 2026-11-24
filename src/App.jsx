@@ -56,9 +56,18 @@ import ChatView from "./components/ChatView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import Composer from "./components/Composer.jsx";
 import AvatarOverlay from "./components/AvatarOverlay.jsx";
+import MilesGreetingPopup from "./components/MilesGreetingPopup.jsx";
 import GuideCursor from "./components/GuideCursor.jsx";
 import { playGuide } from "./avatarGuide.js";
 import { matchHotkey } from "./hotkeys.js";
+import {
+  buildGreeting,
+  markGreetingShown,
+  saveLeftOff,
+  shouldShowGreeting,
+  trackActivity,
+  viewLabel,
+} from "./milesGreeting.js";
 import FilesInspector from "./components/FilesInspector.jsx";
 import CommandPalette from "./components/CommandPalette.jsx";
 import HotkeysOverlay from "./components/HotkeysOverlay.jsx";
@@ -125,6 +134,8 @@ export default function App() {
       return false;
     }
   });
+  const [milesHello, setMilesHello] = useState(null);
+  const milesTrackViews = useRef(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [hotkeysOpen, setHotkeysOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -478,6 +489,26 @@ export default function App() {
     reportQuestEvent("view:" + view);
   }, [view, opsToken, address]);
 
+  // Miles day-part greeting once per signed-in visit (after a short away).
+  useEffect(() => {
+    if (!opsToken || !address || tour || connectOpen) return;
+    if (!shouldShowGreeting(address)) return;
+    const payload = buildGreeting(address);
+    setMilesHello(payload);
+  }, [opsToken, address, tour, connectOpen]);
+
+  useEffect(() => {
+    if (!opsToken || !address) {
+      milesTrackViews.current = false;
+      return;
+    }
+    if (!milesTrackViews.current) {
+      milesTrackViews.current = true;
+      return;
+    }
+    trackActivity(address, { type: "view", label: "Opened " + viewLabel(view) });
+  }, [view, opsToken, address]);
+
   const refreshCredits = async () => {
     if (!opsToken || !address) return;
     try {
@@ -617,6 +648,30 @@ export default function App() {
   const listedProjects = opsProjects || [];
   const listedProjectId = opsProjectId || opsProjects?.[0]?.id || "";
   const activeProject = listedProjects.find((item) => item.id === listedProjectId) || null;
+
+  // Remember desk position for Miles' next login greeting.
+  useEffect(() => {
+    if (!opsToken || !address) return undefined;
+    const snap = () =>
+      saveLeftOff(address, {
+        view,
+        projectId: activeProject?.id || "",
+        projectLabel: activeProject?.label || "",
+        sessionId: sessionId || "",
+        sessionTitle: sessionTitle || "",
+        mode,
+      });
+    const onHide = () => {
+      if (document.hidden) snap();
+    };
+    window.addEventListener("pagehide", snap);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      snap();
+      window.removeEventListener("pagehide", snap);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [opsToken, address, view, activeProject?.id, activeProject?.label, sessionId, sessionTitle, mode]);
 
   const loadRepoRef = useRef(() => {});
   loadRepoRef.current = () => {
@@ -892,6 +947,11 @@ export default function App() {
           markWritten(projectRow, payload, message);
           seedFiles?.(projectRow.id, payload);
           recordCommit?.(projectRow.id, String(message || "Update from /root").slice(0, 72));
+          trackActivity(address, {
+            type: "ship",
+            label: "Shipped to " + (projectRow.label || "repo"),
+            detail: String(message || "Update from /root").slice(0, 120),
+          });
           const at = new Date().toISOString();
           setOpsProjects((prev) => (prev || []).map((item) => (item.id === projectRow.id ? { ...item, activityAt: at } : item)));
           setLastCommit((prev) => {
@@ -924,6 +984,11 @@ export default function App() {
       }
       setSessionId(cloudId);
       if (desk) saveBook((current) => ({ ...current, sessionId: cloudId }));
+      trackActivity(address, {
+        type: "chat",
+        label: desk ? "Trades chat with Hamrin" : "Agent chat · " + (title || "New Agent"),
+        detail: String(value || "").replace(/\s+/g, " ").trim().slice(0, 120),
+      });
       setLocal((prev) => {
         const next = { ...prev };
         for (const dropId of result.dropped || []) delete next[dropId];
@@ -1566,9 +1631,41 @@ export default function App() {
           </main>
         </div>
       </div>
+      {milesHello && (
+        <MilesGreetingPopup
+          payload={milesHello}
+          onClose={() => {
+            markGreetingShown(address);
+            setMilesHello(null);
+          }}
+          onTalk={() => {
+            markGreetingShown(address);
+            setMilesHello(null);
+            setAvatarOn(true);
+            try {
+              localStorage.setItem("root-web-avatar-on", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+          onContinue={() => {
+            const left = milesHello.leftOff;
+            markGreetingShown(address);
+            setMilesHello(null);
+            if (!left) return;
+            if (left.projectId) setOpsProjectId(left.projectId);
+            if (left.mode) setMode?.(left.mode);
+            if (left.sessionId) {
+              setSessionId(left.sessionId);
+              setSessionTitle(left.sessionTitle || "New Agent");
+            }
+            openView(left.view || "home");
+          }}
+        />
+      )}
       <AvatarOverlay
         open={avatarOn}
-        hidden={!!tour}
+        hidden={!!tour || !!milesHello}
         signedIn={!!opsToken}
         credit={credit}
         onTour={startTour}

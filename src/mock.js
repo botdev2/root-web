@@ -359,9 +359,10 @@ export const HELP = [
     id: "miles-help",
     section: "Control",
     title: "Miles",
-    summary: "Corner companion that clicks the UI and prompts Hamrin.",
-    body: "Miles reads the open chat and repo. Say what you want done. Clear requests run instantly; fuzzier ones go through Hamrin with a guide fence so he can still drive the chrome.",
+    summary: "Corner companion that greets you by time of day and can click the UI or prompt Hamrin.",
+    body: "When you sign in, Miles opens a Good morning / Good day / Good evening popup with where you left off and what moved since last time. In the corner he still reads the open chat and repo. Clear requests run instantly; fuzzier ones go through Hamrin with a guide fence.",
     bullets: [
+      "Login greeting lists desk activity and a Continue where I left off action",
       "Open Miles with Ctrl+Shift+M or the Miles button",
       "“ship an app”, “open files”, “switch to agent”, “nvidia theme”",
       "“write a prompt that reviews the README” fills and sends to Hamrin",

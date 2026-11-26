@@ -696,7 +696,8 @@ const CITY_THEMES = [
   {
     id: "snowy-helsinki",
     name: "Snowy Helsinki",
-    detail: "Helsinki Cathedral in winter · Wikimedia",
+    detail: "Helsinki Cathedral under fresh snow · Wikimedia",
+    wallpaperKey: "snowy-helsinki-winter",
     description: "City · Baltic ice, pale blue and slate",
     isDark: false,
     bg: "#E8EEF4",
@@ -866,7 +867,7 @@ THEMES.push(
   ...CITY_THEMES.map((city) => {
     const theme = makeTheme(city);
     theme.wallpaper = true;
-    theme.wallpaperId = city.id + "-4k";
+    theme.wallpaperId = city.wallpaperKey || city.id + "-4k";
     theme.city = true;
     return theme;
   }),
@@ -892,15 +893,18 @@ export const WALLPAPERS = [
     thumb: "/wallpapers/thumb/jensen-huang-nvidia.jpg",
     uhd: false,
   },
-  ...CITY_THEMES.map((city) => ({
-    id: city.id + "-4k",
-    name: city.name,
-    detail: city.detail,
-    src: `/wallpapers/${city.id}-4k.jpg`,
-    thumb: `/wallpapers/thumb/${city.id}-4k.jpg`,
-    uhd: true,
-    city: true,
-  })),
+  ...CITY_THEMES.map((city) => {
+    const key = city.wallpaperKey || city.id + "-4k";
+    return {
+      id: key,
+      name: city.name,
+      detail: city.detail,
+      src: `/wallpapers/${key}.jpg`,
+      thumb: `/wallpapers/thumb/${key}.jpg`,
+      uhd: true,
+      city: true,
+    };
+  }),
   ...[
     ["alpine-mirror", "Alpine Mirror", "Clouds in still mountain water"],
     ["polar-night", "Polar Night", "Aurora over dark pines"],

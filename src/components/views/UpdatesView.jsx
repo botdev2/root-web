@@ -1,6 +1,14 @@
 import { useState } from "react";
-import { Page, Card, Row, Ghost } from "../ui.jsx";
+import { Page, Card, Row, Ghost, Section } from "../ui.jsx";
 import { APP_CHANNEL, APP_VERSION } from "../../version.js";
+
+const NOTES = [
+  {
+    version: "0.2.55",
+    title: "/root desk update",
+    body: "Wallet-native agent desk on chat.useroot.sh. Hamrin ships code to your Hub; Miles greets you by time of day and can drive the UI; Marketplace is P2P with PALM as escrow; city themes use real 4K photos — Snowy Helsinki is actual January snow on the cathedral.",
+  },
+];
 
 export default function UpdatesView() {
   const [status, setStatus] = useState("You’re on the latest build.");
@@ -18,6 +26,18 @@ export default function UpdatesView() {
           <div className="mt-2 text-[12px] text-[var(--muted)]">{status}</div>
         </div>
       </Card>
+
+      <Section title="Release notes">
+        <Card>
+          {NOTES.map((note) => (
+            <div key={note.version} className="border-b border-[var(--stroke-soft)] px-4 py-4 last:border-b-0">
+              <div className="text-[11px] tracking-[0.18em] text-[var(--faint)]">{note.version}</div>
+              <div className="mt-1 text-[15px] text-[var(--ink)]">{note.title}</div>
+              <p className="mt-2 text-[13px] leading-5 text-[var(--muted)]">{note.body}</p>
+            </div>
+          ))}
+        </Card>
+      </Section>
     </Page>
   );
 }

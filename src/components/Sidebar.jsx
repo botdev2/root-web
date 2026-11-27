@@ -5,13 +5,12 @@ import AddProjectMenu from "./AddProjectMenu.jsx";
 import { PanelGrip, useLayout, Zone } from "../layout.jsx";
 
 const NAV = [
-  { id: "home", label: "New Agent" },
-  { id: "markets", label: "Markets" },
-  { id: "quests", label: "Achievements" },
-  { id: "reasoning", label: "Reasoning" },
-  { id: "ops", label: "Ops" },
-  { id: "marketplace", label: "Marketplace" },
-  { id: "billing", label: "Billing" },
+  { id: "home", label: "New Agent", icon: "plus" },
+  { id: "markets", label: "Markets", icon: "chart" },
+  { id: "quests", label: "Achievements", icon: "trophy" },
+  { id: "reasoning", label: "Reasoning", icon: "brain" },
+  { id: "ops", label: "Ops", icon: "server" },
+  { id: "marketplace", label: "Marketplace", icon: "store" },
 ];
 
 function shortWhen(value) {
@@ -37,10 +36,10 @@ function byRecent(left, right) {
 }
 
 const FOOTER = [
-  { id: "updates", label: "Updates" },
-  { id: "account", label: "Account" },
-  { id: "settings", label: "Settings" },
-  { id: "telemetry", label: "Telemetry" },
+  { id: "billing", label: "Billing", icon: "coin" },
+  { id: "account", label: "Account", icon: "user" },
+  { id: "settings", label: "Settings", icon: "gear" },
+  { id: "telemetry", label: "Telemetry", icon: "activity" },
 ];
 
 export default function Sidebar({
@@ -116,6 +115,7 @@ export default function Sidebar({
       node: (
         <NavButton
           tour={item.id === "home" ? "nav-home" : undefined}
+          icon={item.icon}
           active={
             item.id === "home"
               ? view === "home" || view === "notes"
@@ -159,7 +159,7 @@ export default function Sidebar({
       home: "footer",
       locked: item.id === "settings",
       node: (
-        <NavButton active={view === item.id} onClick={() => go(() => onView(item.id))}>
+        <NavButton icon={item.icon} active={view === item.id} onClick={() => go(() => onView(item.id))}>
           {item.label}
         </NavButton>
       ),
@@ -170,7 +170,7 @@ export default function Sidebar({
       home: "footer",
       className: "sm:hidden",
       node: (
-        <NavButton active={avatarOn} onClick={() => go(() => onAvatar?.())}>
+        <NavButton icon="bot" active={avatarOn} onClick={() => go(() => onAvatar?.())}>
           Miles
         </NavButton>
       ),
@@ -380,17 +380,18 @@ function LiveDot() {
   );
 }
 
-function NavButton({ active, onClick, children, tour }) {
+function NavButton({ active, onClick, children, tour, icon }) {
   return (
     <button
       type="button"
       data-tour={tour}
       onClick={onClick}
-      className={`mb-1 flex h-10 w-full items-center rounded-[14px] px-2 text-left text-[13px] ${
+      className={`mb-1 flex h-10 w-full items-center gap-2.5 rounded-[14px] px-2.5 text-left text-[13px] ${
         active ? "bg-[var(--sidebar-sel)]" : "hover:bg-[var(--hover)]"
       }`}
     >
-      {children}
+      {icon && <Icon name={icon} size={15} className={`shrink-0 ${active ? "text-[var(--ink)]" : "text-[var(--muted)]"}`} />}
+      <span className="min-w-0 truncate">{children}</span>
     </button>
   );
 }

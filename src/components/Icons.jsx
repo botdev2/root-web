@@ -309,6 +309,43 @@ export function Icon({ name, size = 16, className = "" }) {
           <circle cx="17" cy="7" r="2" />
         </svg>
       );
+    case "trophy":
+      return (
+        <svg {...props}>
+          <path d="M8 4h8v3.5a4 4 0 0 1-8 0z" />
+          <path d="M8 5.5H5.5A2.5 2.5 0 0 0 8 8M16 5.5h2.5A2.5 2.5 0 0 1 16 8" />
+          <path d="M12 11.5V14M9.5 19h5M10.5 14h3v2.5a1.5 1.5 0 0 1-1.5 1.5h0a1.5 1.5 0 0 1-1.5-1.5V14z" />
+        </svg>
+      );
+    case "brain":
+      return (
+        <svg {...props}>
+          <path d="M9.5 5.5a2.5 2.5 0 0 0-2.5 2.5v.4A2.5 2.5 0 0 0 5.5 10.5v2A2.5 2.5 0 0 0 7.5 15v.5A2.5 2.5 0 0 0 10 18h.5" />
+          <path d="M14.5 5.5a2.5 2.5 0 0 1 2.5 2.5v.4a2.5 2.5 0 0 1 1.5 2.1v2a2.5 2.5 0 0 1-2 2.5v.5A2.5 2.5 0 0 1 14 18h-.5" />
+          <path d="M12 5.5v13" />
+        </svg>
+      );
+    case "store":
+      return (
+        <svg {...props}>
+          <path d="M4 9.5 5.5 4.5h13L20 9.5" />
+          <path d="M4 9.5h16v10H4z" />
+          <path d="M9.5 19.5v-6h5v6" />
+        </svg>
+      );
+    case "gear":
+      return (
+        <svg {...props}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3.5v2.2M12 18.3V20.5M3.5 12h2.2M18.3 12h2.2M6.1 6.1l1.6 1.6M16.3 16.3l1.6 1.6M17.9 6.1l-1.6 1.6M7.7 16.3l-1.6 1.6" />
+        </svg>
+      );
+    case "activity":
+      return (
+        <svg {...props}>
+          <path d="M4 12h3.5l2-5.5L14 18l2.5-6H20" />
+        </svg>
+      );
     default:
       return <svg {...props} />;
   }

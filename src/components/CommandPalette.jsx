@@ -21,7 +21,6 @@ const HITS = [
   { id: "browse:wallpaper", label: "Browse wallpapers", hint: `${WALLPAPERS.length - 1} photos, many in 4K` },
   { id: "account", label: "Account", hint: "Wallet and profile" },
   { id: "telemetry", label: "Telemetry", hint: "Session privacy" },
-  { id: "updates", label: "Updates", hint: "Channel and version" },
   { id: "layout", label: "Arrange the interface", hint: "Drag items, hide them, dock panels" },
   { id: "tour", label: "Take the tutorial", hint: "A guided first repository, prompt, and commit" },
   { id: "episode:ops-1", label: "Episode 1 - Introduction to Ops", hint: "Guided tutorial: ops.palmaierc.com and how it connects to the harness" },

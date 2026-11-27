@@ -79,7 +79,6 @@ import ReasoningView from "./components/views/ReasoningView.jsx";
 import OpsView from "./components/views/OpsView.jsx";
 import NotesView from "./components/views/NotesView.jsx";
 import AccountView from "./components/views/AccountView.jsx";
-import UpdatesView from "./components/views/UpdatesView.jsx";
 import TelemetryView from "./components/views/TelemetryView.jsx";
 import HelpView from "./components/views/HelpView.jsx";
 import { findEpisode } from "./tour/episodes.js";
@@ -1501,7 +1500,7 @@ export default function App() {
                   />
                 )}
                 {view === "account" && <AccountView />}
-                {view === "updates" && <UpdatesView />}
+                {view === "updates" && <BillingView credit={credit} token={opsToken} onRefresh={refreshCredits} />}
                 {view === "telemetry" && <TelemetryView />}
                 {view === "help" && (
                   <HelpView

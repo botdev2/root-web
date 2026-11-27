@@ -21,7 +21,6 @@ const HEADERS = {
   settings: { title: "Settings", subtitle: "Appearance, models, privacy" },
   templates: { title: "Create from Template", subtitle: "Scaffold a project, then refine with Auto-Prompt" },
   account: { title: "Account", subtitle: "Access, skills, profile" },
-  updates: { title: "Updates", subtitle: "App version and channel" },
   telemetry: { title: "Telemetry", subtitle: "Tracker and network security" },
   help: { title: "Help", subtitle: "How /root works on the web" },
   editor: { title: "Editor", subtitle: "Project text editor" },

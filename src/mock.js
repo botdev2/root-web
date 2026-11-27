@@ -270,9 +270,9 @@ export const HELP = [
     id: "marketplace",
     section: "Ship",
     title: "Marketplace",
-    summary: "P2P marketplace. Sellers list in PALM; buyers lock PALM in escrow until delivery is released.",
-    body: "Marketplace is peer-to-peer. A seller posts a listing with a PALM price. A buyer funds escrow (price plus a 1% desk fee); PALM sits between both sides until the seller marks delivered and the buyer releases — or either side refunds or disputes. Mock desk for now; nothing spends on-chain yet.",
-    bullets: ["List anything for a PALM price", "Buyer funds escrow · PALM locked between peers", "Seller delivers · buyer releases (or refund / dispute)", "1% desk fee on funded escrow · mock, nothing spends"],
+    summary: "$PALM P2P escrow supervised by the PALM DAO. 1% fee splits 30% supervisors / 70% revshare.",
+    body: "Marketplace is a $PALM utility. Sellers list in $PALM. Buyers fund platform escrow (price plus 1%). The PALM DAO supervises locks and disputes. When a deal releases, the fee splits: 30% to DAO supervisors, 70% to $PALM holder revshare. Mock desk for now; nothing spends on-chain yet.",
+    bullets: ["Price and settle only in $PALM", "Platform holds escrow · DAO supervises", "Disputes escalate to DAO supervisors", "1% fee → 30% supervisors · 70% revshare"],
   },
   {
     id: "imagegen",

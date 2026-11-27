@@ -14,7 +14,7 @@ const HITS = [
   { id: "ops", label: "Ops", hint: "PALM Ops console" },
   { id: "markets", label: "Markets", hint: "Live PALM and crypto prices" },
   { id: "market-mode", label: "PALM Market Mode", hint: "Trading-desk theme, tape, and quotes" },
-  { id: "marketplace", label: "Marketplace", hint: "P2P sell · PALM escrow" },
+  { id: "marketplace", label: "Marketplace", hint: "$PALM escrow · DAO + revshare" },
   { id: "billing", label: "Billing", hint: "Credits and when they reset" },
   { id: "settings", label: "Settings · Appearance", hint: "Themes, PALM, wallpaper" },
   { id: "browse:theme", label: "Browse themes", hint: `${THEMES.length} looks, light and dark` },

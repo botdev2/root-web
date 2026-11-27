@@ -4,9 +4,14 @@ import { APP_CHANNEL, APP_VERSION } from "../../version.js";
 
 const NOTES = [
   {
+    version: "0.2.56",
+    title: "$PALM marketplace · DAO escrow",
+    body: "Marketplace is now a $PALM utility: platform-held escrow supervised by the PALM DAO. 1% fee splits 30% to supervisors and 70% to holder revshare. Disputes escalate to DAO settle.",
+  },
+  {
     version: "0.2.55",
     title: "/root desk update",
-    body: "Wallet-native agent desk on chat.useroot.sh. Hamrin ships code to your Hub; Miles greets you by time of day and can drive the UI; Marketplace is P2P with PALM as escrow; city themes use real 4K photos — Snowy Helsinki is actual January snow on the cathedral.",
+    body: "Wallet-native agent desk on chat.useroot.sh. Hamrin ships code to your Hub; Miles greets you by time of day; city themes use real 4K photos.",
   },
 ];
 

@@ -12,7 +12,7 @@ const HEADERS = {
   automations: { title: "Automations", subtitle: "Scheduled helpers for this project" },
   reasoning: { title: "Reasoning", subtitle: "Intake to Output — click a node" },
   ops: { title: "PALM Ops", subtitle: "Hosting, domains, and Ops Hub" },
-  marketplace: { title: "Marketplace", subtitle: "P2P · PALM escrow between peers" },
+  marketplace: { title: "Marketplace", subtitle: "$PALM escrow · DAO supervised · 1% fee" },
   markets: { title: "Markets", subtitle: "PALM vs majors" },
   trades: { title: "Trades", subtitle: "Hamrin on the tape · local PALM/ETH limits" },
   notes: { title: "Notes", subtitle: "Daily goals and markdown" },

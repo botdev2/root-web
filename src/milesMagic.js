@@ -79,6 +79,9 @@ export function milesIntent(raw) {
   if (/\b(home|dashboard)\b/.test(lower)) {
     return say("Home.", { view: "home" });
   }
+  if (/\b(do|run|work|start|finish)\b/.test(lower) && /\b(my\s+)?(notes?|tasks?|list)\b/.test(lower)) {
+    return say("Working through your notes, one by one.", { milesWork: true });
+  }
   if (/\b(notes?|day\s*tasks?|reminders?)\b/.test(lower) && /\b(open|show|my|list|what)\b/.test(lower)) {
     return say("Opening notes.", { view: "notes" });
   }
@@ -89,7 +92,7 @@ export function milesIntent(raw) {
     const task = remindMatch[1].trim().replace(/[.?!]+$/, "");
     const part = (remindMatch[2] || "").toLowerCase();
     if (task.length >= 2) {
-      return say(part ? `I'll remind you ${part}.` : "I'll remind you.", {
+      return say(part ? `I'll do that ${part}.` : "I'll do that.", {
         view: "notes",
         note: { text: task, part: part || undefined, milesRemind: true },
       });

@@ -116,6 +116,7 @@ export function sanitizeGuide(action, { allowSend = true } = {}) {
         milesRemind: noteRaw.milesRemind !== false,
       }
     : null;
+  const milesWork = action.milesWork === true;
   if (
     !clicks.length &&
     !view &&
@@ -131,11 +132,12 @@ export function sanitizeGuide(action, { allowSend = true } = {}) {
     !market &&
     !theme &&
     !wallpaper &&
-    !note
+    !note &&
+    !milesWork
   ) {
     return null;
   }
-  return { clicks, view, mode, prompt, send, files, ship, tour, newChat, palette, hotkeys, paper, market, theme, wallpaper, note };
+  return { clicks, view, mode, prompt, send, files, ship, tour, newChat, palette, hotkeys, paper, market, theme, wallpaper, note, milesWork };
 }
 
 export function parseGuide(raw, options) {
@@ -174,6 +176,7 @@ export async function playGuide(action, api) {
   if (action.market) api.toggleMarket?.();
   if (action.view) api.openView?.(action.view);
   if (action.note) api.addNote?.(action.note);
+  if (action.milesWork) api.runMilesNotes?.();
   if (action.mode) api.setMode?.(action.mode);
   if (action.files) api.setFilesOpen?.(true);
   if (action.ship) {

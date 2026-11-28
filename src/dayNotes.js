@@ -41,9 +41,9 @@ export function noteLinkLabel(note) {
 
 export function remindLabel(note) {
   if (!note?.milesRemind) return "";
-  if (!note.remindAt) return "Miles will nudge";
+  if (!note.remindAt) return "Miles will do this";
   const at = Date.parse(note.remindAt);
-  if (!Number.isFinite(at)) return "Miles will nudge";
+  if (!Number.isFinite(at)) return "Miles will do this";
   const date = new Date(at);
   return (
     "Miles · " +
@@ -51,6 +51,17 @@ export function remindLabel(note) {
     ":" +
     String(date.getMinutes()).padStart(2, "0")
   );
+}
+
+export function milesWorkQueue(notes, now = Date.now()) {
+  return dueLocalNotes(notes, now)
+    .slice()
+    .sort((left, right) => {
+      const leftAt = left.remindAt ? Date.parse(left.remindAt) : Number.MAX_SAFE_INTEGER;
+      const rightAt = right.remindAt ? Date.parse(right.remindAt) : Number.MAX_SAFE_INTEGER;
+      if (leftAt !== rightAt) return leftAt - rightAt;
+      return String(left.createdAt || "").localeCompare(String(right.createdAt || ""));
+    });
 }
 
 export function dueLocalNotes(notes, now = Date.now()) {

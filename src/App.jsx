@@ -17,7 +17,7 @@ import {
   sendTurn,
   updateNote,
 } from "./glmChat.js";
-import { dueLocalNotes, normalizeNote, todayKey } from "./dayNotes.js";
+import { dueLocalNotes, milesWorkQueue, normalizeNote, todayKey } from "./dayNotes.js";
 import { dayPartFromDate } from "./dayClock.js";
 import { readCache, writeCache } from "./opsCache.js";
 import { claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, repoLimit, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
@@ -177,11 +177,16 @@ export default function App() {
     }
   });
   const [milesHello, setMilesHello] = useState(null);
-  const [milesNudge, setMilesNudge] = useState(null);
+  const [milesWork, setMilesWork] = useState(null);
   const notesSynced = useRef("");
-  const nudgedNotes = useRef(new Set());
+  const milesTried = useRef(new Set());
+  const milesDrainOn = useRef(false);
+  const milesStop = useRef(false);
+  const milesQueueRef = useRef(async () => {});
+  const milesHelloRef = useRef(null);
   const dayGoalsRef = useRef(dayGoals);
   dayGoalsRef.current = dayGoals;
+  milesHelloRef.current = milesHello;
   const milesTrackViews = useRef(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [hotkeysOpen, setHotkeysOpen] = useState(false);
@@ -592,21 +597,6 @@ export default function App() {
     };
   }, [opsToken, address, tour, connectOpen]);
 
-  // Fire Miles nudges when a timed reminder comes due.
-  useEffect(() => {
-    if (!opsToken || !address) return undefined;
-    const tick = () => {
-      const due = dueLocalNotes(dayGoals);
-      const next = due.find((item) => item.id && !nudgedNotes.current.has(item.id));
-      if (!next) return;
-      nudgedNotes.current.add(next.id);
-      setMilesNudge(next);
-      notice?.("Miles · " + next.text);
-    };
-    tick();
-    const id = window.setInterval(tick, 30_000);
-    return () => window.clearInterval(id);
-  }, [opsToken, address, dayGoals, notice]);
 
   useEffect(() => {
     if (!opsToken || !address) {
@@ -1234,11 +1224,166 @@ export default function App() {
     }
   };
 
+  const runMilesQueue = async (notes) => {
+    if (milesDrainOn.current) return;
+    const queue = (Array.isArray(notes) ? notes : milesWorkQueue(dayGoalsRef.current)).filter(
+      (item) => item?.id && item.text && !item.done && !milesTried.current.has(item.id),
+    );
+    if (!queue.length) return;
+    if (credit && credit.remaining <= 0) {
+      notice?.("Hamrin credits are used up, so Miles cannot work the notes yet.");
+      return;
+    }
+    milesDrainOn.current = true;
+    milesStop.current = false;
+    setAvatarOn(true);
+    setDayTasksEnabled?.(true);
+    setMode?.("agent");
+    let failed = null;
+    try {
+      for (let index = 0; index < queue.length; index += 1) {
+        if (milesStop.current) break;
+        const note = queue[index];
+        milesTried.current.add(note.id);
+        const repo = listedProjects.find((row) => row.id === note.projectId) || activeProject;
+        const title = String(note.text || "Note").slice(0, 42);
+        const known = /^[a-f0-9]{24}$/.test(note.conversationId || "") && !isArchived(note.conversationId);
+        const pendingId = known ? note.conversationId : "miles-" + note.id;
+        const replyId = "miles-reply-" + note.id;
+        setMilesWork({ note, index: index + 1, total: queue.length });
+        if (repo?.id) setOpsProjectId(repo.id);
+        setSessionTitle(title);
+        setSessionId(pendingId);
+        setView("chat");
+        setSending(true);
+        setBusy({ sessionId: pendingId, projectId: repo?.id || "" });
+        setLocal((prev) => ({
+          ...prev,
+          [pendingId]: [
+            ...(prev[pendingId] || []),
+            { role: "user", text: note.text },
+            {
+              id: replyId,
+              role: "assistant",
+              text: "",
+              pending: true,
+              mode: "agent",
+              startedAt: Date.now(),
+              trace: [{ title: "Miles · " + (index + 1) + " of " + queue.length, state: "active", kind: "spark", detail: "" }],
+            },
+          ],
+        }));
+        try {
+          const tree = (repo?.id && files?.[repo.id]) || {};
+          const outcome = await runAgentTurn({
+            address,
+            conversationId: known ? note.conversationId : "",
+            project: repo,
+            token: readOpsSession(address),
+            mode: "agent",
+            allowTools: true,
+            title,
+            text: note.text,
+            brain: brainEnabled || {},
+            files: Object.entries(tree)
+              .map(([path, body]) => "### " + path + "\n" + String(body || "").slice(0, 1500))
+              .join("\n\n")
+              .slice(0, 6000),
+            fileTree: tree,
+            autoprompt: false,
+            web: webOn,
+            onProject: (projectRow, nextTree) => rememberRepo(projectRow, nextTree),
+            onWrote: (projectRow, payload, message) => {
+              markWritten(projectRow, payload, message);
+              seedFiles?.(projectRow.id, payload);
+              recordCommit?.(projectRow.id, String(message || title).slice(0, 72));
+            },
+            onTrace: ({ steps, startedAt, elapsedMs }) => {
+              setLocal((prev) => ({
+                ...prev,
+                [pendingId]: (prev[pendingId] || []).map((item) =>
+                  item.id === replyId ? { ...item, pending: true, trace: steps, startedAt, elapsedMs: elapsedMs || 0 } : item,
+                ),
+              }));
+            },
+          });
+          const result = outcome.result;
+          if (!result) throw new Error("Hamrin 1.0 did not answer.");
+          const cloudId = result.conversation?.id || pendingId;
+          const turns = (result.conversation?.turns || []).map((turn) => ({
+            role: turn.role,
+            text: turn.text,
+            think: turn.think || "",
+          }));
+          setSessionId(cloudId);
+          setLocal((prev) => {
+            const next = { ...prev };
+            if (pendingId !== cloudId) delete next[pendingId];
+            next[cloudId] = turns.length
+              ? turns
+              : (prev[pendingId] || []).map((item) => (item.id === replyId ? { role: "assistant", text: result.text || "" } : item));
+            return next;
+          });
+          if (result.credit) setCredit(result.credit);
+          setCloudSessions((prev) => {
+            const row = {
+              id: cloudId,
+              projectId: result.conversation?.projectId || repo?.id || note.projectId || "project",
+              title: result.conversation?.title || title,
+              updatedAt: result.conversation?.updatedAt || new Date().toISOString(),
+            };
+            return [row, ...prev.filter((item) => item.id !== cloudId && item.id !== pendingId)].slice(0, convoMax);
+          });
+          updateDayGoal?.(note.id, { done: true, conversationId: cloudId, conversationTitle: title });
+          if (opsToken) updateNote(address, note.id, { done: true, conversationId: cloudId, conversationTitle: title }).catch(() => {});
+          trackActivity(address, { type: "chat", label: "Miles did · " + title, detail: note.projectLabel || "" });
+        } catch (error) {
+          failed = note;
+          setLocal((prev) => ({
+            ...prev,
+            [pendingId]: (prev[pendingId] || []).map((item) =>
+              item.id === replyId ? { role: "assistant", text: error.message || "Miles could not finish this note." } : item,
+            ),
+          }));
+          notice?.(error.message || "Miles stopped on that note.");
+          break;
+        } finally {
+          setSending(false);
+          setBusy(null);
+        }
+      }
+    } finally {
+      milesDrainOn.current = false;
+      if (milesStop.current) notice?.("Miles stopped. The rest of the notes stay open.");
+      if (!failed) setMilesWork(null);
+      else setMilesWork((prev) => (prev ? { ...prev, failed: true } : prev));
+    }
+  };
+  milesQueueRef.current = runMilesQueue;
+
   useEffect(() => {
     if (!isConnected || !address || !opsToken) return undefined;
     const timer = window.setInterval(() => scheduleRef.current(), 30000);
     return () => window.clearInterval(timer);
   }, [isConnected, address, opsToken]);
+
+  useEffect(() => {
+    if (!opsToken || !address) return undefined;
+    const kick = () => {
+      if (document.visibilityState === "hidden") return;
+      if (milesDrainOn.current || milesHelloRef.current) return;
+      if (shouldShowGreeting(address)) return;
+      const due = milesWorkQueue(dayGoalsRef.current).filter((item) => item?.id && !milesTried.current.has(item.id));
+      if (!due.length) return;
+      milesQueueRef.current(due);
+    };
+    const first = window.setTimeout(kick, milesHello ? 400 : 1200);
+    const timer = window.setInterval(kick, 20000);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(timer);
+    };
+  }, [opsToken, address, milesHello, dayGoals]);
 
   const forgetChat = (id) => {
     setCloudSessions((prev) => prev.filter((item) => item.id !== id));
@@ -1386,6 +1531,15 @@ export default function App() {
           } catch {
             /* local note still shows */
           }
+        },
+        runMilesNotes: () => {
+          milesTried.current = new Set();
+          const due = milesWorkQueue(dayGoalsRef.current);
+          if (!due.length) {
+            notice?.("No Miles notes are due. Turn on Miles does this for a note.");
+            return;
+          }
+          milesQueueRef.current(due);
         },
       });
     } finally {
@@ -1831,30 +1985,42 @@ export default function App() {
           }}
         />
       )}
-      {milesNudge && !milesHello && (
-        <div className="absolute bottom-24 right-4 z-[70] w-[min(340px,92vw)] md:bottom-8">
-          <div className="frost-panel rounded-2xl border border-[var(--stroke)] p-4 shadow-xl">
-            <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">MILES REMINDER</div>
-            <div className="mt-1.5 text-[14.5px] leading-5 text-[var(--ink)]">{milesNudge.text}</div>
-            {(milesNudge.projectLabel || milesNudge.conversationTitle) && (
-              <div className="mt-1 text-[12px] text-[var(--muted)]">
-                {[milesNudge.projectLabel, milesNudge.conversationTitle].filter(Boolean).join(" · ")}
-              </div>
-            )}
+      {milesWork && !milesHello && (
+        <div className="absolute bottom-24 right-4 z-[70] w-[min(360px,92vw)] md:bottom-8">
+          <div className="frost-panel note-rise rounded-2xl border border-[var(--stroke)] p-4 shadow-xl">
+            <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">
+              {milesWork.failed ? "MILES STOPPED" : "MILES · " + milesWork.index + " OF " + milesWork.total}
+            </div>
+            <div className="mt-1.5 text-[14.5px] leading-5 text-[var(--ink)]">{milesWork.note?.text}</div>
+            <div className="mt-1 text-[12px] text-[var(--muted)]">
+              {[milesWork.note?.projectLabel, milesWork.note?.conversationTitle].filter(Boolean).join(" · ") || "Unattached"}
+            </div>
             <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                className="h-9 rounded-xl bg-[var(--accent)] px-3 text-[12.5px] text-[var(--bg)]"
-                onClick={() => {
-                  openView("notes");
-                  setMilesNudge(null);
-                  setAvatarOn(true);
-                }}
-              >
-                Open notes
-              </button>
-              <button type="button" className="h-9 px-2 text-[12.5px] text-[var(--muted)]" onClick={() => setMilesNudge(null)}>
-                Dismiss
+              {milesWork.failed ? (
+                <button
+                  type="button"
+                  className="h-9 rounded-xl bg-[var(--accent)] px-3 text-[12.5px] text-[var(--bg)]"
+                  onClick={() => {
+                    if (milesWork.note?.id) milesTried.current.delete(milesWork.note.id);
+                    setMilesWork(null);
+                    milesQueueRef.current(milesWorkQueue(dayGoalsRef.current));
+                  }}
+                >
+                  Retry
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="h-9 rounded-xl border border-[var(--stroke)] px-3 text-[12.5px]"
+                  onClick={() => {
+                    milesStop.current = true;
+                  }}
+                >
+                  Stop after this
+                </button>
+              )}
+              <button type="button" className="h-9 px-2 text-[12.5px] text-[var(--muted)]" onClick={() => setMilesWork(null)}>
+                Hide
               </button>
             </div>
           </div>

@@ -69,7 +69,7 @@ export default function MilesGreetingPopup({ payload, onContinue, onTalk, onClos
         <div className="max-h-[min(52vh,440px)] space-y-4 overflow-y-auto px-5 py-4">
           {hasReminders && (
             <section>
-              <div className="mb-2 text-[11px] tracking-[0.2em] text-[var(--faint)]">MILES REMINDERS</div>
+              <div className="mb-2 text-[11px] tracking-[0.2em] text-[var(--faint)]">I'LL DO THESE, ONE BY ONE</div>
               <ul className="space-y-2">
                 {reminders.map((item) => (
                   <li key={item.id} className="rounded-xl border border-[var(--stroke)] bg-[var(--hover)] px-3 py-2.5">

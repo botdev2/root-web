@@ -323,7 +323,7 @@ export default function NotesView({ cloudSessions = [], onOpenChat, onOpenProjec
             <Ghost active={milesRemind} onClick={() => setMilesRemind((prev) => !prev)}>
               <span className="inline-flex items-center gap-1.5">
                 <Icon name="bell" size={13} />
-                Miles reminder
+                Miles does this
               </span>
             </Ghost>
             {milesRemind && (

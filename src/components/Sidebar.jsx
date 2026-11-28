@@ -8,7 +8,6 @@ const NAV = [
   { id: "home", label: "New Agent", icon: "plus" },
   { id: "markets", label: "Markets", icon: "chart" },
   { id: "quests", label: "Achievements", icon: "trophy" },
-  { id: "reasoning", label: "Reasoning", icon: "brain" },
   { id: "ops", label: "Ops", icon: "server" },
   { id: "marketplace", label: "Marketplace", icon: "store" },
 ];
@@ -36,10 +35,9 @@ function byRecent(left, right) {
 }
 
 const FOOTER = [
-  { id: "billing", label: "Billing", icon: "coin" },
+  { id: "billing", label: "Billing", icon: "bill" },
   { id: "account", label: "Account", icon: "user" },
   { id: "settings", label: "Settings", icon: "gear" },
-  { id: "telemetry", label: "Telemetry", icon: "activity" },
 ];
 
 export default function Sidebar({

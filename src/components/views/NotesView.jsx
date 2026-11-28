@@ -164,7 +164,7 @@ export default function NotesView({ hubProjects = [], cloudSessions = [], onOpen
         <div className="text-[11px] tracking-[0.22em] text-[var(--faint)]">TODAY</div>
         <h1 className="mt-1 text-[28px] font-light tracking-[-0.02em]">{day}</h1>
         <p className="mt-1 max-w-[520px] text-[13.5px] leading-5 text-[var(--muted)]">
-          Notes live on your wallet day ledger. Attach a Hub project or chat, and ask Miles to nudge you.
+          Notes live on your wallet day ledger. Attach a Hub project or chat. Miles runs the ones you mark, in chat, with the avatar off.
         </p>
       </div>
 

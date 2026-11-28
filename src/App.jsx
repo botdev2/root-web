@@ -408,11 +408,37 @@ export default function App() {
     };
   }, [dayTasksEnabled, view, sessionId]);
 
+  const milesTasksOn = (dayGoals || []).some((note) => note && !note.done && note.milesRemind);
+  const milesTasksRef = useRef(false);
+  milesTasksRef.current = milesTasksOn;
+
   const openView = (id) => {
     const next = id === "plugins" ? "marketplace" : id;
     setView(next);
     setNavOpen(false);
     if (next === "settings") setSettingsTab("appearance");
+  };
+
+  const requestAvatar = (next) => {
+    if (milesTasksRef.current) {
+      setAvatarOn(false);
+      try {
+        localStorage.setItem("root-web-avatar-on", "0");
+      } catch {
+        /* ignore */
+      }
+      notice?.("Miles is working notes in chat. The avatar stays off until those are done.");
+      return;
+    }
+    setAvatarOn((value) => {
+      const on = typeof next === "boolean" ? next : !value;
+      try {
+        localStorage.setItem("root-web-avatar-on", on ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return on;
+    });
   };
 
   const runHotkey = (id) => {
@@ -454,15 +480,7 @@ export default function App() {
       return;
     }
     if (id === "miles") {
-      setAvatarOn((value) => {
-        const next = !value;
-        try {
-          localStorage.setItem("root-web-avatar-on", next ? "1" : "0");
-        } catch {
-          /* ignore */
-        }
-        return next;
-      });
+      requestAvatar();
       return;
     }
     if (id === "new") {
@@ -577,8 +595,13 @@ export default function App() {
   }, [opsToken, address, setDayGoals]);
 
   // Miles day-part greeting once per signed-in visit (after a short away).
+  // Auto notes run in chat, so the avatar greeting stays down while any are open.
   useEffect(() => {
     if (!opsToken || !address || tour || connectOpen) return;
+    if (milesTasksRef.current) {
+      setMilesHello(null);
+      return;
+    }
     if (!shouldShowGreeting(address)) return;
     let cancelled = false;
     (async () => {
@@ -589,13 +612,24 @@ export default function App() {
       } catch {
         /* local reminders still show */
       }
-      if (cancelled) return;
+      if (cancelled || milesTasksRef.current) return;
       setMilesHello(buildGreeting(address, { reminders }));
     })();
     return () => {
       cancelled = true;
     };
-  }, [opsToken, address, tour, connectOpen]);
+  }, [opsToken, address, tour, connectOpen, milesTasksOn]);
+
+  useEffect(() => {
+    if (!milesTasksOn) return;
+    setAvatarOn(false);
+    setMilesHello(null);
+    try {
+      localStorage.setItem("root-web-avatar-on", "0");
+    } catch {
+      /* ignore */
+    }
+  }, [milesTasksOn]);
 
 
   useEffect(() => {
@@ -1236,7 +1270,8 @@ export default function App() {
     }
     milesDrainOn.current = true;
     milesStop.current = false;
-    setAvatarOn(true);
+    setAvatarOn(false);
+    setMilesHello(null);
     setDayTasksEnabled?.(true);
     setMode?.("agent");
     let failed = null;
@@ -1245,7 +1280,9 @@ export default function App() {
         if (milesStop.current) break;
         const note = queue[index];
         milesTried.current.add(note.id);
-        const repo = listedProjects.find((row) => row.id === note.projectId) || activeProject;
+        const repo = note.projectId
+          ? listedProjects.find((row) => row.id === note.projectId) || { id: note.projectId, label: note.projectLabel || "" }
+          : null;
         const title = String(note.text || "Note").slice(0, 42);
         const known = /^[a-f0-9]{24}$/.test(note.conversationId || "") && !isArchived(note.conversationId);
         const pendingId = known ? note.conversationId : "miles-" + note.id;
@@ -1257,11 +1294,12 @@ export default function App() {
         setView("chat");
         setSending(true);
         setBusy({ sessionId: pendingId, projectId: repo?.id || "" });
+        const shown = [note.text, note.plan ? "Plan:\n" + note.plan : ""].filter(Boolean).join("\n\n");
         setLocal((prev) => ({
           ...prev,
           [pendingId]: [
             ...(prev[pendingId] || []),
-            { role: "user", text: [note.text, note.plan ? "Plan:\n" + note.plan : ""].filter(Boolean).join("\n\n") },
+            { role: "user", text: shown },
             {
               id: replyId,
               role: "assistant",
@@ -1283,7 +1321,7 @@ export default function App() {
             mode: "agent",
             allowTools: true,
             title,
-            text: [note.text, note.plan ? "Plan:\n" + note.plan : ""].filter(Boolean).join("\n\n"),
+            text: shown + "\n\nFinish this note in this chat. Use the attached repository when there is one.",
             brain: brainEnabled || {},
             files: Object.entries(tree)
               .map(([path, body]) => "### " + path + "\n" + String(body || "").slice(0, 1500))
@@ -1371,8 +1409,8 @@ export default function App() {
     if (!opsToken || !address) return undefined;
     const kick = () => {
       if (document.visibilityState === "hidden") return;
-      if (milesDrainOn.current || milesHelloRef.current) return;
-      if (shouldShowGreeting(address)) return;
+      if (milesDrainOn.current) return;
+      if (!milesTasksRef.current && (milesHelloRef.current || shouldShowGreeting(address))) return;
       const due = milesWorkQueue(dayGoalsRef.current).filter((item) => item?.id && !milesTried.current.has(item.id));
       if (!due.length) return;
       milesQueueRef.current(due);
@@ -1591,19 +1629,9 @@ export default function App() {
               opsToken={opsToken}
               onOpsToken={setOpsToken}
               onCreateProject={createOpsProject}
-              avatarOn={avatarOn}
+              avatarOn={avatarOn && !milesTasksOn}
               busy={busy}
-              onAvatar={() => {
-                setAvatarOn((value) => {
-                  const next = !value;
-                  try {
-                    localStorage.setItem("root-web-avatar-on", next ? "1" : "0");
-                  } catch {
-                    /* ignore */
-                  }
-                  return next;
-                });
-              }}
+              onAvatar={() => requestAvatar()}
               onNewChat={() => {
                 setView("home");
                 setSessionId(null);
@@ -1631,18 +1659,8 @@ export default function App() {
                 setNavOpen((open) => !open);
               }}
               onHelp={() => openView("help")}
-              avatarOn={avatarOn}
-              onAvatar={() => {
-                setAvatarOn((value) => {
-                  const next = !value;
-                  try {
-                    localStorage.setItem("root-web-avatar-on", next ? "1" : "0");
-                  } catch {
-                    /* ignore */
-                  }
-                  return next;
-                });
-              }}
+              avatarOn={avatarOn && !milesTasksOn}
+              onAvatar={() => requestAvatar()}
               onUnlock={() => setUnlockOpen(true)}
               onFiles={() => {
                 setNavOpen(false);
@@ -1964,12 +1982,7 @@ export default function App() {
           onTalk={() => {
             markGreetingShown(address);
             setMilesHello(null);
-            setAvatarOn(true);
-            try {
-              localStorage.setItem("root-web-avatar-on", "1");
-            } catch {
-              /* ignore */
-            }
+            requestAvatar(true);
           }}
           onContinue={() => {
             const left = milesHello.leftOff;
@@ -2028,8 +2041,8 @@ export default function App() {
         </div>
       )}
       <AvatarOverlay
-        open={avatarOn}
-        hidden={!!tour || !!milesHello}
+        open={avatarOn && !milesTasksOn && !milesWork}
+        hidden={!!tour || !!milesHello || milesTasksOn || !!milesWork}
         signedIn={!!opsToken}
         credit={credit}
         onTour={startTour}
@@ -2130,12 +2143,7 @@ export default function App() {
               return;
             }
             if (id === "miles") {
-              setAvatarOn(true);
-              try {
-                localStorage.setItem("root-web-avatar-on", "1");
-              } catch {
-                /* ignore */
-              }
+              requestAvatar(true);
               return;
             }
             if (id === "market-mode") {

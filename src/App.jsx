@@ -1261,7 +1261,7 @@ export default function App() {
           ...prev,
           [pendingId]: [
             ...(prev[pendingId] || []),
-            { role: "user", text: note.text },
+            { role: "user", text: [note.text, note.plan ? "Plan:\n" + note.plan : ""].filter(Boolean).join("\n\n") },
             {
               id: replyId,
               role: "assistant",
@@ -1283,7 +1283,7 @@ export default function App() {
             mode: "agent",
             allowTools: true,
             title,
-            text: note.text,
+            text: [note.text, note.plan ? "Plan:\n" + note.plan : ""].filter(Boolean).join("\n\n"),
             brain: brainEnabled || {},
             files: Object.entries(tree)
               .map(([path, body]) => "### " + path + "\n" + String(body || "").slice(0, 1500))
@@ -1787,6 +1787,7 @@ export default function App() {
                 {view === "ops" && <OpsView token={opsToken} onToken={setOpsToken} />}
                 {view === "notes" && (
                   <NotesView
+                    hubProjects={listedProjects}
                     cloudSessions={cloudSessions}
                     onOpenChat={(id) => {
                       const row = cloudSessions.find((item) => item.id === id);
@@ -1796,7 +1797,7 @@ export default function App() {
                       setView("chat");
                     }}
                     onOpenProject={(id) => {
-                      setProjectId(id);
+                      setOpsProjectId(id);
                       setView("home");
                     }}
                   />

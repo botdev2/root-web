@@ -3,7 +3,7 @@ import { useAccount } from "wagmi";
 import { useAppState } from "../../AppState.jsx";
 import { DAY_PART_META, DAY_PARTS, dayPartFromDate } from "../../dayClock.js";
 import { noteLinkLabel, remindLabel, todayKey } from "../../dayNotes.js";
-import { createNote, removeNote, updateNote } from "../../glmChat.js";
+import { createNote, draftNotes, removeNote, updateNote } from "../../glmChat.js";
 import { Icon } from "../Icons.jsx";
 import { Card, Field, Ghost, Page, Primary, Section } from "../ui.jsx";
 
@@ -26,25 +26,25 @@ function remindOptions() {
   return slots;
 }
 
-export default function NotesView({ cloudSessions = [], onOpenChat, onOpenProject }) {
+export default function NotesView({ hubProjects = [], cloudSessions = [], onOpenChat, onOpenProject }) {
   const { address, isConnected } = useAccount();
   const {
     dayGoals,
     addDayGoal,
     updateDayGoal,
     removeDayGoal,
-    toggleDayGoal,
-    projects,
-    project,
     notice,
   } = useAppState();
+  const projects = hubProjects;
   const [part, setPart] = useState(dayPartFromDate());
   const [draft, setDraft] = useState("");
-  const [projectId, setProjectId] = useState(project?.id || "");
+  const [plan, setPlan] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [conversationId, setConversationId] = useState("");
   const [milesRemind, setMilesRemind] = useState(false);
   const [remindAt, setRemindAt] = useState("");
   const [busy, setBusy] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const day = todayKey();
   const rows = useMemo(() => dayGoals.filter((item) => (item.part || "afternoon") === part), [dayGoals, part]);
   const chats = useMemo(() => {
@@ -108,10 +108,54 @@ export default function NotesView({ cloudSessions = [], onOpenChat, onOpenProjec
       conversationTitle: selectedChat?.title || "",
       milesRemind,
       remindAt: milesRemind ? remindAt || null : null,
+      plan,
     });
     setDraft("");
+    setPlan("");
     await persistCreate(note);
     setBusy("");
+  };
+
+  const askSuggestions = async () => {
+    if (!isConnected || !address || busy) return;
+    setBusy("suggest");
+    try {
+      const data = await draftNotes(address, {
+        kind: "suggest",
+        text: draft,
+        projectLabel: selectedProject?.label || "",
+        notes: dayGoals.map((item) => item.text),
+      });
+      setSuggestions((data.suggestions || []).filter(Boolean));
+      if (!data.suggestions?.length) notice?.("Hamrin did not suggest any notes.");
+    } catch (error) {
+      notice?.(error.message || "Could not suggest notes.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const askPlan = async (text, instructions, apply, projectLabel) => {
+    if (!isConnected || !address || busy) return;
+    setBusy("plan");
+    try {
+      const data = await draftNotes(address, {
+        kind: "plan",
+        text,
+        instructions,
+        projectLabel: projectLabel || selectedProject?.label || "",
+      });
+      const next = String(data.plan || "").trim();
+      if (!next) {
+        notice?.("Hamrin did not write a plan.");
+        return;
+      }
+      apply(next);
+    } catch (error) {
+      notice?.(error.message || "Could not write a plan.");
+    } finally {
+      setBusy("");
+    }
   };
 
   return (
@@ -163,6 +207,9 @@ export default function NotesView({ cloudSessions = [], onOpenChat, onOpenProjec
                   <div className={`text-[14.5px] leading-5 ${item.done ? "text-[var(--muted)] line-through" : ""}`}>
                     {item.text}
                   </div>
+                  {item.plan && (
+                    <div className="mt-1 whitespace-pre-wrap text-[12.5px] leading-5 text-[var(--muted)]">{item.plan}</div>
+                  )}
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-[var(--muted)]">
                     {noteLinkLabel(item) && (
                       <button
@@ -231,6 +278,13 @@ export default function NotesView({ cloudSessions = [], onOpenChat, onOpenProjec
                     </select>
                     <button
                       type="button"
+                      onClick={() => askPlan(item.text, item.plan, (next) => persistPatch(item.id, { plan: next }), item.projectLabel)}
+                      className="inline-flex h-8 items-center rounded-lg border border-[var(--stroke)] px-2.5 text-[12px] text-[var(--muted)] hover:text-[var(--ink)]"
+                    >
+                      {busy === "plan" ? "Writing…" : item.plan ? "Rewrite plan" : "Write plan"}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() =>
                         persistPatch(item.id, {
                           milesRemind: !item.milesRemind,
@@ -278,12 +332,55 @@ export default function NotesView({ cloudSessions = [], onOpenChat, onOpenProjec
 
       <Section title="New note">
         <Card className="space-y-3 p-4">
-          <Field
-            label="What needs doing"
-            value={draft}
-            onChange={setDraft}
-            placeholder="Ship the billing copy…"
-          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-[11px] text-[var(--faint)]">What needs doing</div>
+            <button
+              type="button"
+              onClick={askSuggestions}
+              disabled={!isConnected || !!busy}
+              className="text-[12px] text-[var(--accent)] disabled:opacity-50"
+            >
+              {busy === "suggest" ? "Suggesting…" : "Suggest with Hamrin"}
+            </button>
+          </div>
+          {suggestions.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {suggestions.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => {
+                    setDraft(item);
+                    setSuggestions((prev) => prev.filter((row) => row !== item));
+                  }}
+                  className="rounded-full border border-[var(--stroke)] px-3 py-1 text-left text-[12.5px] text-[var(--muted)] hover:text-[var(--ink)]"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          )}
+          <Field value={draft} onChange={setDraft} placeholder="Ship the billing copy…" />
+          <label className="block">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-[var(--faint)]">Plan</span>
+              <button
+                type="button"
+                disabled={!isConnected || !!busy || !draft.trim()}
+                onClick={() => askPlan(draft, plan, setPlan)}
+                className="text-[12px] text-[var(--accent)] disabled:opacity-50"
+              >
+                {busy === "plan" ? "Writing…" : plan.trim() ? "Rewrite with Hamrin" : "Generate plan"}
+              </button>
+            </div>
+            <textarea
+              value={plan}
+              onChange={(event) => setPlan(event.target.value)}
+              placeholder="Instructions Miles should follow, or leave this for Hamrin to write."
+              rows={4}
+              className="w-full resize-y rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 py-2 text-[14px] leading-5 outline-none"
+            />
+          </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <div className="mb-1.5 text-[11px] text-[var(--faint)]">Project</div>
@@ -302,12 +399,21 @@ export default function NotesView({ cloudSessions = [], onOpenChat, onOpenProjec
                   </option>
                 ))}
               </select>
+              {projects.length === 0 && (
+                <div className="mt-1.5 text-[11.5px] leading-4 text-[var(--faint)]">
+                  Hub repos show here once this wallet is signed in. Chats were already loaded, so the project list was empty.
+                </div>
+              )}
             </label>
             <label className="block">
               <div className="mb-1.5 text-[11px] text-[var(--faint)]">Conversation</div>
               <select
                 value={conversationId}
-                onChange={(event) => setConversationId(event.target.value)}
+                onChange={(event) => {
+                  const next = chats.find((row) => row.id === event.target.value) || null;
+                  setConversationId(event.target.value);
+                  if (next?.projectId && projects.some((row) => row.id === next.projectId)) setProjectId(next.projectId);
+                }}
                 className="h-10 w-full rounded-lg border border-[var(--stroke)] bg-[var(--input)] px-3 text-[14px]"
               >
                 <option value="">None</option>

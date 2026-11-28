@@ -25,6 +25,7 @@ export function normalizeNote(row, fallbackPart = dayPartFromDate()) {
     conversationTitle: String(row.conversationTitle || ""),
     milesRemind: Boolean(row.milesRemind),
     remindAt: row.remindAt ? String(row.remindAt) : null,
+    plan: String(row.plan || "").slice(0, 2000),
     createdAt: row.createdAt || "",
     updatedAt: row.updatedAt || "",
   };

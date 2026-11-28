@@ -152,6 +152,10 @@ export function readPalmOtp(address) {
   });
 }
 
+export function draftNotes(address, body) {
+  return call("/v1/notes/draft", { address, method: "POST", body });
+}
+
 export function listNotes(address, day) {
   const query = day ? "?day=" + encodeURIComponent(day) : "";
   return call("/v1/notes" + query, { address });

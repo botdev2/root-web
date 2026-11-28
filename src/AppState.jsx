@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { dayPartFromDate } from "./dayClock.js";
+import { normalizeNote, todayKey } from "./dayNotes.js";
 import { BRAIN_NODES, DEFAULT_PREFS, defaultPluginState } from "./features.js";
 
 const SAMPLE_PROJECTS = new Set(["my-mobile-app", "landing", "wiki"]);
@@ -26,7 +27,9 @@ function withoutSampleFiles(map) {
 function readGoals() {
   const rows = readStored("root-web-day-goals", []);
   if (!Array.isArray(rows)) return [];
-  return rows.filter((item) => item && !SAMPLE_GOALS.has(item.text));
+  return rows
+    .map((item) => normalizeNote(item))
+    .filter((item) => item && !SAMPLE_GOALS.has(item.text));
 }
 
 const AppState = createContext(null);
@@ -227,13 +230,41 @@ export function AppStateProvider({ children }) {
         });
       },
       signOut: () => setSession(null),
+      setDayGoals: (next) => {
+        const rows = typeof next === "function" ? next : () => next;
+        setDayGoals((prev) => {
+          const value = rows(prev);
+          return (Array.isArray(value) ? value : []).map((item) => normalizeNote(item)).filter(Boolean);
+        });
+      },
       toggleDayGoal: (id) => {
         setDayGoals((prev) => prev.map((row) => (row.id === id ? { ...row, done: !row.done } : row)));
       },
-      addDayGoal: (text, part) => {
+      addDayGoal: (text, part, extra = {}) => {
         const label = String(text || "").trim();
-        if (!label) return;
-        setDayGoals((prev) => [...prev, { id: String(Date.now()), done: false, text: label, part: part || dayPartFromDate() }]);
+        if (!label) return null;
+        const note = normalizeNote({
+          id: String(Date.now()),
+          done: false,
+          text: label,
+          part: part || dayPartFromDate(),
+          day: todayKey(),
+          ...extra,
+        });
+        setDayGoals((prev) => [...prev, note]);
+        return note;
+      },
+      updateDayGoal: (id, patch) => {
+        setDayGoals((prev) =>
+          prev.map((row) => {
+            if (row.id !== id) return row;
+            const nextId = patch?.id ? String(patch.id) : row.id;
+            return normalizeNote({ ...row, ...patch, id: nextId }) || row;
+          }),
+        );
+      },
+      removeDayGoal: (id) => {
+        setDayGoals((prev) => prev.filter((row) => row.id !== id));
       },
       notice: (text) => {
         setToast(text);

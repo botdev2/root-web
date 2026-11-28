@@ -1,7 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useSignMessage } from "wagmi";
-import { archiveConversation, listConversations, loadConversation, pingPresence, readCredits, readUserStats, removeConversation, reportQuestEvent, sendTurn } from "./glmChat.js";
+import {
+  archiveConversation,
+  createNote,
+  listConversations,
+  listDueNotes,
+  listNotes,
+  loadConversation,
+  pingPresence,
+  readCredits,
+  readUserStats,
+  removeConversation,
+  replaceNotes,
+  reportQuestEvent,
+  sendTurn,
+  updateNote,
+} from "./glmChat.js";
+import { dueLocalNotes, normalizeNote, todayKey } from "./dayNotes.js";
+import { dayPartFromDate } from "./dayClock.js";
 import { readCache, writeCache } from "./opsCache.js";
 import { claimOpsSession, createHubProject, deleteHubRepo, hubCloneUrl, hubRepoUrl, opsFetch, readOpsSession, repoLimit, reposForWallet, signOpsSession, walletKey, writeOpsSession } from "./opsApi.js";
 import { automationDue, runAgentTurn, thinkingTitle } from "./agentRun.js";
@@ -105,7 +122,33 @@ const CHAT_VIEWS = new Set(["home", "chat", "markets", "trades"]);
 export default function App() {
   const state = useAppState();
   const { layout, setEditing, reset: resetLayout } = useLayout();
-  const { seedFiles, replaceFiles, replaceFileInfo, noteFile, replaceCommits, recordCommit, finishAutomationRun, setProjectId, mode, setMode, notice, dayTasksEnabled, setDayTasksEnabled, brainEnabled, files, fileInfo, automations, prefs, togglePref, setPrefs } = state || {};
+  const {
+    seedFiles,
+    replaceFiles,
+    replaceFileInfo,
+    noteFile,
+    replaceCommits,
+    recordCommit,
+    finishAutomationRun,
+    setProjectId,
+    mode,
+    setMode,
+    notice,
+    dayTasksEnabled,
+    setDayTasksEnabled,
+    brainEnabled,
+    files,
+    fileInfo,
+    automations,
+    prefs,
+    togglePref,
+    setPrefs,
+    dayGoals,
+    setDayGoals,
+    toggleDayGoal,
+    addDayGoal,
+    updateDayGoal,
+  } = state || {};
   // One switch for the composer pill and Settings; the Brain flag also counts.
   const autoPrompt = !!(prefs?.autoprompt || brainEnabled?.["autoprompt.rewrite"]);
   const webOn = prefs?.web !== false;
@@ -134,6 +177,11 @@ export default function App() {
     }
   });
   const [milesHello, setMilesHello] = useState(null);
+  const [milesNudge, setMilesNudge] = useState(null);
+  const notesSynced = useRef("");
+  const nudgedNotes = useRef(new Set());
+  const dayGoalsRef = useRef(dayGoals);
+  dayGoalsRef.current = dayGoals;
   const milesTrackViews = useRef(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [hotkeysOpen, setHotkeysOpen] = useState(false);
@@ -488,13 +536,77 @@ export default function App() {
     reportQuestEvent("view:" + view);
   }, [view, opsToken, address]);
 
+  // Pull today's notes from the wallet day ledger (or seed it from local cache once).
+  useEffect(() => {
+    if (!opsToken || !address) {
+      notesSynced.current = "";
+      return undefined;
+    }
+    const day = todayKey();
+    const stamp = walletKey(address) + ":" + day;
+    if (notesSynced.current === stamp) return undefined;
+    notesSynced.current = stamp;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listNotes(address, day);
+        if (cancelled) return;
+        const remote = (data.notes || []).map((item) => normalizeNote(item)).filter(Boolean);
+        if (remote.length) {
+          setDayGoals?.(remote);
+          return;
+        }
+        const local = (dayGoalsRef.current || []).filter((item) => !item.day || item.day === day);
+        if (local.length) {
+          const saved = await replaceNotes(address, day, local);
+          if (cancelled) return;
+          setDayGoals?.((saved.notes || local).map((item) => normalizeNote(item)).filter(Boolean));
+        }
+      } catch {
+        notesSynced.current = "";
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [opsToken, address, setDayGoals]);
+
   // Miles day-part greeting once per signed-in visit (after a short away).
   useEffect(() => {
     if (!opsToken || !address || tour || connectOpen) return;
     if (!shouldShowGreeting(address)) return;
-    const payload = buildGreeting(address);
-    setMilesHello(payload);
+    let cancelled = false;
+    (async () => {
+      let reminders = dueLocalNotes(dayGoalsRef.current);
+      try {
+        const data = await listDueNotes(address);
+        if (!cancelled && Array.isArray(data.notes)) reminders = data.notes;
+      } catch {
+        /* local reminders still show */
+      }
+      if (cancelled) return;
+      setMilesHello(buildGreeting(address, { reminders }));
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [opsToken, address, tour, connectOpen]);
+
+  // Fire Miles nudges when a timed reminder comes due.
+  useEffect(() => {
+    if (!opsToken || !address) return undefined;
+    const tick = () => {
+      const due = dueLocalNotes(dayGoals);
+      const next = due.find((item) => item.id && !nudgedNotes.current.has(item.id));
+      if (!next) return;
+      nudgedNotes.current.add(next.id);
+      setMilesNudge(next);
+      notice?.("Miles · " + next.text);
+    };
+    tick();
+    const id = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(id);
+  }, [opsToken, address, dayGoals, notice]);
 
   useEffect(() => {
     if (!opsToken || !address) {
@@ -1256,6 +1368,25 @@ export default function App() {
         setTheme: (id) => pickTheme(id),
         setWallpaper: (id) => setWallpaperId(id),
         toggleMarket: () => enableMarket(!marketOn),
+        addNote: async (note) => {
+          const part = note?.part || dayPartFromDate();
+          const created = addDayGoal?.(note?.text, part, {
+            day: todayKey(),
+            projectId: activeProject?.id || "",
+            projectLabel: activeProject?.label || "",
+            conversationId: sessionId || "",
+            conversationTitle: sessionTitle || "",
+            milesRemind: note?.milesRemind !== false,
+          });
+          setDayTasksEnabled?.(true);
+          if (!created || !opsToken || !address) return;
+          try {
+            const data = await createNote(address, created);
+            if (data?.note) updateDayGoal?.(created.id, data.note);
+          } catch {
+            /* local note still shows */
+          }
+        },
       });
     } finally {
       if (guideRun.current === token) {
@@ -1404,6 +1535,29 @@ export default function App() {
                     onShipDemo={() => startTour("ship-demo")}
                     onChip={(chip) => send(chip)}
                     onNotes={() => openView("notes")}
+                    onToggleGoal={async (id) => {
+                      const row = (dayGoals || []).find((item) => item.id === id);
+                      toggleDayGoal?.(id);
+                      if (!row || !opsToken || !address) return;
+                      try {
+                        await updateNote(address, id, { done: !row.done });
+                      } catch {
+                        /* local toggle still applies */
+                      }
+                    }}
+                    onOpenNoteLink={(item) => {
+                      if (item?.conversationId) {
+                        setSessionId(item.conversationId);
+                        setSessionTitle(item.conversationTitle || "Chat");
+                        if (item.projectId) setProjectId(item.projectId);
+                        setView("chat");
+                        return;
+                      }
+                      if (item?.projectId) {
+                        setProjectId(item.projectId);
+                        setView("home");
+                      }
+                    }}
                   />
                 )}
                 {view === "chat" && <ChatView sessionId={sessionId} extras={local[sessionId] || []} />}
@@ -1477,7 +1631,22 @@ export default function App() {
                 )}
                 {view === "reasoning" && <ReasoningView />}
                 {view === "ops" && <OpsView token={opsToken} onToken={setOpsToken} />}
-                {view === "notes" && <NotesView />}
+                {view === "notes" && (
+                  <NotesView
+                    cloudSessions={cloudSessions}
+                    onOpenChat={(id) => {
+                      const row = cloudSessions.find((item) => item.id === id);
+                      setSessionId(id);
+                      setSessionTitle(row?.title || "Chat");
+                      if (row?.projectId) setProjectId(row.projectId);
+                      setView("chat");
+                    }}
+                    onOpenProject={(id) => {
+                      setProjectId(id);
+                      setView("home");
+                    }}
+                  />
+                )}
                 {view === "billing" && <BillingView credit={credit} token={opsToken} onRefresh={refreshCredits} />}
                 {view === "quests" && <QuestsView token={opsToken} onRefresh={refreshCredits} />}
                 {view === "marketplace" && <MarketplaceView credit={credit} />}
@@ -1661,6 +1830,35 @@ export default function App() {
             openView(left.view || "home");
           }}
         />
+      )}
+      {milesNudge && !milesHello && (
+        <div className="absolute bottom-24 right-4 z-[70] w-[min(340px,92vw)] md:bottom-8">
+          <div className="frost-panel rounded-2xl border border-[var(--stroke)] p-4 shadow-xl">
+            <div className="text-[11px] tracking-[0.2em] text-[var(--faint)]">MILES REMINDER</div>
+            <div className="mt-1.5 text-[14.5px] leading-5 text-[var(--ink)]">{milesNudge.text}</div>
+            {(milesNudge.projectLabel || milesNudge.conversationTitle) && (
+              <div className="mt-1 text-[12px] text-[var(--muted)]">
+                {[milesNudge.projectLabel, milesNudge.conversationTitle].filter(Boolean).join(" · ")}
+              </div>
+            )}
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                className="h-9 rounded-xl bg-[var(--accent)] px-3 text-[12.5px] text-[var(--bg)]"
+                onClick={() => {
+                  openView("notes");
+                  setMilesNudge(null);
+                  setAvatarOn(true);
+                }}
+              >
+                Open notes
+              </button>
+              <button type="button" className="h-9 px-2 text-[12.5px] text-[var(--muted)]" onClick={() => setMilesNudge(null)}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       <AvatarOverlay
         open={avatarOn}

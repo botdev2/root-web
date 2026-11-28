@@ -36,6 +36,7 @@ export const GUIDE_VIEWS = new Set([
   "ops",
   "marketplace",
   "billing",
+  "notes",
   "settings",
   "templates",
   "account",
@@ -106,6 +107,15 @@ export function sanitizeGuide(action, { allowSend = true } = {}) {
   const theme = typeof action.theme === "string" ? action.theme.slice(0, 40) : "";
   const wallpaper = typeof action.wallpaper === "string" ? action.wallpaper.slice(0, 40) : "";
   const tour = action.tour === true ? true : typeof action.tour === "string" ? action.tour.slice(0, 40) : "";
+  const noteRaw = action.note && typeof action.note === "object" ? action.note : null;
+  const noteText = noteRaw ? String(noteRaw.text || "").trim().slice(0, 280) : "";
+  const note = noteText
+    ? {
+        text: noteText,
+        part: String(noteRaw.part || "").slice(0, 16),
+        milesRemind: noteRaw.milesRemind !== false,
+      }
+    : null;
   if (
     !clicks.length &&
     !view &&
@@ -120,11 +130,12 @@ export function sanitizeGuide(action, { allowSend = true } = {}) {
     !paper &&
     !market &&
     !theme &&
-    !wallpaper
+    !wallpaper &&
+    !note
   ) {
     return null;
   }
-  return { clicks, view, mode, prompt, send, files, ship, tour, newChat, palette, hotkeys, paper, market, theme, wallpaper };
+  return { clicks, view, mode, prompt, send, files, ship, tour, newChat, palette, hotkeys, paper, market, theme, wallpaper, note };
 }
 
 export function parseGuide(raw, options) {
@@ -162,6 +173,7 @@ export async function playGuide(action, api) {
   if (action.wallpaper) api.setWallpaper?.(action.wallpaper);
   if (action.market) api.toggleMarket?.();
   if (action.view) api.openView?.(action.view);
+  if (action.note) api.addNote?.(action.note);
   if (action.mode) api.setMode?.(action.mode);
   if (action.files) api.setFilesOpen?.(true);
   if (action.ship) {

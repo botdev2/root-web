@@ -152,6 +152,31 @@ export function readPalmOtp(address) {
   });
 }
 
+export function listNotes(address, day) {
+  const query = day ? "?day=" + encodeURIComponent(day) : "";
+  return call("/v1/notes" + query, { address });
+}
+
+export function listDueNotes(address) {
+  return call("/v1/notes?due=1", { address });
+}
+
+export function createNote(address, body) {
+  return call("/v1/notes", { address, method: "POST", body });
+}
+
+export function updateNote(address, id, body) {
+  return call("/v1/notes/" + encodeURIComponent(id), { address, method: "PATCH", body });
+}
+
+export function removeNote(address, id) {
+  return call("/v1/notes/" + encodeURIComponent(id), { address, method: "DELETE" });
+}
+
+export function replaceNotes(address, day, notes) {
+  return call("/v1/notes", { address, method: "POST", body: { replace: true, day, notes } });
+}
+
 export function readQuests(address) {
   return call("/v1/quests", { address });
 }

@@ -310,9 +310,15 @@ export const HELP = [
     id: "notes",
     section: "Ship",
     title: "Notes",
-    summary: "Daily goals and markdown. Opened from the day-task clock.",
-    body: "Notes is not a sidebar tab. Turn on Day tasks, then press the edit icon beside the clock. Goals toggle in place. Markdown is a single page for the day.",
-    bullets: ["Edit icon beside the home clock", "Check a goal to mark it done", "Add a goal from the field", "Markdown is free text"],
+    summary: "Daily notes on your wallet ledger, attached to a project or chat.",
+    body: "Turn on Day tasks, then press the edit icon beside the clock. Notes save to the day ledger when a wallet is signed in. Attach a Hub project or conversation, and ask Miles to remind you.",
+    bullets: [
+      "Edit icon beside the home clock",
+      "Notes sync to the wallet day ledger",
+      "Attach a project or conversation",
+      "Miles reminder on a day part or a time",
+      "Ask Miles: remind me to…",
+    ],
   },
   {
     id: "account",

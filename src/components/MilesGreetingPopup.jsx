@@ -13,9 +13,10 @@ export default function MilesGreetingPopup({ payload, onContinue, onTalk, onClos
 
   if (!payload) return null;
 
-  const { greeting, firstVisit, awayLabel, leftOff, activities } = payload;
+  const { greeting, firstVisit, awayLabel, leftOff, activities, reminders } = payload;
   const hasActivity = activities?.length > 0;
   const hasLeft = !!leftOff;
+  const hasReminders = reminders?.length > 0;
 
   return (
     <div
@@ -66,6 +67,24 @@ export default function MilesGreetingPopup({ payload, onContinue, onTalk, onClos
         </div>
 
         <div className="max-h-[min(52vh,440px)] space-y-4 overflow-y-auto px-5 py-4">
+          {hasReminders && (
+            <section>
+              <div className="mb-2 text-[11px] tracking-[0.2em] text-[var(--faint)]">MILES REMINDERS</div>
+              <ul className="space-y-2">
+                {reminders.map((item) => (
+                  <li key={item.id} className="rounded-xl border border-[var(--stroke)] bg-[var(--hover)] px-3 py-2.5">
+                    <div className="text-[13.5px] text-[var(--ink)]">{item.text}</div>
+                    {(item.projectLabel || item.conversationTitle) && (
+                      <div className="mt-0.5 text-[11.5px] text-[var(--muted)]">
+                        {[item.projectLabel, item.conversationTitle].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {hasLeft && (
             <section>
               <div className="mb-2 text-[11px] tracking-[0.2em] text-[var(--faint)]">WHERE YOU LEFT OFF</div>

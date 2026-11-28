@@ -170,12 +170,21 @@ export function shouldShowGreeting(address) {
   return true;
 }
 
-export function buildGreeting(address) {
+export function buildGreeting(address, { reminders = [] } = {}) {
   const desk = readDesk(address);
   const now = new Date();
   const left = desk.leftOff;
   const awayFrom = left?.at || desk.lastVisitAt || "";
   const activities = (desk.activity || []).slice().reverse();
+  const due = (Array.isArray(reminders) ? reminders : [])
+    .filter((item) => item && !item.done && item.text)
+    .slice(0, 6)
+    .map((item) => ({
+      id: item.id,
+      text: String(item.text).slice(0, 120),
+      projectLabel: String(item.projectLabel || "").slice(0, 60),
+      conversationTitle: String(item.conversationTitle || "").slice(0, 60),
+    }));
   return {
     greeting: timeGreeting(now),
     dayPart: dayPartOf(now),
@@ -189,6 +198,7 @@ export function buildGreeting(address) {
         }
       : null,
     activities,
+    reminders: due,
   };
 }
 

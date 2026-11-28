@@ -3,8 +3,9 @@ import DayRing from "./DayRing.jsx";
 import { Icon } from "./Icons.jsx";
 import useNow from "../hooks/useNow.js";
 import { DAY_PART_META, dayPartFromDate, formatClock, formatDateLine } from "../dayClock.js";
+import { noteLinkLabel, remindLabel } from "../dayNotes.js";
 
-export default function DayTasksPanel({ goals, onToggleGoal, onEdit }) {
+export default function DayTasksPanel({ goals, onToggleGoal, onEdit, onOpenLink }) {
   const now = useNow();
   const [filter, setFilter] = useState(dayPartFromDate());
   const part = filter || dayPartFromDate(now);
@@ -33,26 +34,66 @@ export default function DayTasksPanel({ goals, onToggleGoal, onEdit }) {
       <div className="mx-4 mt-4 space-y-1 text-left md:mx-7 md:mt-5">
         {rows.length === 0 ? (
           <div className="py-2 text-center text-[12.5px] text-[var(--faint)]">
-            No tasks for {DAY_PART_META[part].name} yet.
+            No notes for {DAY_PART_META[part].name} yet.
+            {onEdit && (
+              <button type="button" onClick={onEdit} className="mt-1 block w-full text-[12px] text-[var(--accent)]">
+                Add one
+              </button>
+            )}
           </div>
         ) : (
-          rows.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onToggleGoal?.(item.id)}
-              className={`flex w-full items-center gap-2.5 px-1 py-2 text-left ${item.done ? "opacity-70" : ""}`}
-            >
-              <span
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                  item.done ? "border-[var(--green)] bg-[var(--green)] text-[var(--bg)]" : "border-[var(--stroke)]"
-                }`}
+          rows.map((item) => {
+            const link = noteLinkLabel(item);
+            const remind = remindLabel(item);
+            return (
+              <div
+                key={item.id}
+                className={`flex w-full items-start gap-2.5 rounded-xl px-1 py-2 ${item.done ? "opacity-70" : ""}`}
               >
-                {item.done ? "✓" : ""}
-              </span>
-              <span className={`text-[14px] ${item.done ? "text-[var(--muted)] line-through" : ""}`}>{item.text}</span>
-            </button>
-          ))
+                <button
+                  type="button"
+                  onClick={() => onToggleGoal?.(item.id)}
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                    item.done ? "border-[var(--green)] bg-[var(--green)] text-[var(--bg)]" : "border-[var(--stroke)]"
+                  }`}
+                  aria-label={item.done ? "Mark open" : "Mark done"}
+                >
+                  {item.done ? "✓" : ""}
+                </button>
+                <div className="min-w-0 flex-1 text-left">
+                  <button
+                    type="button"
+                    onClick={() => onToggleGoal?.(item.id)}
+                    className={`block w-full text-left text-[14px] leading-5 ${
+                      item.done ? "text-[var(--muted)] line-through" : ""
+                    }`}
+                  >
+                    {item.text}
+                  </button>
+                  {(link || remind) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-[var(--muted)]">
+                      {link && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenLink?.(item)}
+                          className="inline-flex items-center gap-1 hover:text-[var(--ink)]"
+                        >
+                          <Icon name={item.conversationId ? "chat" : "folder"} size={11} />
+                          {link}
+                        </button>
+                      )}
+                      {remind && (
+                        <span className="inline-flex items-center gap-1 text-[var(--accent)]">
+                          <Icon name="bell" size={11} />
+                          {remind}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>

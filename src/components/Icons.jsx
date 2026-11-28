@@ -346,6 +346,13 @@ export function Icon({ name, size = 16, className = "" }) {
           <path d="M4 12h3.5l2-5.5L14 18l2.5-6H20" />
         </svg>
       );
+    case "bell":
+      return (
+        <svg {...props}>
+          <path d="M12 4.5a4.5 4.5 0 0 1 4.5 4.5v2.2c0 .8.3 1.6.8 2.2L19 15.5H5l1.7-2.1c.5-.6.8-1.4.8-2.2V9A4.5 4.5 0 0 1 12 4.5z" />
+          <path d="M10 17.5a2 2 0 0 0 4 0" />
+        </svg>
+      );
     default:
       return <svg {...props} />;
   }

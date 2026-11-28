@@ -79,6 +79,22 @@ export function milesIntent(raw) {
   if (/\b(home|dashboard)\b/.test(lower)) {
     return say("Home.", { view: "home" });
   }
+  if (/\b(notes?|day\s*tasks?|reminders?)\b/.test(lower) && /\b(open|show|my|list|what)\b/.test(lower)) {
+    return say("Opening notes.", { view: "notes" });
+  }
+  const remindMatch = text.match(
+    /^(?:(?:please|hey|miles)[,:]?\s*)?remind\s+me\s+(?:to\s+)?(.+?)(?:\s+(?:at|in|this)\s+(morning|afternoon|evening|night))?$/i,
+  );
+  if (remindMatch) {
+    const task = remindMatch[1].trim().replace(/[.?!]+$/, "");
+    const part = (remindMatch[2] || "").toLowerCase();
+    if (task.length >= 2) {
+      return say(part ? `I'll remind you ${part}.` : "I'll remind you.", {
+        view: "notes",
+        note: { text: task, part: part || undefined, milesRemind: true },
+      });
+    }
+  }
 
   if (/\b(agent\s+mode|switch\s+to\s+agent|go\s+agent)\b/.test(lower) || /\bmode\s+agent\b/.test(lower)) {
     return say("Agent mode.", { mode: "agent", click: "agent" });
